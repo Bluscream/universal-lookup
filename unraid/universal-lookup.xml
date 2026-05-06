@@ -9,7 +9,7 @@
   <Project>https://github.com/Bluscream/universal-lookup</Project>
   <Overview>Universal Lookup - Aggregated lookup service for phone numbers, IP addresses, emails, locations, and parcel tracking with smart caching and response merging.</Overview>
   <Category>Tools: Network:Other</Category>
-  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <WebUI>http://[IP]:[PORT:24010]/</WebUI>
   <Icon>https://raw.githubusercontent.com/Bluscream/universal-lookup/main/src/frontend/favicon.png</Icon>
   <ExtraParams/>
   <PostArgs/>
@@ -17,7 +17,7 @@
   <DonateLink/>
   <Requires/>
 
-  <Config Name="Web Port" Target="3000" Default="3000" Mode="tcp" Description="Port for the web interface and API" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Web Port" Target="24010" Default="24010" Mode="tcp" Description="Port for the web interface and API" Type="Port" Display="always" Required="true" Mask="false">24010</Config>
   <Config Name="Data Path" Target="/app/data" Default="/mnt/user/appdata/universal-lookup" Mode="rw" Description="Persistent data (cache DB, MaxMind databases)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/universal-lookup</Config>
   <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Logging level (error, warn, info, debug)" Type="Variable" Display="always" Required="false" Mask="false">info</Config>
   <Config Name="Cache TTL (seconds)" Target="CACHE_TTL" Default="86400" Mode="" Description="How long to cache lookup results (default: 24 hours)" Type="Variable" Display="always" Required="false" Mask="false">86400</Config>

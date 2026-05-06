@@ -8,11 +8,11 @@ services:
     container_name: universal-lookup
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "24010:24010"
     volumes:
       - lookup-data:/app/data
     environment:
-      - PORT=3000
+      - PORT=24010
       - LOG_LEVEL=info
       - CACHE_TTL=86400
       - CACHE_TTL_PARCEL=3600

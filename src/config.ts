@@ -21,7 +21,7 @@ function envBool(key: string, fallback: boolean): boolean {
 
 export const config = {
   // Server
-  port: envInt('PORT', 3000),
+  port: envInt('PORT', 24010),
   host: env('HOST', '0.0.0.0'),
   logLevel: env('LOG_LEVEL', 'info'),
 
