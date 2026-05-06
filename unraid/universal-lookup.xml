@@ -4,14 +4,16 @@
   <Repository>bluscream1/universal-lookup</Repository>
   <Registry>https://hub.docker.com/r/bluscream1/universal-lookup</Registry>
   <Network>bridge</Network>
-  <Privileged>false</Privileged>
+  <Privileged>true</Privileged>
   <Support>https://github.com/Bluscream/universal-lookup/issues</Support>
   <Project>https://github.com/Bluscream/universal-lookup</Project>
-  <Overview>Universal Lookup - Aggregated lookup service for phone numbers, IP addresses, emails, locations, and parcel tracking with smart caching and response merging.</Overview>
+  <Overview>Universal Lookup - Aggregated lookup service for phone numbers, IP addresses, emails, locations, and parcel tracking.&#xD;
+&#xD;
+[b]Tailscale Support:[/b] To use Tailscale, ensure [b]Privileged mode[/b] is ON and you have a Tailscale State Directory configured below. You may also need to add [i]--device=/dev/net/tun[/i] to Extra Parameters.</Overview>
   <Category>Tools: Network:Other</Category>
   <WebUI>http://[IP]:[PORT:24010]/</WebUI>
   <Icon>https://raw.githubusercontent.com/Bluscream/universal-lookup/main/src/frontend/favicon.png</Icon>
-  <ExtraParams/>
+  <ExtraParams>--cap-add=NET_ADMIN --device=/dev/net/tun</ExtraParams>
   <PostArgs/>
   <DonateText/>
   <DonateLink/>
@@ -19,6 +21,7 @@
 
   <Config Name="Web Port" Target="24010" Default="24010" Mode="tcp" Description="Port for the web interface and API" Type="Port" Display="always" Required="true" Mask="false">24010</Config>
   <Config Name="Data Path" Target="/app/data" Default="/mnt/user/appdata/universal-lookup" Mode="rw" Description="Persistent data (cache DB, MaxMind databases)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/universal-lookup</Config>
+  <Config Name="Tailscale State Path" Target="/var/lib/tailscale" Default="/mnt/user/appdata/universal-lookup/tailscale" Mode="rw" Description="Persistent state for Tailscale" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/universal-lookup/tailscale</Config>
   <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Logging level (error, warn, info, debug)" Type="Variable" Display="always" Required="false" Mask="false">info</Config>
   <Config Name="Cache TTL (seconds)" Target="CACHE_TTL" Default="86400" Mode="" Description="How long to cache lookup results (default: 24 hours)" Type="Variable" Display="always" Required="false" Mask="false">86400</Config>
   <Config Name="Provider Timeout (ms)" Target="PROVIDER_TIMEOUT" Default="10000" Mode="" Description="Timeout for each provider in milliseconds" Type="Variable" Display="always" Required="false" Mask="false">10000</Config>
