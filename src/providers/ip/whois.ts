@@ -1,4 +1,6 @@
-import whoisLib from 'whois';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const whoisLib = require('whois');
 import type { Provider, ProviderResult } from '../../types/common.js';
 import { config } from '../../config.js';
 
