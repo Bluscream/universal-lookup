@@ -58,9 +58,20 @@ export function getDatabase(): SqlJsDatabase {
 /** Save database to disk */
 export function saveDatabase(): void {
   if (!db) return;
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  writeFileSync(config.dbPath, buffer);
+  try {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    writeFileSync(config.dbPath, buffer);
+  } catch (error) {
+    const err = error as { code?: string };
+    if (err.code === 'EACCES') {
+      console.error(
+        `CRITICAL ERROR: Permission denied writing to ${config.dbPath}. ` +
+          'Please ensure the container has write access to the data directory.',
+      );
+    }
+    throw error;
+  }
 }
 
 /** Close the database connection */

@@ -2,7 +2,7 @@
 FROM node:22-slim AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npx tsc
@@ -27,7 +27,7 @@ WORKDIR /app
 
 # Copy package files and install production deps only
 COPY package*.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm install --omit=dev --ignore-scripts
 
 # Copy built app
 COPY --from=builder /app/dist ./dist/
@@ -38,8 +38,8 @@ COPY src/frontend/ ./dist/frontend/
 # Create data directory
 RUN mkdir -p /app/data/maxmind && chown -R node:node /app/data
 
-# Use non-root user
-USER node
+# Use root to ensure volume permissions work on all NAS environments
+# USER node
 
 # Default env vars
 ENV PORT=24010
