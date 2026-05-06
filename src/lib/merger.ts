@@ -109,7 +109,7 @@ function isEmpty(value: unknown): boolean {
 /**
  * Recursively remove empty values from an object or array.
  */
-function deepClean<T>(obj: T): T {
+export function deepClean<T>(obj: T): T {
   if (Array.isArray(obj)) {
     return obj
       .map((v) => (typeof v === 'object' ? deepClean(v) : v))

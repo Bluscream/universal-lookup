@@ -55,9 +55,8 @@ export const tracerouteProvider: Provider = {
 };
 
 interface TracerouteHop {
-  hop: number;
-  ip: string | null;
-  rtt_ms: number | null;
+  ip: string;
+  rtt_ms: number;
 }
 
 function parseTraceroute(output: string, _isWin: boolean): TracerouteHop[] {
@@ -72,9 +71,6 @@ function parseTraceroute(output: string, _isWin: boolean): TracerouteHop[] {
     const hopMatch = trimmed.match(/^\s*(\d+)\s+/);
     if (!hopMatch) continue;
 
-    const hop = parseInt(hopMatch[1], 10);
-    if (hop < 1 || hop > 64) continue;
-
     // Extract IP
     const ipMatch = trimmed.match(/(\d+\.\d+\.\d+\.\d+)/);
     const ip = ipMatch ? ipMatch[1] : null;
@@ -83,13 +79,9 @@ function parseTraceroute(output: string, _isWin: boolean): TracerouteHop[] {
     const rttMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*ms/);
     const rtt = rttMatch ? parseFloat(rttMatch[1]) : null;
 
-    // Skip "Request timed out" / "* * *" lines that have no data
-    if (!ip && !rtt && (trimmed.includes('*') || trimmed.includes('timed out'))) {
-      hops.push({ hop, ip: null, rtt_ms: null });
-      continue;
+    if (ip && rtt) {
+      hops.push({ ip, rtt_ms: rtt });
     }
-
-    hops.push({ hop, ip, rtt_ms: rtt });
   }
 
   return hops;

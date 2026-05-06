@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { config, getCacheTtl } from '../config.js';
 import { getCached, setCache } from '../db/cache.js';
-import { collectErrors, collectRaw, mergeResponses } from '../lib/merger.js';
+import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/merger.js';
 import { normalizeQuery } from '../lib/normalizer.js';
 import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
@@ -265,7 +265,7 @@ async function handleLookup(
   const fullResponse = { ...response, raw: collectRaw(results) };
   setCache(type, normalizedQuery, fullResponse, getCacheTtl(type));
 
-  return response;
+  return deepClean(response);
 }
 
 function getLookupFunction(type: LookupType) {
