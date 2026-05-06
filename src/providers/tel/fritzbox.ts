@@ -79,7 +79,7 @@ export const fritzbox: Provider = {
           if (!wwwAuth) throw new Error('401 Unauthorized but no WWW-Authenticate header');
 
           const authParams: Record<string, string> = {};
-          wwwAuth.replace(/(\w+)=["']?([^"']+)["']?/g, (_: any, key: string, val: string) => {
+          wwwAuth.replace(/(\w+)=["']?([^"']+)["']?/g, (_: string, key: string, val: string) => {
             authParams[key] = val;
             return '';
           });

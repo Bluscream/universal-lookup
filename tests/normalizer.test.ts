@@ -8,32 +8,32 @@ import {
 
 describe('normalizeTel', () => {
   it('strips whitespace and dashes', () => {
-    expect(normalizeTel('+49 30 123 456')).toBe('+4930123456');
-    expect(normalizeTel('+49-30-123-456')).toBe('+4930123456');
+    expect(normalizeTel('+49 30 123 456')).toBe('004930123456');
+    expect(normalizeTel('+49-30-123-456')).toBe('004930123456');
   });
 
   it('strips parentheses and dots', () => {
-    expect(normalizeTel('(030) 123.456')).toBe('+4930123456');
+    expect(normalizeTel('(030) 123.456')).toBe('004930123456');
   });
 
-  it('converts 0049 to +49', () => {
-    expect(normalizeTel('004930123456')).toBe('+4930123456');
+  it('converts 0049 to 0049', () => {
+    expect(normalizeTel('004930123456')).toBe('004930123456');
   });
 
-  it('converts leading 0 to +49', () => {
-    expect(normalizeTel('030123456')).toBe('+4930123456');
+  it('converts leading 0 to 0049', () => {
+    expect(normalizeTel('030123456')).toBe('004930123456');
   });
 
-  it('preserves + prefix', () => {
-    expect(normalizeTel('+4930123456')).toBe('+4930123456');
+  it('converts + prefix to 00', () => {
+    expect(normalizeTel('+4930123456')).toBe('004930123456');
   });
 
   it('handles international format', () => {
-    expect(normalizeTel('+1 555 123 4567')).toBe('+15551234567');
+    expect(normalizeTel('+1 555 123 4567')).toBe('0015551234567');
   });
 
   it('handles slashes', () => {
-    expect(normalizeTel('030/123456')).toBe('+4930123456');
+    expect(normalizeTel('030/123456')).toBe('004930123456');
   });
 });
 
