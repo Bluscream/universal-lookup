@@ -26,11 +26,11 @@ export const tracerouteProvider: Provider = {
         timeout: Math.min(config.providerTimeout * 2, 30000),
       });
 
-      const hops = parseTraceroute(stdout, isWin);
+      const { hops, totalHops } = parseTraceroute(stdout, isWin);
       return {
         provider: PROVIDER_NAME,
         success: hops.length > 0,
-        data: { hops },
+        data: { hops, hops_count: totalHops },
         raw: stdout,
         duration: Date.now() - start,
       };
@@ -38,12 +38,12 @@ export const tracerouteProvider: Provider = {
       const err = error as { stdout?: string; message?: string };
       const stdout = err.stdout ?? '';
       if (stdout) {
-        const hops = parseTraceroute(stdout, platform() === 'win32');
+        const { hops, totalHops } = parseTraceroute(stdout, platform() === 'win32');
         if (hops.length > 0) {
           return {
             provider: PROVIDER_NAME,
             success: true,
-            data: { hops },
+            data: { hops, hops_count: totalHops },
             raw: stdout,
             duration: Date.now() - start,
           };
@@ -59,9 +59,10 @@ interface TracerouteHop {
   rtt_ms: number;
 }
 
-function parseTraceroute(output: string, _isWin: boolean): TracerouteHop[] {
+function parseTraceroute(output: string, _isWin: boolean): { hops: TracerouteHop[]; totalHops: number } {
   const hops: TracerouteHop[] = [];
   const lines = output.split('\n');
+  let maxHopFound = 0;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -70,6 +71,10 @@ function parseTraceroute(output: string, _isWin: boolean): TracerouteHop[] {
     // Match hop number at start of line
     const hopMatch = trimmed.match(/^\s*(\d+)\s+/);
     if (!hopMatch) continue;
+
+    const hop = parseInt(hopMatch[1], 10);
+    if (hop < 1 || hop > 64) continue;
+    if (hop > maxHopFound) maxHopFound = hop;
 
     // Extract IP
     const ipMatch = trimmed.match(/(\d+\.\d+\.\d+\.\d+)/);
@@ -84,6 +89,6 @@ function parseTraceroute(output: string, _isWin: boolean): TracerouteHop[] {
     }
   }
 
-  return hops;
+  return { hops, totalHops: maxHopFound };
 }
 
