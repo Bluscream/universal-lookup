@@ -98,10 +98,31 @@ function normalizeKey(key: string): string {
  */
 function isEmpty(value: unknown): boolean {
   if (value === null || value === undefined) return true;
-  if (value === '') return true;
-  if (Array.isArray(value) && value.length === 0) return true;
-  if (typeof value === 'object' && Object.keys(value as object).length === 0) return true;
+  if (typeof value === 'string' && value.trim() === '') return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') {
+    return Object.keys(value as object).length === 0;
+  }
   return false;
+}
+
+/**
+ * Recursively remove empty values from an object or array.
+ */
+function deepClean<T>(obj: T): T {
+  if (Array.isArray(obj)) {
+    return obj
+      .map((v) => (typeof v === 'object' ? deepClean(v) : v))
+      .filter((v) => !isEmpty(v)) as unknown as T;
+  }
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as object)
+        .map(([k, v]) => [k, typeof v === 'object' ? deepClean(v) : v])
+        .filter(([, v]) => !isEmpty(v)),
+    ) as unknown as T;
+  }
+  return obj;
 }
 
 /**
@@ -147,7 +168,7 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
     }
   }
 
-  return merged;
+  return deepClean(merged);
 }
 
 /**
@@ -162,7 +183,7 @@ export function collectErrors(results: ProviderResult[]): Record<string, string>
     }
   }
 
-  return errors;
+  return deepClean(errors);
 }
 
 /**
@@ -177,5 +198,5 @@ export function collectRaw(results: ProviderResult[]): Record<string, unknown> {
     }
   }
 
-  return raw;
+  return deepClean(raw);
 }
