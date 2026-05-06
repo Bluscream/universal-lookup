@@ -20,8 +20,9 @@ export const fritzbox: Provider = {
   },
 
   async lookup(query: string): Promise<ProviderResult> {
+    const { normalizeTel } = await import('../../lib/normalizer.js');
     const start = Date.now();
-    const numClean = query.replace(/[^0-9]/g, '');
+    const numClean = normalizeTel(query);
     if (!numClean) {
       return {
         provider: PROVIDER_NAME,
@@ -33,11 +34,13 @@ export const fritzbox: Provider = {
     }
 
     try {
-      const host = config.fritzboxHost.includes(':')
-        ? config.fritzboxHost
-        : `${config.fritzboxHost}:49443`;
-      const protocol = host.includes('49443') ? 'https' : 'http';
-      const baseUrl = `${protocol}://${host}`;
+      let baseUrl = config.fritzboxHost;
+      if (!baseUrl.startsWith('http')) {
+        const host = baseUrl.includes(':') ? baseUrl : `${baseUrl}:49443`;
+        const protocol = host.includes('49443') ? 'https' : 'http';
+        baseUrl = `${protocol}://${host}`;
+      }
+      
       const soapUrl = `${baseUrl}/upnp/control/x_contact`;
 
       // Helper for Digest Auth
@@ -57,7 +60,6 @@ export const fritzbox: Provider = {
             SoapAction: 'urn:dslforum-org:service:X_AVM-DE_OnTel:1#GetPhonebook',
             ...(authHeader ? { Authorization: authHeader } : {}),
           },
-          // We handle auth manually for Digest support
           validateStatus: (status) => status === 200 || status === 401,
         });
       };
@@ -78,11 +80,12 @@ export const fritzbox: Provider = {
           const wwwAuth = resp.headers['www-authenticate'];
           if (!wwwAuth) throw new Error('401 Unauthorized but no WWW-Authenticate header');
 
+          // More robust parsing for WWW-Authenticate
           const authParams: Record<string, string> = {};
-          wwwAuth.replace(/(\w+)=["']?([^"']+)["']?/g, (_: string, key: string, val: string) => {
-            authParams[key] = val;
-            return '';
-          });
+          const matches = wwwAuth.matchAll(/(\w+)=["']?([^"',]+)["']?/g);
+          for (const match of matches) {
+            authParams[match[1]] = match[2];
+          }
 
           const { realm, nonce, qop } = authParams;
           const uri = '/upnp/control/x_contact';
