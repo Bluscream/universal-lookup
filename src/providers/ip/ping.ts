@@ -1,38 +1,63 @@
 import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import { platform } from 'node:os';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import { promisify } from 'node:util';
 import { config } from '../../config.js';
+import type { Provider, ProviderResult } from '../../types/common.js';
 
 const execAsync = promisify(exec);
 const PROVIDER_NAME = 'ping';
 
 export const pingProvider: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return true; },
+  isAvailable() {
+    return true;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const isWin = platform() === 'win32';
       const t = Math.max(1, Math.floor(config.providerTimeout / 1000));
-      const cmd = isWin ? `ping -n 3 -w ${t*1000} ${query}` : `ping -c 3 -W ${t} ${query}`;
+      const cmd = isWin ? `ping -n 3 -w ${t * 1000} ${query}` : `ping -c 3 -W ${t} ${query}`;
       const { stdout } = await execAsync(cmd, { timeout: config.providerTimeout + 2000 });
-      return { provider: PROVIDER_NAME, success: true, data: parsePing(stdout, isWin), raw: stdout, duration: Date.now() - start };
-    } catch (error: any) {
-      const stdout = error?.stdout ?? '';
+      return {
+        provider: PROVIDER_NAME,
+        success: true,
+        data: parsePing(stdout, isWin),
+        raw: stdout,
+        duration: Date.now() - start,
+      };
+    } catch (error: unknown) {
+      const err = error as { stdout?: string; message?: string };
+      const stdout = err.stdout ?? '';
       if (stdout) {
         const d = parsePing(stdout, platform() === 'win32');
         d.ping_alive = false;
-        return { provider: PROVIDER_NAME, success: true, data: d, raw: stdout, duration: Date.now() - start };
+        return {
+          provider: PROVIDER_NAME,
+          success: true,
+          data: d,
+          raw: stdout,
+          duration: Date.now() - start,
+        };
       }
-      return { provider: PROVIDER_NAME, success: false, data: { ping_alive: false }, error: error?.message ?? String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: { ping_alive: false },
+        error: err.message ?? String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };
 
 function parsePing(out: string, isWin: boolean): Record<string, unknown> {
-  const d: Record<string, unknown> = { ping_alive: false, ping_latency_ms: null, ping_packet_loss: null };
+  const d: Record<string, unknown> = {
+    ping_alive: false,
+    ping_latency_ms: null,
+    ping_packet_loss: null,
+  };
   if (out.match(/time[=<]/i) || out.match(/Zeit[=<]/i)) d.ping_alive = true;
   if (isWin) {
     const avg = out.match(/(?:Average|Mittelwert)\s*=\s*(\d+)\s*ms/i);
@@ -47,3 +72,4 @@ function parsePing(out: string, isWin: boolean): Record<string, unknown> {
   }
   return d;
 }
+

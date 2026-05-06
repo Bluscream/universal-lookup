@@ -9,13 +9,10 @@ declare module 'whois' {
   function lookup(
     address: string,
     options: WhoisOptions,
-    callback: (err: Error | null, data: string) => void
+    callback: (err: Error | null, data: string) => void,
   ): void;
 
-  function lookup(
-    address: string,
-    callback: (err: Error | null, data: string) => void
-  ): void;
+  function lookup(address: string, callback: (err: Error | null, data: string) => void): void;
 
   export { lookup };
   export default { lookup };

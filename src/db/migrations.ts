@@ -1,5 +1,5 @@
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import initSqlJs, { type Database as SqlJsDatabase } from 'sql.js';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { config, ensureDataDir } from '../config.js';
 
 let db: SqlJsDatabase | null = null;

@@ -1,7 +1,6 @@
-import { promises as dns, Resolver } from 'node:dns';
-import type { Provider, ProviderResult } from '../../types/common.js';
-import { config } from '../../config.js';
+import { promises as dns } from 'node:dns';
 import { isIP } from 'node:net';
+import type { Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns';
 
@@ -29,7 +28,7 @@ export const dnsProvider: Provider = {
           const hostnames = await dns.reverse(query);
           data.reverse_dns = hostnames;
           raw.reverse = hostnames;
-        } catch (e) {
+        } catch (_e) {
           // No reverse DNS available
         }
         return {
@@ -42,17 +41,37 @@ export const dnsProvider: Provider = {
       }
 
       // Domain lookups — run all in parallel
-      const results = await Promise.allSettled([
-        dns.resolve4(query).then(r => { raw.A = r; data.dns_a = r; }),
-        dns.resolve6(query).then(r => { raw.AAAA = r; data.dns_aaaa = r; }),
-        dns.resolveMx(query).then(r => {
-          raw.MX = r;
-          data.dns_mx = r.sort((a, b) => a.priority - b.priority).map(m => `${m.priority} ${m.exchange}`);
+      const _results = await Promise.allSettled([
+        dns.resolve4(query).then((r) => {
+          raw.A = r;
+          data.dns_a = r;
         }),
-        dns.resolveTxt(query).then(r => { raw.TXT = r; data.dns_txt = r.map(t => t.join('')); }),
-        dns.resolveNs(query).then(r => { raw.NS = r; data.dns_ns = r; }),
-        dns.resolveCname(query).then(r => { raw.CNAME = r; data.dns_cname = r; }).catch(() => {}),
-        dns.resolveSoa(query).then(r => {
+        dns.resolve6(query).then((r) => {
+          raw.AAAA = r;
+          data.dns_aaaa = r;
+        }),
+        dns.resolveMx(query).then((r) => {
+          raw.MX = r;
+          data.dns_mx = r
+            .sort((a, b) => a.priority - b.priority)
+            .map((m) => `${m.priority} ${m.exchange}`);
+        }),
+        dns.resolveTxt(query).then((r) => {
+          raw.TXT = r;
+          data.dns_txt = r.map((t) => t.join(''));
+        }),
+        dns.resolveNs(query).then((r) => {
+          raw.NS = r;
+          data.dns_ns = r;
+        }),
+        dns
+          .resolveCname(query)
+          .then((r) => {
+            raw.CNAME = r;
+            data.dns_cname = r;
+          })
+          .catch(() => {}),
+        dns.resolveSoa(query).then((r) => {
           raw.SOA = r;
           data.dns_soa = {
             primary_ns: r.nsname,

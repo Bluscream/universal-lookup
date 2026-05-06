@@ -12,7 +12,9 @@ const PROVIDER_NAME = 'dhl';
  */
 export const dhl: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return true; },
+  isAvailable() {
+    return true;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
@@ -30,7 +32,14 @@ export const dhl: Provider = {
       const raw = resp.data;
       const shipment = raw?.shipments?.[0];
       if (!shipment) {
-        return { provider: PROVIDER_NAME, success: false, data: {}, raw, error: 'No shipment found', duration: Date.now() - start };
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          raw,
+          error: 'No shipment found',
+          duration: Date.now() - start,
+        };
       }
 
       const data: Record<string, unknown> = {
@@ -49,7 +58,10 @@ export const dhl: Provider = {
         destination_city: shipment.destination?.address?.addressLocality,
         destination_postal: shipment.destination?.address?.postalCode,
         estimated_delivery: shipment.details?.estimatedDeliveryDate,
-        weight: shipment.details?.weight ? `${shipment.details.weight.value} ${shipment.details.weight.unitText}` : undefined,
+        weight: shipment.details?.weight
+          ? `${shipment.details.weight.value} ${shipment.details.weight.unitText}`
+          : undefined,
+        // biome-ignore lint/suspicious/noExplicitAny: External API response
         events: shipment.events?.map((e: any) => ({
           date: e.timestamp,
           status: e.status,
@@ -60,12 +72,26 @@ export const dhl: Provider = {
       };
 
       return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { status: number } };
       // DHL API returns 404 when tracking number is not found or wrong format
-      if (error?.response?.status === 404) {
-        return { provider: PROVIDER_NAME, success: false, data: {}, error: 'Tracking number not found', duration: Date.now() - start };
+      if (err.response?.status === 404) {
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          error: 'Tracking number not found',
+          duration: Date.now() - start,
+        };
       }
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error instanceof Error ? error.message : String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };
+

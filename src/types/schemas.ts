@@ -26,9 +26,9 @@ export const RequestInfoSchema = z.object({
 export const LookupResponseSchema = z.object({
   lookup_time: z.string(),
   success: z.boolean(),
-  response: z.record(z.unknown()),
-  errors: z.record(z.string()),
-  raw: z.record(z.unknown()),
+  response: z.record(z.string(), z.unknown()),
+  errors: z.record(z.string(), z.string()),
+  raw: z.record(z.string(), z.unknown()),
   request: RequestInfoSchema,
 });
 

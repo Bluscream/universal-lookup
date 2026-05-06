@@ -1,13 +1,15 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
 import { normalizeLocation } from '../../lib/normalizer.js';
+import type { Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'google-maps';
 
 export const googleMaps: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return !!config.googleMapsApiKey; },
+  isAvailable() {
+    return !!config.googleMapsApiKey;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
@@ -24,12 +26,19 @@ export const googleMaps: Provider = {
       const raw = resp.data;
 
       if (raw.status !== 'OK' || !raw.results?.length) {
-        return { provider: PROVIDER_NAME, success: false, data: {}, raw, error: raw.status || 'No results', duration: Date.now() - start };
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          raw,
+          error: raw.status || 'No results',
+          duration: Date.now() - start,
+        };
       }
 
       const r = raw.results[0];
       const comps = r.address_components || [];
-      const getComp = (type: string) => comps.find((c: any) => c.types?.includes(type));
+      const getComp = (type: string) => comps.find((c: { types?: string[] }) => c.types?.includes(type));
 
       const data: Record<string, unknown> = {
         formatted_address: r.formatted_address,
@@ -49,7 +58,13 @@ export const googleMaps: Provider = {
 
       return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };
     } catch (error) {
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error instanceof Error ? error.message : String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };

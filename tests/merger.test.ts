@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { mergeResponses, collectErrors, collectRaw } from '../src/lib/merger.js';
+import { describe, expect, it } from 'vitest';
+import { collectErrors, collectRaw, mergeResponses } from '../src/lib/merger.js';
 import type { ProviderResult } from '../src/types/common.js';
 
 describe('mergeResponses', () => {

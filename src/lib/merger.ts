@@ -6,82 +6,82 @@ import type { ProviderResult } from '../types/common.js';
  */
 const KEY_ALIASES: Record<string, string> = {
   // Country
-  'countrycode': 'country_code',
-  'country_code2': 'country_code',
-  'country_iso': 'country_code',
-  'countryname': 'country',
-  'country_name': 'country',
+  countrycode: 'country_code',
+  country_code2: 'country_code',
+  country_iso: 'country_code',
+  countryname: 'country',
+  country_name: 'country',
 
   // Region/State
-  'regionname': 'region',
-  'region_name': 'region',
-  'state': 'region',
-  'stateprov': 'region',
-  'regioncode': 'region_code',
-  'region_code': 'region_code',
+  regionname: 'region',
+  region_name: 'region',
+  state: 'region',
+  stateprov: 'region',
+  regioncode: 'region_code',
+  region_code: 'region_code',
 
   // City
-  'cityname': 'city',
-  'city_name': 'city',
+  cityname: 'city',
+  city_name: 'city',
 
   // Coordinates
-  'lat': 'latitude',
-  'lon': 'longitude',
-  'lng': 'longitude',
+  lat: 'latitude',
+  lon: 'longitude',
+  lng: 'longitude',
 
   // Postal
-  'zip': 'postal_code',
-  'zipcode': 'postal_code',
-  'zip_code': 'postal_code',
-  'postalcode': 'postal_code',
+  zip: 'postal_code',
+  zipcode: 'postal_code',
+  zip_code: 'postal_code',
+  postalcode: 'postal_code',
 
   // Network
-  'isp_name': 'isp',
-  'organization': 'org',
-  'org_name': 'org',
-  'asn_number': 'asn',
-  'as_number': 'asn',
-  'as_name': 'asn_org',
-  'asname': 'asn_org',
-  'as_org': 'asn_org',
+  isp_name: 'isp',
+  organization: 'org',
+  org_name: 'org',
+  asn_number: 'asn',
+  as_number: 'asn',
+  as_name: 'asn_org',
+  asname: 'asn_org',
+  as_org: 'asn_org',
 
   // Timezone
-  'time_zone': 'timezone',
-  'tz': 'timezone',
+  time_zone: 'timezone',
+  tz: 'timezone',
 
   // Phone
-  'phone_number': 'phone',
-  'phonenumber': 'phone',
-  'telefon': 'phone',
-  'caller_name': 'name',
-  'callername': 'name',
-  'display_name': 'name',
+  phone_number: 'phone',
+  phonenumber: 'phone',
+  telefon: 'phone',
+  caller_name: 'name',
+  callername: 'name',
+  display_name: 'name',
 
   // Address
-  'street_address': 'street',
-  'strasse': 'street',
-  'plz': 'postal_code',
-  'ort': 'city',
-  'stadt': 'city',
+  street_address: 'street',
+  strasse: 'street',
+  plz: 'postal_code',
+  ort: 'city',
+  stadt: 'city',
 
   // Security/Risk
-  'is_proxy': 'proxy',
-  'is_vpn': 'vpn',
-  'is_tor': 'tor',
-  'is_tor_node': 'tor',
-  'is_datacenter': 'datacenter',
-  'is_crawler': 'crawler',
-  'is_threat': 'threat',
-  'risk_score': 'risk_score',
-  'risk_level': 'risk_level',
+  is_proxy: 'proxy',
+  is_vpn: 'vpn',
+  is_tor: 'tor',
+  is_tor_node: 'tor',
+  is_datacenter: 'datacenter',
+  is_crawler: 'crawler',
+  is_threat: 'threat',
+  risk_score: 'risk_score',
+  risk_level: 'risk_level',
 
   // Email
-  'is_disposable': 'disposable',
-  'is_valid': 'valid',
-  'is_valid_syntax': 'valid_syntax',
-  'has_mx_records': 'mx_records',
-  'is_free': 'free_provider',
-  'role_account': 'role_account',
+  is_disposable: 'disposable',
+  is_valid: 'valid',
+  is_valid_syntax: 'valid_syntax',
+  has_mx_records: 'mx_records',
+  is_free: 'free_provider',
+  role_account: 'role_account',
 };
 
 /**

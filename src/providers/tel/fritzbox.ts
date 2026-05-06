@@ -34,16 +34,22 @@ export const fritzbox: Provider = {
           timeout: config.providerTimeout,
           headers: {
             'Content-Type': 'text/xml; charset="utf-8"',
-            'SoapAction': 'urn:dslforum-org:service:X_AVM-DE_OnTel:1#GetPhonebook',
+            SoapAction: 'urn:dslforum-org:service:X_AVM-DE_OnTel:1#GetPhonebook',
           },
           auth: { username: config.fritzboxUser, password: config.fritzboxPass },
-        }
+        },
       );
 
       // Parse the phonebook URL from SOAP response and search for the number
       const urlMatch = resp.data.match(/<NewPhonebookURL>([^<]+)<\/NewPhonebookURL>/);
       if (!urlMatch) {
-        return { provider: PROVIDER_NAME, success: false, data: {}, error: 'Could not get phonebook URL', duration: Date.now() - start };
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          error: 'Could not get phonebook URL',
+          duration: Date.now() - start,
+        };
       }
 
       const pbResp = await axios.get(urlMatch[1], { timeout: config.providerTimeout });
@@ -51,7 +57,9 @@ export const fritzbox: Provider = {
 
       // Search for the number in the phonebook XML
       const numClean = query.replace(/[^0-9]/g, '');
-      const contactMatch = pbResp.data.match(new RegExp(`<contact>[\\s\\S]*?${numClean}[\\s\\S]*?<\\/contact>`, 'i'));
+      const contactMatch = pbResp.data.match(
+        new RegExp(`<contact>[\\s\\S]*?${numClean}[\\s\\S]*?<\\/contact>`, 'i'),
+      );
       if (contactMatch) {
         const nameMatch = contactMatch[0].match(/<realName>([^<]+)<\/realName>/);
         if (nameMatch) data.name = nameMatch[1];
@@ -61,12 +69,19 @@ export const fritzbox: Provider = {
       return {
         provider: PROVIDER_NAME,
         success: Object.keys(data).length > 0,
-        data, raw: contactMatch?.[0],
+        data,
+        raw: contactMatch?.[0],
         error: Object.keys(data).length === 0 ? 'Number not in FritzBox phonebook' : undefined,
         duration: Date.now() - start,
       };
     } catch (error) {
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error instanceof Error ? error.message : String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };

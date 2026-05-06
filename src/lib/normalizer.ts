@@ -1,6 +1,6 @@
-import type { LookupType } from '../types/common.js';
-import { isIP } from 'node:net';
 import { resolve4 } from 'node:dns/promises';
+import { isIP } from 'node:net';
+import type { LookupType } from '../types/common.js';
 
 /**
  * Normalize a phone number to a clean format.
@@ -9,22 +9,22 @@ import { resolve4 } from 'node:dns/promises';
  */
 export function normalizeTel(input: string): string {
   // Strip common noise characters
-  let cleaned = input.replace(/[\s\-\.\(\)\/]/g, '');
+  let cleaned = input.replace(/[\s\-.()/]/g, '');
 
   // Remove any non-digit characters except leading +
   if (cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned.slice(1).replace(/\D/g, '');
+    cleaned = `+${cleaned.slice(1).replace(/\D/g, '')}`;
   } else {
     cleaned = cleaned.replace(/\D/g, '');
   }
 
   // Convert +49 prefix to 0049
   if (cleaned.startsWith('+49')) {
-    cleaned = '0049' + cleaned.slice(3);
+    cleaned = `0049${cleaned.slice(3)}`;
   }
   // Convert +XX prefix to 00XX
   else if (cleaned.startsWith('+')) {
-    cleaned = '00' + cleaned.slice(1);
+    cleaned = `00${cleaned.slice(1)}`;
   }
   // Already 0049 — keep as is
   else if (cleaned.startsWith('0049')) {
@@ -36,7 +36,7 @@ export function normalizeTel(input: string): string {
   }
   // Convert leading 0 (German local format) to 0049
   else if (cleaned.startsWith('0') && cleaned.length > 3) {
-    cleaned = '0049' + cleaned.slice(1);
+    cleaned = `0049${cleaned.slice(1)}`;
   }
 
   return cleaned;
@@ -50,7 +50,7 @@ export async function normalizeIp(input: string): Promise<string> {
   const trimmed = input.trim().toLowerCase();
 
   // Strip protocol if present
-  let cleaned = trimmed
+  const cleaned = trimmed
     .replace(/^https?:\/\//, '')
     .replace(/\/.*$/, '')
     .replace(/:.*$/, ''); // remove port
@@ -84,12 +84,17 @@ export function normalizeEmail(input: string): string {
  * Normalize a location query.
  * Detects coordinates vs place names.
  */
-export function normalizeLocation(input: string): { query: string; isCoords: boolean; lat?: number; lon?: number } {
+export function normalizeLocation(input: string): {
+  query: string;
+  isCoords: boolean;
+  lat?: number;
+  lon?: number;
+} {
   const trimmed = input.trim();
 
   // Try to parse as coordinates (lat,lon or lat lon)
   const coordPatterns = [
-    /^(-?\d+\.?\d*)\s*[,;\s]\s*(-?\d+\.?\d*)$/,  // "52.52, 13.40" or "52.52 13.40"
+    /^(-?\d+\.?\d*)\s*[,;\s]\s*(-?\d+\.?\d*)$/, // "52.52, 13.40" or "52.52 13.40"
     /^lat[=:]?\s*(-?\d+\.?\d*)\s*[,;&]\s*lo?ng?[=:]?\s*(-?\d+\.?\d*)$/i, // "lat=52.52,lng=13.40"
   ];
 

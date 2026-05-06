@@ -1,7 +1,5 @@
 // Universal Lookup — Frontend Application
-(function() {
-  'use strict';
-
+(() => {
   const form = document.getElementById('lookup-form');
   const typeSelect = document.getElementById('lookup-type');
   const queryInput = document.getElementById('lookup-query');
@@ -40,7 +38,10 @@
     e.preventDefault();
     const type = typeSelect.value;
     const query = queryInput.value.trim();
-    if (!query) { queryInput.focus(); return; }
+    if (!query) {
+      queryInput.focus();
+      return;
+    }
 
     setLoading(true);
     hideResults();
@@ -49,17 +50,17 @@
     if (optRaw.checked) params.set('raw', 'true');
     if (optFresh.checked) params.set('fresh', 'true');
 
-    const url = `/api/${type}/${encodeURIComponent(query)}${params.toString() ? '?' + params : ''}`;
+    const url = `/api/${type}/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ''}`;
 
     try {
       const resp = await fetch(url);
       const data = await resp.json();
       showResults(data);
       // Update URL
-      const newUrl = `/${type}/${encodeURIComponent(query)}${params.toString() ? '?' + params : ''}`;
+      const newUrl = `/${type}/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ''}`;
       history.pushState({ type, query }, '', newUrl);
     } catch (err) {
-      showError('Request failed: ' + err.message);
+      showError(`Request failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -125,19 +126,56 @@
     resultCards.innerHTML = '';
     const response = data.response || {};
     const CARD_KEYS = [
-      'ip','country','country_code','city','region','postal_code',
-      'latitude','longitude','timezone','isp','org','asn','asn_org',
-      'reverse_dns','proxy','vpn','tor','datacenter','hosting',
-      'risk_score','risk_level',
-      'name','phone','street','address','caller_type','tellows_score',
-      'email','valid_syntax','disposable','free_provider','mx_records','reachable',
-      'display_name','formatted_address',
-      'tracking_number','carrier','status','status_description',
-      'ping_alive','ping_latency_ms',
+      'ip',
+      'country',
+      'country_code',
+      'city',
+      'region',
+      'postal_code',
+      'latitude',
+      'longitude',
+      'timezone',
+      'isp',
+      'org',
+      'asn',
+      'asn_org',
+      'reverse_dns',
+      'proxy',
+      'vpn',
+      'tor',
+      'datacenter',
+      'hosting',
+      'risk_score',
+      'risk_level',
+      'name',
+      'phone',
+      'street',
+      'address',
+      'caller_type',
+      'tellows_score',
+      'email',
+      'valid_syntax',
+      'disposable',
+      'free_provider',
+      'mx_records',
+      'reachable',
+      'display_name',
+      'formatted_address',
+      'tracking_number',
+      'carrier',
+      'status',
+      'status_description',
+      'ping_alive',
+      'ping_latency_ms',
     ];
 
     for (const key of CARD_KEYS) {
-      if (key in response && response[key] !== null && response[key] !== undefined && response[key] !== '') {
+      if (
+        key in response &&
+        response[key] !== null &&
+        response[key] !== undefined &&
+        response[key] !== ''
+      ) {
         resultCards.appendChild(createCard(key, response[key]));
       }
     }
@@ -173,17 +211,27 @@
     const card = document.createElement('div');
     card.className = 'result-card';
     const label = key.replace(/_/g, ' ');
-    const isMono = typeof value === 'number' || typeof value === 'boolean' || ['ip','asn','latitude','longitude','postal_code'].includes(key);
+    const isMono =
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      ['ip', 'asn', 'latitude', 'longitude', 'postal_code'].includes(key);
     const displayValue = typeof value === 'boolean' ? (value ? '✓ Yes' : '✗ No') : String(value);
     card.innerHTML = `<div class="card-label">${esc(label)}</div><div class="card-value${isMono ? ' mono' : ''}">${esc(displayValue)}</div>`;
     return card;
   }
 
   function syntaxHighlight(json) {
-    return json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return json
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
       .replace(/"(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?/g, (match) => {
         let cls = 'json-string';
-        if (match.endsWith(':')) { cls = 'json-key'; match = match.slice(0, -1) + ':'; return `<span class="${cls}">${match.slice(0,-1)}</span>:`; }
+        if (match.endsWith(':')) {
+          cls = 'json-key';
+          match = `${match.slice(0, -1)}:`;
+          return `<span class="${cls}">${match.slice(0, -1)}</span>:`;
+        }
         return `<span class="${cls}">${match}</span>`;
       })
       .replace(/\b(-?\d+\.?\d*([eE][+-]?\d+)?)\b/g, '<span class="json-number">$1</span>')

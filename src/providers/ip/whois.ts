@@ -1,8 +1,10 @@
 import { createRequire } from 'node:module';
+
 const require = createRequire(import.meta.url);
 const whoisLib = require('whois');
-import type { Provider, ProviderResult } from '../../types/common.js';
+
 import { config } from '../../config.js';
+import type { Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'whois';
 
@@ -22,10 +24,14 @@ export const whois: Provider = {
 
     try {
       const raw = await new Promise<string>((resolve, reject) => {
-        whoisLib.lookup(query, { timeout: config.providerTimeout }, (err: Error | null, data: string) => {
-          if (err) reject(err);
-          else resolve(data);
-        });
+        whoisLib.lookup(
+          query,
+          { timeout: config.providerTimeout },
+          (err: Error | null, data: string) => {
+            if (err) reject(err);
+            else resolve(data);
+          },
+        );
       });
 
       // Parse the raw WHOIS text into key-value pairs

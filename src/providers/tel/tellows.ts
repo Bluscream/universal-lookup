@@ -7,7 +7,9 @@ const PROVIDER_NAME = 'tellows';
 
 export const tellows: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return true; },
+  isAvailable() {
+    return true;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
@@ -20,7 +22,13 @@ export const tellows: Provider = {
       }
       return await lookupScrape(num, start);
     } catch (error) {
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error instanceof Error ? error.message : String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };
@@ -33,22 +41,31 @@ async function lookupApi(num: string, start: number): Promise<ProviderResult> {
   const raw = resp.data;
   const tel = raw?.tellows;
   if (!tel) {
-    return { provider: PROVIDER_NAME, success: false, data: {}, raw, error: 'No data returned', duration: Date.now() - start };
+    return {
+      provider: PROVIDER_NAME,
+      success: false,
+      data: {},
+      raw,
+      error: 'No data returned',
+      duration: Date.now() - start,
+    };
   }
   return {
-    provider: PROVIDER_NAME, success: true,
+    provider: PROVIDER_NAME,
+    success: true,
     data: {
-      tellows_score: tel.score ? parseInt(tel.score) : undefined,
+      tellows_score: tel.score ? parseInt(tel.score, 10) : undefined,
       tellows_score_color: tel.scoreColor,
       caller_type: tel.callerType?.name,
       caller_type_id: tel.callerType?.id,
       name: tel.callerName,
       city: tel.location,
       country: tel.country,
-      comments_count: tel.comments ? parseInt(tel.comments) : undefined,
-      searches_count: tel.searches ? parseInt(tel.searches) : undefined,
+      comments_count: tel.comments ? parseInt(tel.comments, 10) : undefined,
+      searches_count: tel.searches ? parseInt(tel.searches, 10) : undefined,
     },
-    raw, duration: Date.now() - start,
+    raw,
+    duration: Date.now() - start,
   };
 }
 
@@ -57,7 +74,8 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
   const resp = await axios.get(url, {
     timeout: config.providerTimeout,
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
     },
   });
@@ -72,8 +90,8 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
     const src = scoreImg.attr('src') || '';
     const altMatch = alt.match(/Score\s+(\d+)/i);
     const srcMatch = src.match(/s(\d+)\.jpg/);
-    if (altMatch) data.tellows_score = parseInt(altMatch[1]);
-    else if (srcMatch) data.tellows_score = parseInt(srcMatch[1]);
+    if (altMatch) data.tellows_score = parseInt(altMatch[1], 10);
+    else if (srcMatch) data.tellows_score = parseInt(srcMatch[1], 10);
   }
 
   // --- Caller Name (from h1 or .callerId) ---
@@ -84,12 +102,14 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
   } else {
     // Fallback: extract from <h1>
     const h1Text = $('h1').first().text().trim();
-    const h1Name = h1Text.replace(/\s*[\d\+\/\s]+$/, '').trim();
+    const h1Name = h1Text.replace(/\s*[\d+/\s]+$/, '').trim();
     if (h1Name && h1Name.length > 2) data.name = h1Name;
   }
 
   // --- Call Type (Anruftypen) ---
-  const callTypeMatch = html.match(/<b><a href="#userratings">Anruftypen:<\/a><\/b>\s*\n?\s*([^<]+)/);
+  const callTypeMatch = html.match(
+    /<b><a href="#userratings">Anruftypen:<\/a><\/b>\s*\n?\s*([^<]+)/,
+  );
   if (callTypeMatch) {
     data.caller_type = callTypeMatch[1].trim();
   }
@@ -107,11 +127,11 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
 
   // --- Bewertungen (Comments Count) ---
   const ratingsMatch = html.match(/Bewertungen:\s*<span>(\d+)<\/span>/);
-  if (ratingsMatch) data.comments_count = parseInt(ratingsMatch[1]);
+  if (ratingsMatch) data.comments_count = parseInt(ratingsMatch[1], 10);
 
   // --- Suchanfragen (Searches Count) ---
   const searchesMatch = html.match(/Suchanfragen:\s*\n?\s*(\d+)/);
-  if (searchesMatch) data.searches_count = parseInt(searchesMatch[1]);
+  if (searchesMatch) data.searches_count = parseInt(searchesMatch[1], 10);
 
   // --- Assessment (Einschätzung) ---
   const assessMatch = html.match(/<strong>Einsch[^<]*<\/strong>\s*\n?\s*([^<]+)/);
@@ -122,30 +142,36 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
 
   // --- Call Type Distribution Table ---
   const callTypes: { type: string; count: number }[] = [];
-  $('h5:contains("Anruftypen")').closest('.col-md-4').find('table.table-rating tr').each((_, row) => {
-    const th = $(row).find('th');
-    if (th.length) {
-      const typeText = th.contents().first().text().trim();
-      const countMatch = th.find('span.small').text().match(/(\d+)/);
-      if (typeText && countMatch) {
-        callTypes.push({ type: typeText, count: parseInt(countMatch[1]) });
+  $('h5:contains("Anruftypen")')
+    .closest('.col-md-4')
+    .find('table.table-rating tr')
+    .each((_, row) => {
+      const th = $(row).find('th');
+      if (th.length) {
+        const typeText = th.contents().first().text().trim();
+        const countMatch = th.find('span.small').text().match(/(\d+)/);
+        if (typeText && countMatch) {
+          callTypes.push({ type: typeText, count: parseInt(countMatch[1], 10) });
+        }
       }
-    }
-  });
+    });
   if (callTypes.length > 0) data.call_types = callTypes;
 
   // --- Caller Names Distribution Table ---
   const callerNames: { name: string; count: number }[] = [];
-  $('h5:contains("Anrufername")').closest('.col-md-4').find('table.table-rating tr').each((_, row) => {
-    const th = $(row).find('th');
-    if (th.length) {
-      const nameText = th.contents().first().text().trim();
-      const countMatch = th.find('span.small').text().match(/(\d+)/);
-      if (nameText && countMatch) {
-        callerNames.push({ name: nameText, count: parseInt(countMatch[1]) });
+  $('h5:contains("Anrufername")')
+    .closest('.col-md-4')
+    .find('table.table-rating tr')
+    .each((_, row) => {
+      const th = $(row).find('th');
+      if (th.length) {
+        const nameText = th.contents().first().text().trim();
+        const countMatch = th.find('span.small').text().match(/(\d+)/);
+        if (nameText && countMatch) {
+          callerNames.push({ name: nameText, count: parseInt(countMatch[1], 10) });
+        }
       }
-    }
-  });
+    });
   if (callerNames.length > 0) data.caller_names = callerNames;
 
   // --- Trends ---
@@ -153,15 +179,18 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
   if (lastCallMatch) data.last_call = lastCallMatch[1].trim();
 
   const viewsMatch = html.match(/Aufrufe letzter Monat<\/strong>:\s*(\d+)/);
-  if (viewsMatch) data.monthly_views = parseInt(viewsMatch[1]);
+  if (viewsMatch) data.monthly_views = parseInt(viewsMatch[1], 10);
 
   const blocklistMatch = html.match(/Nr\.\s*(\d+)\s*in Sperrliste/);
-  if (blocklistMatch) data.blocklist_position = parseInt(blocklistMatch[1]);
+  if (blocklistMatch) data.blocklist_position = parseInt(blocklistMatch[1], 10);
 
   // --- Area Code Details ---
   const areaCodeCard = $('h4:contains("Vorwahl")').first();
   if (areaCodeCard.length) {
-    const areaTitle = areaCodeCard.text().trim().replace(/^Vorwahl\s*/, '');
+    const areaTitle = areaCodeCard
+      .text()
+      .trim()
+      .replace(/^Vorwahl\s*/, '');
     if (areaTitle) data.area_name = areaTitle;
   }
 
@@ -175,7 +204,7 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
   if (postalMatch) data.postal_code = postalMatch[1];
 
   const populationMatch = html.match(/<b>Einwohner:<\/b>\s*([\d]+)/);
-  if (populationMatch) data.population = parseInt(populationMatch[1]);
+  if (populationMatch) data.population = parseInt(populationMatch[1], 10);
 
   // --- Comments ---
   const comments: { text: string; date?: string; score?: number; author?: string }[] = [];
@@ -198,7 +227,7 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
     comments.push({
       text,
       date: meta.split(/\s{2,}/)[0]?.trim() || undefined,
-      score: scoreMatch ? parseInt(scoreMatch[1]) : undefined,
+      score: scoreMatch ? parseInt(scoreMatch[1], 10) : undefined,
       author: author || undefined,
     });
   });
@@ -209,14 +238,21 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
     // Fallback: extract from the latest comment card in the details section
     const fallbackEl = $('b:contains("Neuster Kommentar")').closest('div');
     if (fallbackEl.length) {
-      const fbText = fallbackEl.find('p.callerinfo').first().text().trim()
-        .replace(/alle Bewertungen$/, '').trim();
+      const fbText = fallbackEl
+        .find('p.callerinfo')
+        .first()
+        .text()
+        .trim()
+        .replace(/alle Bewertungen$/, '')
+        .trim();
       const fbDateMatch = fallbackEl.text().match(/\((\d{2}\.\d{2}\.\d{2}\s+\d{2}:\d{2})\)/);
       if (fbText) {
-        data.comments = [{
-          text: fbText.replace(/^.*?schrieb:\s*/, '').trim(),
-          date: fbDateMatch ? fbDateMatch[1] : undefined,
-        }];
+        data.comments = [
+          {
+            text: fbText.replace(/^.*?schrieb:\s*/, '').trim(),
+            date: fbDateMatch ? fbDateMatch[1] : undefined,
+          },
+        ];
       }
     }
   }
@@ -224,7 +260,8 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
   return {
     provider: PROVIDER_NAME,
     success: Object.keys(data).length > 0,
-    data, raw: resp.data,
+    data,
+    raw: resp.data,
     error: Object.keys(data).length === 0 ? 'Could not parse any data from page' : undefined,
     duration: Date.now() - start,
   };

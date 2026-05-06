@@ -1,15 +1,17 @@
 import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import { platform } from 'node:os';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import { promisify } from 'node:util';
 import { config } from '../../config.js';
+import type { Provider, ProviderResult } from '../../types/common.js';
 
 const execAsync = promisify(exec);
 const PROVIDER_NAME = 'traceroute';
 
 export const tracerouteProvider: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return true; },
+  isAvailable() {
+    return true;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
@@ -26,26 +28,38 @@ export const tracerouteProvider: Provider = {
 
       const hops = parseTraceroute(stdout, isWin);
       return {
-        provider: PROVIDER_NAME, success: hops.length > 0,
+        provider: PROVIDER_NAME,
+        success: hops.length > 0,
         data: { hops },
-        raw: stdout, duration: Date.now() - start,
+        raw: stdout,
+        duration: Date.now() - start,
       };
-    } catch (error: any) {
-      const stdout = error?.stdout ?? '';
+    } catch (error: unknown) {
+      const err = error as { stdout?: string; message?: string };
+      const stdout = err.stdout ?? '';
       if (stdout) {
         const hops = parseTraceroute(stdout, platform() === 'win32');
         if (hops.length > 0) {
-          return { provider: PROVIDER_NAME, success: true, data: { hops }, raw: stdout, duration: Date.now() - start };
+          return {
+            provider: PROVIDER_NAME,
+            success: true,
+            data: { hops },
+            raw: stdout,
+            duration: Date.now() - start,
+          };
         }
       }
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error?.message ?? String(error), duration: Date.now() - start };
+      return { provider: PROVIDER_NAME, success: false, data: {}, error: err.message ?? String(error), duration: Date.now() - start };
     }
   },
 };
 
-interface TracerouteHop { ip: string | null; rtt_ms: number | null; }
+interface TracerouteHop {
+  ip: string | null;
+  rtt_ms: number | null;
+}
 
-function parseTraceroute(output: string, isWin: boolean): TracerouteHop[] {
+function parseTraceroute(output: string, _isWin: boolean): TracerouteHop[] {
   const hops: TracerouteHop[] = [];
   const lines = output.split('\n');
 
@@ -79,3 +93,4 @@ function parseTraceroute(output: string, isWin: boolean): TracerouteHop[] {
 
   return hops;
 }
+

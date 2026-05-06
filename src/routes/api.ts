@@ -1,14 +1,14 @@
-import type { FastifyInstance } from 'fastify';
-import { getCached, setCache } from '../db/cache.js';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { config, getCacheTtl } from '../config.js';
+import { getCached, setCache } from '../db/cache.js';
+import { collectErrors, collectRaw, mergeResponses } from '../lib/merger.js';
 import { normalizeQuery } from '../lib/normalizer.js';
-import { mergeResponses, collectErrors, collectRaw } from '../lib/merger.js';
-import { lookupIp } from '../providers/ip/index.js';
-import { lookupTel } from '../providers/tel/index.js';
 import { lookupEmail } from '../providers/email/index.js';
+import { lookupIp } from '../providers/ip/index.js';
 import { lookupLocation } from '../providers/location/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
-import type { LookupType, LookupResponse } from '../types/common.js';
+import { lookupTel } from '../providers/tel/index.js';
+import type { LookupResponse, LookupType } from '../types/common.js';
 
 const VALID_TYPES = new Set<string>(['tel', 'ip', 'email', 'location', 'parcel']);
 
@@ -39,42 +39,67 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { type: string; query: string };
     Querystring: { raw?: string; fresh?: string };
-  }>('/api/:type/:query', {
-    schema: {
-      tags: ['Lookup'],
-      summary: 'Perform a lookup',
-      description: 'Perform a lookup of the specified type for the given query. Aggregates results from multiple providers.',
-      params: {
-        type: 'object',
-        properties: {
-          type: { type: 'string', enum: ['tel', 'ip', 'email', 'location', 'parcel'], description: 'Lookup type' },
-          query: { type: 'string', description: 'The query to look up (phone number, IP, email, location, tracking number)' },
+  }>(
+    '/api/:type/:query',
+    {
+      schema: {
+        tags: ['Lookup'],
+        summary: 'Perform a lookup',
+        description:
+          'Perform a lookup of the specified type for the given query. Aggregates results from multiple providers.',
+        params: {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['tel', 'ip', 'email', 'location', 'parcel'],
+              description: 'Lookup type',
+            },
+            query: {
+              type: 'string',
+              description:
+                'The query to look up (phone number, IP, email, location, tracking number)',
+            },
+          },
+          required: ['type', 'query'],
         },
-        required: ['type', 'query'],
-      },
-      querystring: {
-        type: 'object',
-        properties: {
-          raw: { type: 'string', enum: ['true', 'false', '1', '0'], description: 'Include raw provider responses' },
-          fresh: { type: 'string', enum: ['true', 'false', '1', '0'], description: 'Bypass cache and force fresh lookup' },
+        querystring: {
+          type: 'object',
+          properties: {
+            raw: {
+              type: 'string',
+              enum: ['true', 'false', '1', '0'],
+              description: 'Include raw provider responses',
+            },
+            fresh: {
+              type: 'string',
+              enum: ['true', 'false', '1', '0'],
+              description: 'Bypass cache and force fresh lookup',
+            },
+          },
         },
+        response: responseSchema,
       },
-      response: responseSchema,
     },
-  }, async (request, reply) => {
-    return handleLookup(request.params.type, request.params.query, request.query, request.ip);
-  });
+    async (request, _reply) => {
+      return handleLookup(request.params.type, request.params.query, request.query, request.ip);
+    },
+  );
 
   // Wildcard for multi-segment queries (e.g., /api/ip/192.168.1.1)
   app.get<{
     Params: { type: string; '*': string };
     Querystring: { raw?: string; fresh?: string };
-  }>('/api/:type/*', {
-    schema: { hide: true },
-  }, async (request, reply) => {
-    const query = (request.params as any)['*'];
-    return handleLookup(request.params.type, query, request.query, request.ip);
-  });
+  }>(
+    '/api/:type/*',
+    {
+      schema: { hide: true },
+    },
+    async (request, _reply) => {
+      const query = (request.params as Record<string, string>)['*'];
+      return handleLookup(request.params.type, query, request.query, request.ip);
+    },
+  );
 }
 
 export async function registerShortcutRoutes(app: FastifyInstance): Promise<void> {
@@ -85,48 +110,59 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const indexPath = join(__dirname, '..', 'frontend', 'index.html');
 
-  const serveIndex = async (_request: any, reply: any) => {
+  const serveIndex = async (_request: FastifyRequest, reply: FastifyReply) => {
     const html = await readFile(indexPath, 'utf-8');
     return reply.type('text/html').send(html);
   };
 
   app.get<{
     Params: { type: string; query: string };
-  }>('/:type/:query', {
-    schema: { hide: true },
-  }, async (request, reply) => {
-    if (!VALID_TYPES.has(request.params.type)) return; // Let other handlers deal with it
-    return serveIndex(request, reply);
-  });
+  }>(
+    '/:type/:query',
+    {
+      schema: { hide: true },
+    },
+    async (request, reply) => {
+      if (!VALID_TYPES.has(request.params.type)) return; // Let other handlers deal with it
+      return serveIndex(request, reply);
+    },
+  );
 
   // Wildcard for multi-segment queries (e.g. /email/user@example.com)
   app.get<{
     Params: { type: string; '*': string };
-  }>('/:type/*', {
-    schema: { hide: true },
-  }, async (request, reply) => {
-    const type = request.params.type;
-    if (!VALID_TYPES.has(type)) return; // Let static/frontend handle it
-    return serveIndex(request, reply);
-  });
+  }>(
+    '/:type/*',
+    {
+      schema: { hide: true },
+    },
+    async (request, reply) => {
+      const type = request.params.type;
+      if (!VALID_TYPES.has(type)) return; // Let static/frontend handle it
+      return serveIndex(request, reply);
+    },
+  );
 }
 
 async function handleLookup(
   type: string,
   query: string,
   queryParams: { raw?: string; fresh?: string },
-  clientIp: string
+  clientIp: string,
 ): Promise<LookupResponse> {
   const startTime = Date.now();
   const includeRaw = !config.disableRaw && (queryParams.raw === 'true' || queryParams.raw === '1');
-  const forceFresh = !config.disableFresh && (queryParams.fresh === 'true' || queryParams.fresh === '1');
+  const forceFresh =
+    !config.disableFresh && (queryParams.fresh === 'true' || queryParams.fresh === '1');
 
   if (!VALID_TYPES.has(type)) {
     return {
       lookup_time: `${Date.now() - startTime}ms`,
       success: false,
       response: {},
-      errors: { system: `Invalid lookup type: ${type}. Valid types: ${[...VALID_TYPES].join(', ')}` },
+      errors: {
+        system: `Invalid lookup type: ${type}. Valid types: ${[...VALID_TYPES].join(', ')}`,
+      },
       raw: {},
       request: { time: new Date().toISOString(), ip: clientIp, type: type as LookupType, query },
     };
@@ -156,7 +192,7 @@ async function handleLookup(
   const merged = mergeResponses(results);
   const errors = collectErrors(results);
   const raw = includeRaw ? collectRaw(results) : {};
-  const success = results.some(r => r.success);
+  const success = results.some((r) => r.success);
 
   const response: LookupResponse = {
     lookup_time: `${Date.now() - startTime}ms`,
@@ -181,10 +217,15 @@ async function handleLookup(
 
 function getLookupFunction(type: LookupType) {
   switch (type) {
-    case 'ip': return lookupIp;
-    case 'tel': return lookupTel;
-    case 'email': return lookupEmail;
-    case 'location': return lookupLocation;
-    case 'parcel': return lookupParcel;
+    case 'ip':
+      return lookupIp;
+    case 'tel':
+      return lookupTel;
+    case 'email':
+      return lookupEmail;
+    case 'location':
+      return lookupLocation;
+    case 'parcel':
+      return lookupParcel;
   }
 }

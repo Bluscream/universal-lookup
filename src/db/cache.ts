@@ -1,5 +1,5 @@
-import { getDatabase, saveDatabase } from './migrations.js';
 import type { LookupResponse } from '../types/common.js';
+import { getDatabase, saveDatabase } from './migrations.js';
 
 /** Get a cached response if it exists and hasn't expired */
 export function getCached(type: string, query: string): LookupResponse | null {
@@ -7,7 +7,7 @@ export function getCached(type: string, query: string): LookupResponse | null {
   const now = Math.floor(Date.now() / 1000);
 
   const stmt = db.prepare(
-    'SELECT response, created_at, ttl FROM cache WHERE type = ? AND query = ? AND (created_at + ttl) > ?'
+    'SELECT response, created_at, ttl FROM cache WHERE type = ? AND query = ? AND (created_at + ttl) > ?',
   );
   stmt.bind([type, query.toLowerCase(), now]);
 
@@ -32,7 +32,7 @@ export function setCache(type: string, query: string, response: LookupResponse, 
   db.run(
     `INSERT INTO cache (type, query, response, created_at, ttl) VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(type, query) DO UPDATE SET response = excluded.response, created_at = excluded.created_at, ttl = excluded.ttl`,
-    [type, query.toLowerCase(), JSON.stringify(response), now, ttl]
+    [type, query.toLowerCase(), JSON.stringify(response), now, ttl],
   );
 
   saveDatabase();
@@ -65,7 +65,9 @@ export function getCacheStats(): { total: number; expired: number } {
   const total = (totalStmt.getAsObject().count as number) || 0;
   totalStmt.free();
 
-  const expiredStmt = db.prepare('SELECT COUNT(*) as count FROM cache WHERE (created_at + ttl) <= ?');
+  const expiredStmt = db.prepare(
+    'SELECT COUNT(*) as count FROM cache WHERE (created_at + ttl) <= ?',
+  );
   expiredStmt.bind([now]);
   expiredStmt.step();
   const expired = (expiredStmt.getAsObject().count as number) || 0;

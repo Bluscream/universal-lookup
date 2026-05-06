@@ -1,16 +1,16 @@
-import Fastify from 'fastify';
-import fastifySwagger from '@fastify/swagger';
-import fastifySwaggerUi from '@fastify/swagger-ui';
-import fastifyStatic from '@fastify/static';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import fastifyCors from '@fastify/cors';
 import fastifyRateLimit from '@fastify/rate-limit';
+import fastifyStatic from '@fastify/static';
+import fastifySwagger from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
+import Fastify from 'fastify';
 import { config } from './config.js';
-import { initDatabase, closeDatabase } from './db/migrations.js';
 import { cleanExpiredCache, getCacheStats } from './db/cache.js';
-import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
+import { closeDatabase, initDatabase } from './db/migrations.js';
 import { ensureMaxmindDbs } from './lib/maxmind-downloader.js';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -50,12 +50,16 @@ async function main() {
     app.addHook('onRequest', async (request, reply) => {
       const path = request.url;
       // Only protect /api/* routes (not /docs, / frontend, etc.)
-      if (!path.startsWith('/api/') || path.startsWith('/api/health') || path.startsWith('/api/types')) {
+      if (
+        !path.startsWith('/api/') ||
+        path.startsWith('/api/health') ||
+        path.startsWith('/api/types')
+      ) {
         return;
       }
 
       const token =
-        (request.query as any)?.token ||
+        (request.query as Record<string, unknown>)?.token ||
         request.headers.authorization?.replace(/^Bearer\s+/i, '');
 
       if (token !== config.requireToken) {
@@ -73,7 +77,8 @@ async function main() {
     openapi: {
       info: {
         title: 'Universal Lookup API',
-        description: 'Aggregated lookup service for phone numbers, IP addresses, emails, locations, and parcel tracking. Merges results from multiple providers with smart caching.',
+        description:
+          'Aggregated lookup service for phone numbers, IP addresses, emails, locations, and parcel tracking. Merges results from multiple providers with smart caching.',
         version: '1.0.0',
         contact: { name: 'Bluscream', url: 'https://github.com/Bluscream/universal-lookup' },
         license: { name: 'MIT', url: 'https://opensource.org/licenses/MIT' },
@@ -108,39 +113,86 @@ async function main() {
   });
 
   // System endpoints
-  app.get('/api/health', {
-    schema: {
-      tags: ['System'],
-      summary: 'Health check',
-      response: { 200: { type: 'object', properties: { status: { type: 'string' }, uptime: { type: 'number' }, cache: { type: 'object' } } } },
+  app.get(
+    '/api/health',
+    {
+      schema: {
+        tags: ['System'],
+        summary: 'Health check',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              status: { type: 'string' },
+              uptime: { type: 'number' },
+              cache: { type: 'object' },
+            },
+          },
+        },
+      },
     },
-  }, async () => {
-    const stats = getCacheStats();
-    return { status: 'ok', uptime: process.uptime(), cache: stats };
-  });
+    async () => {
+      const stats = getCacheStats();
+      return { status: 'ok', uptime: process.uptime(), cache: stats };
+    },
+  );
 
-  app.get('/api/types', {
-    schema: {
-      tags: ['System'],
-      summary: 'List available lookup types',
-      response: { 200: { type: 'object', properties: { types: { type: 'array', items: { type: 'object' } } } } },
+  app.get(
+    '/api/types',
+    {
+      schema: {
+        tags: ['System'],
+        summary: 'List available lookup types',
+        response: {
+          200: {
+            type: 'object',
+            properties: { types: { type: 'array', items: { type: 'object' } } },
+          },
+        },
+      },
     },
-  }, async () => ({
-    types: [
-      { id: 'tel', name: 'Phone Number', description: 'Reverse phone lookup', example: '+493012345678' },
-      { id: 'ip', name: 'IP / Domain', description: 'IP geolocation, WHOIS, DNS, ping, traceroute, port scan, security analysis', example: '8.8.8.8' },
-      { id: 'email', name: 'Email', description: 'Email validation, risk scoring', example: 'user@example.com' },
-      { id: 'location', name: 'Location', description: 'Geocoding and reverse geocoding', example: 'Berlin, Germany' },
-      { id: 'parcel', name: 'Parcel', description: 'Package tracking', example: '00340434515310596216' },
-    ],
-  }));
+    async () => ({
+      types: [
+        {
+          id: 'tel',
+          name: 'Phone Number',
+          description: 'Reverse phone lookup',
+          example: '+493012345678',
+        },
+        {
+          id: 'ip',
+          name: 'IP / Domain',
+          description: 'IP geolocation, WHOIS, DNS, ping, traceroute, port scan, security analysis',
+          example: '8.8.8.8',
+        },
+        {
+          id: 'email',
+          name: 'Email',
+          description: 'Email validation, risk scoring',
+          example: 'user@example.com',
+        },
+        {
+          id: 'location',
+          name: 'Location',
+          description: 'Geocoding and reverse geocoding',
+          example: 'Berlin, Germany',
+        },
+        {
+          id: 'parcel',
+          name: 'Parcel',
+          description: 'Package tracking',
+          example: '00340434515310596216',
+        },
+      ],
+    }),
+  );
 
   // Register routes
   await registerApiRoutes(app);
   await registerShortcutRoutes(app);
 
   // Serve frontend for root path
-  app.get('/', { schema: { hide: true } }, async (request, reply) => {
+  app.get('/', { schema: { hide: true } }, async (_request, reply) => {
     return reply.redirect('/index.html');
   });
 

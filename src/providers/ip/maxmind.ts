@@ -5,8 +5,11 @@ import type { Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'maxmind';
 
+// biome-ignore lint/suspicious/noExplicitAny: MaxMind reader types are complex and lazy-loaded
 let cityReader: any = null;
+// biome-ignore lint/suspicious/noExplicitAny: MaxMind reader types are complex and lazy-loaded
 let asnReader: any = null;
+// biome-ignore lint/suspicious/noExplicitAny: MaxMind reader types are complex and lazy-loaded
 let countryReader: any = null;
 let initialized = false;
 
@@ -58,7 +61,7 @@ export const maxmind: Provider = {
           data.timezone = city.location?.timeZone;
           data.continent = city.continent?.names?.en;
           data.continent_code = city.continent?.code;
-        } catch (e) {
+        } catch (_e) {
           // IP not found in city DB — not an error
         }
       }
@@ -71,7 +74,7 @@ export const maxmind: Provider = {
           data.asn = asn.autonomousSystemNumber ? `AS${asn.autonomousSystemNumber}` : undefined;
           data.asn_org = asn.autonomousSystemOrganization;
           data.network = asn.network;
-        } catch (e) {
+        } catch (_e) {
           // IP not found in ASN DB
         }
       }
@@ -85,12 +88,12 @@ export const maxmind: Provider = {
           data.country_code = country.country?.isoCode;
           data.continent = country.continent?.names?.en;
           data.continent_code = country.continent?.code;
-        } catch (e) {
+        } catch (_e) {
           // IP not found in country DB
         }
       }
 
-      const hasData = Object.values(data).some(v => v !== undefined);
+      const hasData = Object.values(data).some((v) => v !== undefined);
       if (!hasData) {
         return {
           provider: PROVIDER_NAME,

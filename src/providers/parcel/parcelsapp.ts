@@ -12,7 +12,9 @@ const PROVIDER_NAME = 'parcelsapp';
  */
 export const parcelsapp: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return true; },
+  isAvailable() {
+    return true;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
@@ -22,7 +24,13 @@ export const parcelsapp: Provider = {
       }
       return await lookupV1(query, start);
     } catch (error) {
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error instanceof Error ? error.message : String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };
@@ -35,7 +43,7 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
     timeout: config.providerTimeout,
     headers: {
       'User-Agent': 'ParcelsApp/3.0 (Android)',
-      'Accept': 'application/json',
+      Accept: 'application/json',
     },
   });
 
@@ -43,7 +51,14 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
 
   // v1 returns a single parcel object with states array
   if (!raw || (raw.error && !raw.states)) {
-    return { provider: PROVIDER_NAME, success: false, data: {}, raw, error: raw?.error || 'No tracking data', duration: Date.now() - start };
+    return {
+      provider: PROVIDER_NAME,
+      success: false,
+      data: {},
+      raw,
+      error: raw?.error || 'No tracking data',
+      duration: Date.now() - start,
+    };
   }
 
   const data: Record<string, unknown> = {
@@ -56,6 +71,7 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
     estimated_delivery: raw.estimatedDeliveryDate || raw.eta,
     delivered: raw.delivered,
     days_in_transit: raw.daysInTransit,
+    // biome-ignore lint/suspicious/noExplicitAny: External API response
     events: raw.states?.map((s: any) => ({
       date: s.date,
       status: s.status,
@@ -70,23 +86,38 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
 /** Authenticated v3 API (requires key) */
 async function lookupV3(query: string, start: number): Promise<ProviderResult> {
   // Step 1: Initiate tracking
-  const initResp = await axios.post('https://parcelsapp.com/api/v3/shipments/tracking', {
-    shipments: [{ trackingId: query, language: 'en', country: 'Germany' }],
-    apiKey: config.parcelsAppApiKey,
-  }, { timeout: config.providerTimeout });
+  const initResp = await axios.post(
+    'https://parcelsapp.com/api/v3/shipments/tracking',
+    {
+      shipments: [{ trackingId: query, language: 'en', country: 'Germany' }],
+      apiKey: config.parcelsAppApiKey,
+    },
+    { timeout: config.providerTimeout },
+  );
 
   const uuid = initResp.data?.uuid;
   if (!uuid) {
-    return { provider: PROVIDER_NAME, success: false, data: {}, raw: initResp.data, error: 'No UUID returned', duration: Date.now() - start };
+    return {
+      provider: PROVIDER_NAME,
+      success: false,
+      data: {},
+      raw: initResp.data,
+      error: 'No UUID returned',
+      duration: Date.now() - start,
+    };
   }
 
   // Step 2: Poll for results (max 5 attempts with 2s delay)
+  // biome-ignore lint/suspicious/noExplicitAny: External API response
   let trackingData: any = null;
   for (let i = 0; i < 5; i++) {
-    await new Promise(r => setTimeout(r, 2000));
-    const pollResp = await axios.get(`https://parcelsapp.com/api/v3/shipments?apiKey=${config.parcelsAppApiKey}&uuid=${uuid}`, {
-      timeout: config.providerTimeout,
-    });
+    await new Promise((r) => setTimeout(r, 2000));
+    const pollResp = await axios.get(
+      `https://parcelsapp.com/api/v3/shipments?apiKey=${config.parcelsAppApiKey}&uuid=${uuid}`,
+      {
+        timeout: config.providerTimeout,
+      },
+    );
     if (pollResp.data?.done || pollResp.data?.shipments?.length) {
       trackingData = pollResp.data;
       break;
@@ -94,7 +125,14 @@ async function lookupV3(query: string, start: number): Promise<ProviderResult> {
   }
 
   if (!trackingData?.shipments?.length) {
-    return { provider: PROVIDER_NAME, success: false, data: {}, raw: trackingData, error: 'Tracking data not available', duration: Date.now() - start };
+    return {
+      provider: PROVIDER_NAME,
+      success: false,
+      data: {},
+      raw: trackingData,
+      error: 'Tracking data not available',
+      duration: Date.now() - start,
+    };
   }
 
   const ship = trackingData.shipments[0];
@@ -106,10 +144,20 @@ async function lookupV3(query: string, start: number): Promise<ProviderResult> {
     origin: ship.origin,
     destination: ship.destination,
     estimated_delivery: ship.estimatedDeliveryDate,
+    // biome-ignore lint/suspicious/noExplicitAny: External API response
     events: ship.states?.map((s: any) => ({
-      date: s.date, status: s.status, location: s.location, description: s.description,
+      date: s.date,
+      status: s.status,
+      location: s.location,
+      description: s.description,
     })),
   };
 
-  return { provider: PROVIDER_NAME, success: true, data, raw: trackingData, duration: Date.now() - start };
+  return {
+    provider: PROVIDER_NAME,
+    success: true,
+    data,
+    raw: trackingData,
+    duration: Date.now() - start,
+  };
 }

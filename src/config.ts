@@ -10,7 +10,7 @@ function envInt(key: string, fallback: number): number {
   const val = process.env[key];
   if (!val) return fallback;
   const parsed = parseInt(val, 10);
-  return isNaN(parsed) ? fallback : parsed;
+  return Number.isNaN(parsed) ? fallback : parsed;
 }
 
 function envBool(key: string, fallback: boolean): boolean {

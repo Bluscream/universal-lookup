@@ -1,9 +1,8 @@
-import { existsSync, mkdirSync, createWriteStream } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import { createGunzip } from 'node:zlib';
-import { config } from '../config.js';
 import axios from 'axios';
+import { config } from '../config.js';
 
 /**
  * Auto-download GeoLite2 databases if they don't exist.
@@ -18,9 +17,18 @@ const DB_FILES = [
 
 // Alternative mirrors (P3TERX's GitHub hosted copies)
 const ALT_DB_FILES = [
-  { name: 'GeoLite2-City.mmdb', url: 'https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-City.mmdb' },
-  { name: 'GeoLite2-ASN.mmdb', url: 'https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-ASN.mmdb' },
-  { name: 'GeoLite2-Country.mmdb', url: 'https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-Country.mmdb' },
+  {
+    name: 'GeoLite2-City.mmdb',
+    url: 'https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-City.mmdb',
+  },
+  {
+    name: 'GeoLite2-ASN.mmdb',
+    url: 'https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-ASN.mmdb',
+  },
+  {
+    name: 'GeoLite2-Country.mmdb',
+    url: 'https://raw.githubusercontent.com/P3TERX/GeoLite.mmdb/download/GeoLite2-Country.mmdb',
+  },
 ];
 
 export async function ensureMaxmindDbs(): Promise<void> {
@@ -62,7 +70,7 @@ export async function ensureMaxmindDbs(): Promise<void> {
 
     // Try alternative URL
     if (!downloaded) {
-      const altDb = ALT_DB_FILES.find(a => a.name === db.name);
+      const altDb = ALT_DB_FILES.find((a) => a.name === db.name);
       if (altDb) {
         try {
           await downloadFile(altDb.url, filePath);

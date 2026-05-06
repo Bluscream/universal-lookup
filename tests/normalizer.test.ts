@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { normalizeTel, normalizeEmail, normalizeParcel, normalizeLocation } from '../src/lib/normalizer.js';
+import { describe, expect, it } from 'vitest';
+import {
+  normalizeEmail,
+  normalizeLocation,
+  normalizeParcel,
+  normalizeTel,
+} from '../src/lib/normalizer.js';
 
 describe('normalizeTel', () => {
   it('strips whitespace and dashes', () => {
@@ -57,7 +62,7 @@ describe('normalizeLocation', () => {
     const result = normalizeLocation('52.52, 13.40');
     expect(result.isCoords).toBe(true);
     expect(result.lat).toBeCloseTo(52.52);
-    expect(result.lon).toBeCloseTo(13.40);
+    expect(result.lon).toBeCloseTo(13.4);
   });
 
   it('detects coordinates with space', () => {

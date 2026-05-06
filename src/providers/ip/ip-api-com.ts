@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
+import { decrementRateLimit, isRateLimited, updateRateLimit } from '../../lib/rate-limiter.js';
 import type { Provider, ProviderResult } from '../../types/common.js';
-import { updateRateLimit, isRateLimited, decrementRateLimit } from '../../lib/rate-limiter.js';
 
 const PROVIDER_NAME = 'ip-api.com';
 
@@ -36,7 +36,8 @@ export const ipApiCom: Provider = {
 
       const protocol = config.ipApiComKey ? 'https' : 'http';
       const keyParam = config.ipApiComKey ? `&key=${config.ipApiComKey}` : '';
-      const fields = 'status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query';
+      const fields =
+        'status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query';
 
       const url = `${protocol}://ip-api.com/json/${encodeURIComponent(query)}?fields=${fields}${keyParam}`;
       const response = await axios.get(url, { timeout: config.providerTimeout });

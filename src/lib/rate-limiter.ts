@@ -14,11 +14,15 @@ const memoryCache = new Map<string, RateLimitState>();
  */
 export function updateRateLimit(
   provider: string,
-  headers: Record<string, string | string[] | undefined>
+  headers: Record<string, string | string[] | undefined>,
 ): void {
-  const remaining = parseHeaderInt(headers['x-ratelimit-remaining'] ?? headers['x-rate-limit-remaining']);
+  const remaining = parseHeaderInt(
+    headers['x-ratelimit-remaining'] ?? headers['x-rate-limit-remaining'],
+  );
   const limit = parseHeaderInt(headers['x-ratelimit-limit'] ?? headers['x-rate-limit-limit']);
-  const reset = parseHeaderInt(headers['x-ratelimit-reset'] ?? headers['x-rate-limit-reset'] ?? headers['retry-after']);
+  const reset = parseHeaderInt(
+    headers['x-ratelimit-reset'] ?? headers['x-rate-limit-reset'] ?? headers['retry-after'],
+  );
 
   if (remaining === null && limit === null && reset === null) return;
 
@@ -36,7 +40,7 @@ export function updateRateLimit(
     db.run(
       `INSERT INTO rate_limits (provider, remaining, reset_at, limit_total) VALUES (?, ?, ?, ?)
        ON CONFLICT(provider) DO UPDATE SET remaining = excluded.remaining, reset_at = excluded.reset_at, limit_total = excluded.limit_total`,
-      [provider, state.remaining, state.resetAt, state.limitTotal]
+      [provider, state.remaining, state.resetAt, state.limitTotal],
     );
   } catch {
     // DB might not be ready yet, that's fine
@@ -81,5 +85,5 @@ function parseHeaderInt(value: string | string[] | undefined): number | null {
   if (!value) return null;
   const str = Array.isArray(value) ? value[0] : value;
   const num = parseInt(str, 10);
-  return isNaN(num) ? null : num;
+  return Number.isNaN(num) ? null : num;
 }

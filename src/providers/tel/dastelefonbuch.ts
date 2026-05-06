@@ -7,7 +7,9 @@ const PROVIDER_NAME = 'dastelefonbuch';
 
 export const dastelefonbuch: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return true; },
+  isAvailable() {
+    return true;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
@@ -18,9 +20,10 @@ export const dastelefonbuch: Provider = {
       const resp = await axios.get(url, {
         timeout: config.providerTimeout,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
-          'Accept': 'text/html,application/xhtml+xml',
+          Accept: 'text/html,application/xhtml+xml',
         },
       });
 
@@ -64,12 +67,19 @@ export const dastelefonbuch: Provider = {
       return {
         provider: PROVIDER_NAME,
         success: Object.keys(data).length > 0,
-        data, raw: resp.data,
+        data,
+        raw: resp.data,
         error: Object.keys(data).length === 0 ? 'No results found' : undefined,
         duration: Date.now() - start,
       };
     } catch (error) {
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error instanceof Error ? error.message : String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };

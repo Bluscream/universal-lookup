@@ -1,13 +1,15 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
 import { normalizeLocation } from '../../lib/normalizer.js';
+import type { Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'nominatim';
 
 export const nominatim: Provider = {
   name: PROVIDER_NAME,
-  isAvailable() { return true; },
+  isAvailable() {
+    return true;
+  },
 
   async lookup(query: string): Promise<ProviderResult> {
     const start = Date.now();
@@ -22,13 +24,22 @@ export const nominatim: Provider = {
 
       const resp = await axios.get(url, {
         timeout: config.providerTimeout,
-        headers: { 'User-Agent': 'universal-lookup/1.0 (https://github.com/Bluscream/universal-lookup)' },
+        headers: {
+          'User-Agent': 'universal-lookup/1.0 (https://github.com/Bluscream/universal-lookup)',
+        },
       });
 
       const raw = resp.data;
       const result = Array.isArray(raw) ? raw[0] : raw;
       if (!result) {
-        return { provider: PROVIDER_NAME, success: false, data: {}, raw, error: 'No results found', duration: Date.now() - start };
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          raw,
+          error: 'No results found',
+          duration: Date.now() - start,
+        };
       }
 
       const addr = result.address || {};
@@ -53,7 +64,13 @@ export const nominatim: Provider = {
 
       return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };
     } catch (error) {
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: error instanceof Error ? error.message : String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };
