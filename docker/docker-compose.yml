@@ -1,0 +1,38 @@
+services:
+  universal-lookup:
+    image: ghcr.io/bluscream/universal-lookup:latest
+    # Or build locally:
+    # build:
+    #   context: ..
+    #   dockerfile: Dockerfile
+    container_name: universal-lookup
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - lookup-data:/app/data
+    environment:
+      - PORT=3000
+      - LOG_LEVEL=info
+      - CACHE_TTL=86400
+      - CACHE_TTL_PARCEL=3600
+      - PROVIDER_TIMEOUT=10000
+      # Uncomment and fill in API keys as needed:
+      # - IP_API_COM_KEY=
+      # - IP_API_IO_KEY=
+      # - TELLOWS_API_KEY=
+      # - MAXMIND_LICENSE_KEY=
+      # - GOOGLE_MAPS_API_KEY=
+      # - PARCELSAPP_API_KEY=
+      # - FRITZBOX_HOST=fritz.box
+      # - FRITZBOX_USER=
+      # - FRITZBOX_PASS=
+      # - REQUIRE_TOKEN=my-secret-token
+      # - DISABLE_RAW=false
+      # - DISABLE_FRESH=false
+      # - RATE_LIMIT_MAX=100
+      # - RATE_LIMIT_WINDOW=1 minute
+
+volumes:
+  lookup-data:
+    driver: local

@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment (contains secrets)
+.env
+
+# Data (runtime caches, databases, MaxMind DBs)
+data/
+
+# References (HAR captures, pcaps — large + potentially sensitive)
+.references/
+
+# Agent/IDE working files
+.agent/
+.gemini/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Puppeteer cache
+.cache/puppeteer/
