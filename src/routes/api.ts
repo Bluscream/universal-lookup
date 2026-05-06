@@ -35,7 +35,7 @@ const responseSchema = {
 };
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
-  // Main API route
+  // GET: /api/:type/:query
   app.get<{
     Params: { type: string; query: string };
     Querystring: { raw?: string; fresh?: string };
@@ -44,58 +44,111 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     {
       schema: {
         tags: ['Lookup'],
-        summary: 'Perform a lookup',
-        description:
-          'Perform a lookup of the specified type for the given query. Aggregates results from multiple providers.',
+        summary: 'Perform a lookup (GET)',
+        description: 'Perform a lookup of the specified type for the given query.',
         params: {
           type: 'object',
           properties: {
-            type: {
-              type: 'string',
-              enum: ['tel', 'ip', 'email', 'location', 'parcel'],
-              description: 'Lookup type',
-            },
-            query: {
-              type: 'string',
-              description:
-                'The query to look up (phone number, IP, email, location, tracking number)',
-            },
+            type: { type: 'string', enum: [...VALID_TYPES], description: 'Lookup type' },
+            query: { type: 'string', description: 'The query to look up' },
           },
           required: ['type', 'query'],
         },
         querystring: {
           type: 'object',
           properties: {
-            raw: {
-              type: 'string',
-              enum: ['true', 'false', '1', '0'],
-              description: 'Include raw provider responses',
-            },
-            fresh: {
-              type: 'string',
-              enum: ['true', 'false', '1', '0'],
-              description: 'Bypass cache and force fresh lookup',
-            },
+            raw: { type: 'string', enum: ['true', 'false', '1', '0'] },
+            fresh: { type: 'string', enum: ['true', 'false', '1', '0'] },
           },
         },
         response: responseSchema,
       },
     },
-    async (request, _reply) => {
+    async (request) => {
       return handleLookup(request.params.type, request.params.query, request.query, request.ip);
     },
   );
 
-  // Wildcard for multi-segment queries (e.g., /api/ip/192.168.1.1)
+  // POST: /api/:type (Home Assistant / rest_command support)
+  app.post<{
+    Params: { type: string };
+    Body: { query?: string; raw?: boolean | string; fresh?: boolean | string };
+  }>(
+    '/api/:type',
+    {
+      schema: {
+        tags: ['Lookup'],
+        summary: 'Perform a lookup (POST)',
+        description: 'Support for Home Assistant rest_command. Send query in JSON body.',
+        params: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: [...VALID_TYPES] },
+          },
+          required: ['type'],
+        },
+        body: {
+          type: 'object',
+          properties: {
+            query: { type: 'string' },
+            raw: { type: ['boolean', 'string'] },
+            fresh: { type: ['boolean', 'string'] },
+          },
+          required: ['query'],
+        },
+        response: responseSchema,
+      },
+    },
+    async (request) => {
+      const { query, raw, fresh } = request.body;
+      const queryParams = {
+        raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
+        fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
+      };
+      return handleLookup(request.params.type, query || '', queryParams, request.ip);
+    },
+  );
+
+  // POST: /api/lookup (Generic)
+  app.post<{
+    Body: { type: string; query: string; raw?: boolean | string; fresh?: boolean | string };
+  }>(
+    '/api/lookup',
+    {
+      schema: {
+        tags: ['Lookup'],
+        summary: 'Perform a lookup (Generic POST)',
+        body: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: [...VALID_TYPES] },
+            query: { type: 'string' },
+            raw: { type: ['boolean', 'string'] },
+            fresh: { type: ['boolean', 'string'] },
+          },
+          required: ['type', 'query'],
+        },
+        response: responseSchema,
+      },
+    },
+    async (request) => {
+      const { type, query, raw, fresh } = request.body;
+      const queryParams = {
+        raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
+        fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
+      };
+      return handleLookup(type, query, queryParams, request.ip);
+    },
+  );
+
+  // Wildcard for multi-segment queries
   app.get<{
     Params: { type: string; '*': string };
     Querystring: { raw?: string; fresh?: string };
   }>(
     '/api/:type/*',
-    {
-      schema: { hide: true },
-    },
-    async (request, _reply) => {
+    { schema: { hide: true } },
+    async (request) => {
       const query = (request.params as Record<string, string>)['*'];
       return handleLookup(request.params.type, query, request.query, request.ip);
     },
