@@ -55,8 +55,8 @@ export const tracerouteProvider: Provider = {
 };
 
 interface TracerouteHop {
-  ip: string;
-  rtt_ms: number;
+  ip?: string | null;
+  rtt_ms?: number | null;
 }
 
 function parseTraceroute(output: string, _isWin: boolean): { hops: TracerouteHop[]; totalHops: number } {
@@ -84,7 +84,7 @@ function parseTraceroute(output: string, _isWin: boolean): { hops: TracerouteHop
     const rttMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*ms/);
     const rtt = rttMatch ? parseFloat(rttMatch[1]) : null;
 
-    if (ip && rtt) {
+    if (ip || rtt) {
       hops.push({ ip, rtt_ms: rtt });
     }
   }
