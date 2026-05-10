@@ -6,12 +6,31 @@ import type { Provider, ProviderResult, SearchResult } from '../../types/common.
 
 
 
+function cleanUrl(url: string): string {
+  if (!url) return '';
+  try {
+    const u = new URL(url, 'https://www.google.com');
+    // Google redirect
+    if (u.pathname === '/url' && u.searchParams.has('q')) {
+      return u.searchParams.get('q') || url;
+    }
+    // Generic cleanup (remove common tracking params)
+    const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'cvid', 'FORM', 'pq'];
+    for (const p of trackingParams) {
+      u.searchParams.delete(p);
+    }
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 async function scrape(
   url: string,
   selector: string,
   providerName: string,
   // biome-ignore lint/suspicious/noExplicitAny: Puppeteer/Cheerio element
-  mapper: ($el: any) => { text: string; url: string } | null,
+  mapper: ($el: any) => { title: string; url: string; description: string } | null,
 ): Promise<SearchResult[]> {
   try {
     const html = await scrapeWithPuppeteer(url, selector);
@@ -21,8 +40,8 @@ async function scrape(
     $(selector).each((_, el) => {
       if (results.length >= config.universalResultsLimit) return;
       const res = mapper($(el));
-      if (res?.text && res.url) {
-        results.push({ ...res, provider: providerName });
+      if (res?.title && res.url) {
+        results.push({ ...res, url: cleanUrl(res.url), provider: providerName });
       }
     });
     return results;
@@ -44,14 +63,15 @@ export const googleProvider: Provider = {
       ($el) => {
         const title = $el.find('h3').text().trim();
         const link = $el.find('a').attr('href') || '';
+        const desc = $el.find('div[style*="-webkit-line-clamp"], .VwiC3b, .yXK7lf').text().trim();
         if (!title || !link) return null;
-        return { text: title, url: link };
+        return { title, url: link, description: desc };
       },
     );
     return {
       provider: 'google',
       success: results.length > 0,
-      data: { web_results: results },
+      data: { web: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };
@@ -70,14 +90,15 @@ export const bingProvider: Provider = {
       ($el) => {
         const title = $el.find('h2').text().trim();
         const link = $el.find('a').attr('href') || '';
+        const desc = $el.find('.b_caption p, .b_snippet').text().trim();
         if (!title || !link) return null;
-        return { text: title, url: link };
+        return { title, url: link, description: desc };
       },
     );
     return {
       provider: 'bing',
       success: results.length > 0,
-      data: { web_results: results },
+      data: { web: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };
@@ -96,14 +117,15 @@ export const duckduckgoProvider: Provider = {
       ($el) => {
         const title = $el.find('.result__title, h2').text().trim();
         const link = $el.find('a.result__a, a').attr('href') || '';
+        const desc = $el.find('.result__snippet').text().trim();
         if (!title || !link) return null;
-        return { text: title, url: link };
+        return { title, url: link, description: desc };
       },
     );
     return {
       provider: 'duckduckgo',
       success: results.length > 0,
-      data: { web_results: results },
+      data: { web: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };
@@ -122,14 +144,15 @@ export const yahooProvider: Provider = {
       ($el) => {
         const title = $el.find('h3, .title').text().trim();
         const link = $el.find('a').attr('href') || '';
+        const desc = $el.find('.compText, .algo-desc').text().trim();
         if (!title || !link) return null;
-        return { text: title, url: link };
+        return { title, url: link, description: desc };
       },
     );
     return {
       provider: 'yahoo',
       success: results.length > 0,
-      data: { web_results: results },
+      data: { web: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };

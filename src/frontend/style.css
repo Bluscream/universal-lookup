@@ -497,6 +497,15 @@ details[open] .json-summary::before {
   color: var(--text-muted);
   word-break: break-all;
 }
+.web-result-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0.25rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .web-result-provider {
   font-size: 0.7rem;
   font-weight: 600;

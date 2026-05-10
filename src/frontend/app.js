@@ -181,9 +181,9 @@
       }
     }
 
-    // Special handling for arrays (like web_results or emails)
-    if (Array.isArray(response.web_results)) {
-      resultCards.appendChild(createWebResultsCard(response.web_results));
+    // Special handling for arrays (like web results or emails)
+    if (Array.isArray(response.web)) {
+      resultCards.appendChild(createWebResultsCard(response.web));
     }
 
     if (Array.isArray(response.emails)) {
@@ -194,7 +194,7 @@
 
     // Remaining keys not in the priority list
     for (const [key, value] of Object.entries(response)) {
-      if (!CARD_KEYS.includes(key) && key !== 'web_results' && key !== 'emails' && value !== null && value !== undefined && value !== '') {
+      if (!CARD_KEYS.includes(key) && key !== 'web' && key !== 'emails' && value !== null && value !== undefined && value !== '') {
         if (typeof value !== 'object') {
           resultCards.appendChild(createCard(key, value));
         }
@@ -242,9 +242,10 @@
       html += `
         <div class="web-result-item">
           <a href="${esc(res.url)}" target="_blank" rel="noopener" class="web-result-link">
-            <span class="web-result-title">${esc(res.text)}</span>
+            <span class="web-result-title">${esc(res.title)}</span>
             <span class="web-result-url">${esc(res.url)}</span>
           </a>
+          ${res.description ? `<p class="web-result-description">${esc(res.description)}</p>` : ''}
           <span class="web-result-provider badge">${esc(res.provider)}</span>
         </div>`;
     }

@@ -2,7 +2,8 @@
 export type LookupType = 'tel' | 'ip' | 'email' | 'location' | 'parcel' | 'web';
 
 export interface SearchResult {
-  text: string;
+  title: string;
+  description: string;
   url: string;
   provider: string;
 }
