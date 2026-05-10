@@ -71,14 +71,44 @@ All endpoints are available at `http://localhost:24010/api/*`.
 
 Copy `.env.example` to `.env` to customize the service.
 
+### Server & Security
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `24010` | Server port |
+| `HOST` | `0.0.0.0` | Binding address |
 | `LOG_LEVEL` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
-| `DB_PATH` | `./data/cache.db` | Path to SQLite database |
 | `REQUIRE_TOKEN` | `null` | If set, requires `?token=` for all API calls |
+| `RATE_LIMIT_MAX` | `100` | Max requests per time window |
+| `RATE_LIMIT_WINDOW`| `1 minute` | Rate limit time window |
+
+### Cache & Performance
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_PATH` | `./data/cache.db` | Path to SQLite database |
 | `CACHE_TTL` | `86400` | Default cache duration (seconds) |
+| `CACHE_TTL_PARCEL`| `3600` | Cache duration for parcels (seconds) |
 | `PROVIDER_TIMEOUT` | `10000` | Max wait time for API providers (ms) |
+| `PUPPETEER_TIMEOUT`| `15000` | Max wait time for headless browser (ms) |
+
+### API Keys (Optional)
+| Variable | Description |
+|----------|-------------|
+| `IP_API_COM_KEY` | Commercial key for ip-api.com |
+| `IP_API_IO_KEY` | API key for ip-api.io features |
+| `TELLOWS_API_KEY` | Partner key for Tellows |
+| `MAXMIND_LICENSE_KEY` | License for GeoLite2 downloads |
+| `GOOGLE_MAPS_API_KEY` | Key for Geocoding API |
+| `PARCELSAPP_API_KEY` | Key for ParcelsApp tracking |
+| `DHL_API_KEY` | Key for official DHL API |
+
+### Integration Settings
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FRITZBOX_HOST` | `fritz.box` | FritzBox address for phone lookups |
+| `PHONE_COUNTRY_PREFIX`| `0049` | Default country code |
+| `PHONE_LOCAL_PREFIX`| `null` | Default local area code |
+| `UNIVERSAL_RESULTS_LIMIT`| `3` | Max results shown per provider |
+| `PUPPETEER_SKIP_DOWNLOAD`| `false` | Skip downloading Chromium |
 
 ---
 
@@ -97,4 +127,11 @@ The project includes a robust automation script for contributors:
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
 
-Built with ❤️ by [Bluscream](https://github.com/Bluscream)
+### Credits & Contributions
+- **Lead Developer**: [Bluscream](https://github.com/Bluscream)
+- **AI Coding Assistant**: [Antigravity](https://gemini.google.com/advanced) (Google DeepMind)
+
+---
+
+> [!NOTE]
+> **AI Disclaimer**: Parts of this codebase, including core logic, documentation, and deployment scripts, were generated or optimized using Advanced Agentic AI. While thoroughly tested, users are encouraged to review critical components for their specific use cases.
