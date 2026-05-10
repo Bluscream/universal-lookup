@@ -134,6 +134,18 @@ export function normalizeParcel(input: string): string {
 }
 
 /**
+ * Normalize a domain name.
+ * Strips protocol, path, and port.
+ */
+export function normalizeDomain(input: string): string {
+  const trimmed = input.trim().toLowerCase();
+  return trimmed
+    .replace(/^(?:https?|ftp):\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/:.*$/, '');
+}
+
+/**
  * Normalize input based on lookup type.
  * Returns the normalized query string.
  */
@@ -143,6 +155,8 @@ export async function normalizeQuery(type: LookupType, input: string): Promise<s
       return normalizeTel(input);
     case 'ip':
       return normalizeIp(input);
+    case 'domain':
+      return normalizeDomain(input);
     case 'email':
       return normalizeEmail(input);
     case 'location':
@@ -161,27 +175,33 @@ export function detectType(query: string): LookupType {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return 'web';
 
-  // 1. IP Address
-  if (isIP(trimmed)) return 'ip';
+  // 1. URL parsing or Domain Name
+  const domainCandidate = trimmed
+    .replace(/^(?:https?|ftp):\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/:.*$/, '');
 
-  // 2. Email
+  // 2. IP Address
+  if (isIP(domainCandidate)) return 'ip';
+
+  // 3. Email
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) return 'email';
 
-  // 3. Phone Number (best effort)
+  // 4. Phone Number (best effort)
   // Starts with +, 00, or is just digits and long enough
   if (/^(\+|00|0)[0-9]{5,15}$/.test(trimmed.replace(/[\s\-.()/]/g, ''))) {
     return 'tel';
   }
 
-  // 4. Domain Name
+  // 5. Domain Name
   // Matches something.tld or sub.something.tld
   if (
-    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(trimmed)
+    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(domainCandidate)
   ) {
     return 'domain';
   }
 
-  // 5. Parcel (best effort, numeric and long)
+  // 6. Parcel (best effort, numeric and long)
   if (/^[0-9]{10,30}$/.test(trimmed)) {
     return 'parcel';
   }
