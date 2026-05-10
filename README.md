@@ -24,7 +24,13 @@ A universal lookup service that aggregates multiple APIs for phone, IP, email, l
 
 ## Quick Start
 
+### Using npx (Recommended)
+Run the server instantly without cloning:
 ```bash
+npx universal-lookup
+```
+
+### Manual Installation
 # Clone
 git clone https://github.com/Bluscream/universal-lookup.git
 cd universal-lookup
