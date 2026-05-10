@@ -41,11 +41,16 @@ async function scrape(
     const $ = cheerio.load(html);
     const results: SearchResult[] = [];
 
+    const seenUrls = new Set<string>();
     $(selector).each((_, el) => {
       if (results.length >= config.universalResultsLimit) return;
       const res = mapper($(el));
       if (res?.title && res.url) {
-        results.push({ ...res, url: cleanUrl(res.url), provider: providerName });
+        const cleaned = cleanUrl(res.url);
+        if (!seenUrls.has(cleaned)) {
+          seenUrls.add(cleaned);
+          results.push({ ...res, url: cleaned, provider: providerName });
+        }
       }
     });
     return results;
@@ -62,7 +67,7 @@ export const googleProvider: Provider = {
     const start = Date.now();
     const results = await scrape(
       `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-      '.g, .tF2Cxc, .MjjYud, div[data-hveid]',
+      '.g',
       'google',
       ($el) => {
         // Skip ads
@@ -93,7 +98,7 @@ export const bingProvider: Provider = {
     const start = Date.now();
     const results = await scrape(
       `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
-      '.b_algo, .b_result, li.b_algo',
+      '.b_algo',
       'bing',
       ($el) => {
         const title = $el.find('h2').text().trim();
@@ -120,7 +125,7 @@ export const duckduckgoProvider: Provider = {
     const start = Date.now();
     const results = await scrape(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      '.result, .result__body',
+      '.result',
       'duckduckgo',
       ($el) => {
         // Skip ads
