@@ -1,113 +1,100 @@
-# Universal Lookup
+# 🔍 Universal Lookup
 
-A universal lookup service that aggregates multiple APIs for phone, IP, email, location, and parcel lookups — with smart caching, response merging, and a modern web interface.
+[![npm version](https://img.shields.io/npm/v/universal-lookup.svg)](https://www.npmjs.com/package/universal-lookup)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker Image Version](https://img.shields.io/docker/v/bluscream1/universal-lookup?label=docker)](https://hub.docker.com/r/bluscream1/universal-lookup)
+[![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64%20%7C%20armv7%20%7C%20x86-blue)](https://github.com/Bluscream/universal-lookup)
 
-## Features
+**Universal Lookup** is a high-performance intelligence service that aggregates multiple APIs for phone numbers, IP addresses, emails, locations, and parcels. It features smart response merging, multi-layered caching, and a premium web interface.
 
-- **5 Lookup Types**: Phone (tel), IP/Domain, Email, Location, Parcel tracking
-- **Smart Merging**: Automatically merges responses from multiple providers, normalizing field names
-- **SQLite Caching**: Long-term caching with configurable TTL per lookup type
-- **OpenAPI Documentation**: Fully featured Swagger UI at `/docs`
-- **Modern Frontend**: Premium dark-themed UI with real-time lookups
-- **Docker Ready**: Multi-stage Dockerfile with Puppeteer/Chromium support
-- **Unraid Compatible**: Includes Community Applications template
+---
 
-## Lookup Types & Providers
+## 🌟 Features
 
-| Type | Providers |
-|------|-----------|
-| **Phone** (`/api/tel/:query`) | Tellows, Das Telefonbuch, 11880, Das Örtliche, FritzBox |
-| **IP/Domain** (`/api/ip/:query`) | ip-api.com, ip-api.io, MaxMind GeoLite2, WHOIS, DNS, Ping, Subdomains |
-| **Email** (`/api/email/:query`) | ip-api.io (validation, advanced validation, risk score) |
-| **Location** (`/api/location/:query`) | OpenStreetMap Nominatim, Google Maps |
-| **Parcel** (`/api/parcel/:query`) | ParcelsApp |
+- **🚀 Instant Execution**: Run via `npx` without any setup.
+- **🔄 Multi-Provider Aggregation**: Merges results from dozens of sources (Tellows, MaxMind, Google, etc.).
+- **📦 Multi-Arch Docker**: Native support for **ARM64 (Apple Silicon), ARMv7 (RPi), AMD64, and x86**.
+- **⚡ Smart Caching**: Persistent SQLite storage with configurable TTL per data type.
+- **🎨 Premium UI**: Modern dark-mode web interface for real-time lookups.
+- **📖 OpenAPI 3.0**: Fully documented REST API with Swagger UI.
+- **🏠 Unraid Ready**: Optimized for Unraid with Community Applications templates.
 
-## Quick Start
+---
 
-### Using npx (Recommended)
-Run the server instantly without cloning:
+## 🚀 Quick Start
+
+### 1. Using npx (Recommended)
+Run the server instantly from any terminal:
 ```bash
 npx universal-lookup
 ```
+*Note: Ensure you have Node.js 20+ installed.*
 
-### Manual Installation
-# Clone
+### 2. Using Docker
+Pull the multi-arch image from GitHub or Docker Hub:
+```bash
+# Using Docker Hub
+docker run -d -p 24010:24010 --name lookup bluscream1/universal-lookup:latest
+
+# Using GHCR
+docker run -d -p 24010:24010 --name lookup ghcr.io/bluscream/universal-lookup:latest
+```
+
+### 3. Manual Installation
+```bash
 git clone https://github.com/Bluscream/universal-lookup.git
 cd universal-lookup
-
-# Configure
-cp .env.example .env
-# Edit .env with your API keys
-
-# Install & run
 npm install
-npm run dev
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) for the web UI, or [http://localhost:3000/docs](http://localhost:3000/docs) for API docs.
+---
 
-## API Usage
+## 📡 API Endpoints
 
-```bash
-# IP lookup
-curl http://localhost:3000/api/ip/8.8.8.8
+All endpoints are available at `http://localhost:24010/api/*`.
 
-# Phone lookup
-curl http://localhost:3000/api/tel/+493012345678
+| Endpoint | Description | Example Query |
+|----------|-------------|---------------|
+| `GET /api/tel/:query` | Reverse phone lookup | `+493012345678` |
+| `GET /api/ip/:query` | IP/Domain intelligence | `8.8.8.8` |
+| `GET /api/email/:query` | Email validation & risk | `user@example.com` |
+| `GET /api/location/:query` | Geocoding & Reverse Geocoding | `Berlin, Germany` |
+| `GET /api/parcel/:query` | Package tracking | `00340434515310596216` |
 
-# Email lookup
-curl http://localhost:3000/api/email/user@example.com
+> 📖 **Full Documentation**: Explore the interactive Swagger UI at [http://localhost:24010/docs](http://localhost:24010/docs).
 
-# Location lookup
-curl http://localhost:3000/api/location/Berlin,Germany
+---
 
-# Parcel tracking
-curl http://localhost:3000/api/parcel/00340434515310596216
+## ⚙️ Configuration
 
-# With raw responses
-curl http://localhost:3000/api/ip/8.8.8.8?raw=true
+Copy `.env.example` to `.env` to customize the service.
 
-# Force fresh (bypass cache)
-curl http://localhost:3000/api/ip/8.8.8.8?fresh=true
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `24010` | Server port |
+| `LOG_LEVEL` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
+| `DB_PATH` | `./data/cache.db` | Path to SQLite database |
+| `REQUIRE_TOKEN` | `null` | If set, requires `?token=` for all API calls |
+| `CACHE_TTL` | `86400` | Default cache duration (seconds) |
+| `PROVIDER_TIMEOUT` | `10000` | Max wait time for API providers (ms) |
 
-# Shortcut routes (without /api prefix)
-curl http://localhost:3000/ip/8.8.8.8
+---
+
+## 🛠️ Development & Deployment
+
+The project includes a robust automation script for contributors:
+
+```powershell
+# Run QA, bump version, push to Git, build Docker (all archs), and publish to npm
+.\scripts\update.ps1 -Bump patch
 ```
 
-## Response Format
+---
 
-```json
-{
-  "lookup_time": "234ms",
-  "success": true,
-  "response": {
-    "country": "United States",
-    "country_code": "US",
-    "city": "Mountain View",
-    "...": "..."
-  },
-  "errors": {},
-  "raw": {},
-  "request": {
-    "time": "2026-05-06T13:00:00Z",
-    "ip": "192.168.1.1",
-    "type": "ip",
-    "query": "8.8.8.8"
-  }
-}
-```
+## 📜 License
 
-## Docker
+Distributed under the **MIT License**. See `LICENSE` for more information.
 
-```bash
-cd docker
-docker compose up --build
-```
-
-## Environment Variables
-
-See [`.env.example`](.env.example) for all available configuration options.
-
-## License
-
-MIT
+Built with ❤️ by [Bluscream](https://github.com/Bluscream)

@@ -10,7 +10,9 @@ param (
     [ValidateSet("patch", "minor", "major", "none")]
     [string]$Bump = "patch",
     [switch]$IgnoreWarnings,
-    [switch]$IgnoreErrors
+    [switch]$IgnoreErrors,
+    [switch]$SkipDocker,
+    [switch]$SkipNpm
 )
 
 if ($IgnoreErrors) {
@@ -82,48 +84,52 @@ git commit -m $CommitMessage
 git push
 Write-Host "Git push complete." -ForegroundColor Green
 
-# 4. Docker Build
-Write-Host "Building Docker images..." -ForegroundColor Cyan
-$tags = @(
-    "ghcr.io/bluscream/universal-lookup:latest",
-    "ghcr.io/bluscream/universal-lookup:$version",
-    "bluscream1/universal-lookup:latest",
-    "bluscream1/universal-lookup:$version"
-)
+if (-not $SkipDocker) {
+    # 4. Docker Build
+    Write-Host "Building Docker images..." -ForegroundColor Cyan
+    $tags = @(
+        "ghcr.io/bluscream/universal-lookup:latest",
+        "ghcr.io/bluscream/universal-lookup:$version",
+        "bluscream1/universal-lookup:latest",
+        "bluscream1/universal-lookup:$version"
+    )
 
-# Check for buildx
-$hasBuildx = $false
-try {
-    $check = docker buildx version 2>&1
-    if ($check -match "version") { $hasBuildx = $true }
-} catch {
+    # Check for buildx
     $hasBuildx = $false
-}
-
-if ($hasBuildx) {
-    Write-Host "Using Docker Buildx for multi-arch support (linux/amd64, linux/arm64)..." -ForegroundColor Magenta
-    $tagFlags = ""
-    foreach ($tag in $tags) { $tagFlags += "-t $tag " }
-    
-    # Try to use existing builder or create one
-    docker buildx create --use --name universal-builder 2>$null
-    
-    docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7,linux/386 $tagFlags --push .
-    Write-Host "Docker buildx build and push complete." -ForegroundColor Green
-} else {
-    Write-Host "Docker Buildx not found. Falling back to legacy build (single architecture)..." -ForegroundColor Yellow
-    $buildCmd = "docker build "
-    foreach ($tag in $tags) { $buildCmd += "-t $tag " }
-    $buildCmd += "."
-    Invoke-Expression $buildCmd
-    
-    # 5. Docker Push (Legacy)
-    Write-Host "Pushing images to registries..." -ForegroundColor Cyan
-    foreach ($tag in $tags) {
-        Write-Host "Pushing $tag..." -ForegroundColor Gray
-        docker push $tag
+    try {
+        $check = docker buildx version 2>&1
+        if ($check -match "version") { $hasBuildx = $true }
+    } catch {
+        $hasBuildx = $false
     }
-    Write-Host "Docker push complete." -ForegroundColor Green
+
+    if ($hasBuildx) {
+        Write-Host "Using Docker Buildx for multi-arch support (linux/amd64, linux/arm64, linux/arm/v7, linux/386)..." -ForegroundColor Magenta
+        $tagFlags = ""
+        foreach ($tag in $tags) { $tagFlags += "-t $tag " }
+        
+        # Try to use existing builder or create one
+        docker buildx create --use --name universal-builder 2>$null
+        
+        docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7,linux/386 $tagFlags --push .
+        Write-Host "Docker buildx build and push complete." -ForegroundColor Green
+    } else {
+        Write-Host "Docker Buildx not found. Falling back to legacy build (single architecture)..." -ForegroundColor Yellow
+        $buildCmd = "docker build "
+        foreach ($tag in $tags) { $buildCmd += "-t $tag " }
+        $buildCmd += "."
+        Invoke-Expression $buildCmd
+        
+        # 5. Docker Push (Legacy)
+        Write-Host "Pushing images to registries..." -ForegroundColor Cyan
+        foreach ($tag in $tags) {
+            Write-Host "Pushing $tag..." -ForegroundColor Gray
+            docker push $tag
+        }
+        Write-Host "Docker push complete." -ForegroundColor Green
+    }
+} else {
+    Write-Host "Skipping Docker build and push." -ForegroundColor Yellow
 }
 
 # 6. Unraid Template Deploy
@@ -138,22 +144,26 @@ if (Test-Path $NasTemplatePath) {
 }
 
 # 7. NPM Publish
-if (-not $env:NPM_TOKEN) {
-    $env:NPM_TOKEN = [Environment]::GetEnvironmentVariable("NPM_TOKEN", "User")
-}
+if (-not $SkipNpm) {
+    if (-not $env:NPM_TOKEN) {
+        $env:NPM_TOKEN = [Environment]::GetEnvironmentVariable("NPM_TOKEN", "User")
+    }
 
-if ($env:NPM_TOKEN) {
-    Write-Host "Publishing to npm..." -ForegroundColor Cyan
-    # Create .npmrc with token
-    Set-Content -Path ".npmrc" -Value "//registry.npmjs.org/:_authToken=$($env:NPM_TOKEN)"
-    try {
-        npm publish --access public
-        Write-Host "npm publish complete." -ForegroundColor Green
-    } finally {
-        Remove-Item ".npmrc" -Force
+    if ($env:NPM_TOKEN) {
+        Write-Host "Publishing to npm..." -ForegroundColor Cyan
+        # Create .npmrc with token
+        Set-Content -Path ".npmrc" -Value "//registry.npmjs.org/:_authToken=$($env:NPM_TOKEN)"
+        try {
+            npm publish --access public
+            Write-Host "npm publish complete." -ForegroundColor Green
+        } finally {
+            Remove-Item ".npmrc" -Force
+        }
+    } else {
+        Write-Host "NPM_TOKEN not found in environment. Skipping npm publish." -ForegroundColor Yellow
     }
 } else {
-    Write-Host "NPM_TOKEN not found in environment. Skipping npm publish." -ForegroundColor Yellow
+    Write-Host "Skipping npm publish." -ForegroundColor Yellow
 }
 
 Write-Host "All tasks completed successfully!" -ForegroundColor Green
