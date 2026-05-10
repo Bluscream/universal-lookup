@@ -1,9 +1,9 @@
 import { config } from '../../config.js';
 import type { Provider, ProviderResult } from '../../types/common.js';
 import { filterAndSortProviders } from '../../lib/providers.js';
-import { dnsProvider } from '../ip/dns.js';
-import { whois } from '../ip/whois.js';
-import { subdomainProvider } from '../ip/subdomain.js';
+import { dnsProvider } from './dns.js';
+import { whois } from './whois.js';
+import { subdomainProvider } from './subdomain.js';
 import { googleProvider, bingProvider, duckduckgoProvider, yahooProvider } from '../web/index.js';
 
 /** All domain lookup providers in priority order */

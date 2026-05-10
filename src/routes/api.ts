@@ -234,27 +234,10 @@ async function handleLookup(
   const normalizedLower = normalizedQuery.toLowerCase();
 
   // Handle special emergency numbers
-  if (resolvedType === 'tel' || resolvedType === 'auto') {
+  let specialInfo: any = null;
+  if (resolvedType === 'tel') {
     if (normalizedLower in SPECIAL_NUMBERS) {
-      const info = SPECIAL_NUMBERS[normalizedLower];
-      const response: LookupResponse = {
-        lookup_time: `${Date.now() - startTime}ms`,
-        success: true,
-        response: {
-          name: info.name,
-          number_type: info.number_type,
-          phone: normalizedQuery,
-        },
-        errors: {},
-        raw: {},
-        request: {
-          time: new Date().toISOString(),
-          ip: clientIp,
-          type: resolvedType,
-          query: normalizedQuery,
-        },
-      };
-      return sortObjectKeys(response) as LookupResponse;
+      specialInfo = SPECIAL_NUMBERS[normalizedLower];
     }
   }
 
@@ -304,10 +287,21 @@ async function handleLookup(
   }
 
   // Build response
-  const merged = mergeResponses(results);
+  let merged = mergeResponses(results);
   const errors = collectErrors(results);
   const raw = includeRaw ? collectRaw(results) : {};
-  const success = results.some((r) => r.success);
+  let success = results.some((r) => r.success);
+
+  // Apply special info if it was a special number
+  if (specialInfo) {
+    success = true;
+    merged = {
+      ...merged,
+      name: specialInfo.name,
+      number_type: specialInfo.number_type,
+      phone: normalizedQuery,
+    };
+  }
 
   const response: LookupResponse = {
     lookup_time: `${Date.now() - startTime}ms`,
