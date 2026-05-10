@@ -234,7 +234,7 @@ async function handleLookup(
   const normalizedLower = normalizedQuery.toLowerCase();
 
   // Handle special emergency numbers
-  let specialInfo: any = null;
+  let specialInfo: { name: string; number_type: string } | null = null;
   if (resolvedType === 'tel') {
     if (normalizedLower in SPECIAL_NUMBERS) {
       specialInfo = SPECIAL_NUMBERS[normalizedLower];
@@ -348,21 +348,21 @@ function getLookupFunction(type: LookupType) {
 /**
  * Sort object keys alphabetically.
  */
-function sortObjectKeys(obj: any): any {
+function sortObjectKeys<T>(obj: T): T {
   if (Array.isArray(obj)) {
-    return obj.map(sortObjectKeys);
+    return obj.map(sortObjectKeys) as unknown as T;
   }
   
   if (typeof obj !== 'object' || obj === null) {
     return obj;
   }
 
-  const sorted: Record<string, any> = {};
-  const keys = Object.keys(obj).sort();
+  const sorted: Record<string, unknown> = {};
+  const keys = Object.keys(obj as object).sort();
 
   for (const key of keys) {
-    sorted[key] = sortObjectKeys(obj[key]);
+    sorted[key] = sortObjectKeys((obj as Record<string, unknown>)[key]);
   }
 
-  return sorted;
+  return sorted as T;
 }
