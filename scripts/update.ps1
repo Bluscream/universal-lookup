@@ -5,7 +5,7 @@
 # ==============================================================================
 
 param (
-    [string]$CommitMessage = "chore: update and redeploy",
+    [string]$CommitMessage = "update",
     [string]$NasTemplatePath = "\\UNRAID\flash\config\plugins\dockerGui\templates-user",
     [ValidateSet("patch", "minor", "major", "none")]
     [string]$Bump = "patch",
