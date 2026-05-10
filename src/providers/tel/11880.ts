@@ -28,6 +28,7 @@ export const provider11880: Provider = {
       const $ = cheerio.load(resp.data);
       const data: Record<string, unknown> = {};
 
+      // Try search result layout
       const entry = $('.result, .entry, [class*="result-item"], [class*="search-result"]').first();
       if (entry.length) {
         const name = entry.find('[class*="name"], h2, h3, .company-name').first().text().trim();
@@ -38,6 +39,19 @@ export const provider11880: Provider = {
 
         const category = entry.find('[class*="category"], [class*="branch"]').first().text().trim();
         if (category) data.category = category;
+      } else {
+        // Try detail page layout
+        const detailEntry = $('#entry, .box-entry-detail').first();
+        if (detailEntry.length) {
+          const name = detailEntry.find('h1.title, .name').first().text().trim();
+          if (name) data.name = name;
+
+          const address = detailEntry.find('.address, .contact-info').first().text().trim();
+          if (address) data.address = address;
+
+          const category = $('.category, .branch').first().text().trim();
+          if (category) data.category = category;
+        }
       }
 
       return {

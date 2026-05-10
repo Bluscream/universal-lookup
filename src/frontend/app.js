@@ -26,6 +26,7 @@
     email: 'e.g. user@example.com',
     location: 'e.g. Berlin, Germany or 52.52,13.40',
     parcel: 'e.g. 00340434515310596216',
+    web: 'e.g. what is my ip, tellows 01756350071',
   };
 
   // Update placeholder on type change
@@ -76,7 +77,7 @@
   });
 
   // Parse URL on load (e.g. /ip/8.8.8.8)
-  const pathMatch = location.pathname.match(/^\/(tel|ip|email|location|parcel)\/(.+)$/);
+  const pathMatch = location.pathname.match(/^\/(tel|ip|email|location|parcel|web)\/(.+)$/);
   if (pathMatch) {
     typeSelect.value = pathMatch[1];
     queryInput.value = decodeURIComponent(pathMatch[2]);
@@ -180,9 +181,20 @@
       }
     }
 
+    // Special handling for arrays (like web_results or emails)
+    if (Array.isArray(response.web_results)) {
+      resultCards.appendChild(createWebResultsCard(response.web_results));
+    }
+
+    if (Array.isArray(response.emails)) {
+      for (const email of response.emails) {
+        resultCards.appendChild(createCard('email', email));
+      }
+    }
+
     // Remaining keys not in the priority list
     for (const [key, value] of Object.entries(response)) {
-      if (!CARD_KEYS.includes(key) && value !== null && value !== undefined && value !== '') {
+      if (!CARD_KEYS.includes(key) && key !== 'web_results' && key !== 'emails' && value !== null && value !== undefined && value !== '') {
         if (typeof value !== 'object') {
           resultCards.appendChild(createCard(key, value));
         }
@@ -217,6 +229,27 @@
       ['ip', 'asn', 'latitude', 'longitude', 'postal_code'].includes(key);
     const displayValue = typeof value === 'boolean' ? (value ? '✓ Yes' : '✗ No') : String(value);
     card.innerHTML = `<div class="card-label">${esc(label)}</div><div class="card-value${isMono ? ' mono' : ''}">${esc(displayValue)}</div>`;
+    return card;
+  }
+
+  function createWebResultsCard(results) {
+    const card = document.createElement('div');
+    card.className = 'result-card web-results-card';
+    card.style.gridColumn = '1 / -1'; // Full width
+    
+    let html = '<div class="card-label">Web Results</div><div class="web-results-list">';
+    for (const res of results) {
+      html += `
+        <div class="web-result-item">
+          <a href="${esc(res.url)}" target="_blank" rel="noopener" class="web-result-link">
+            <span class="web-result-title">${esc(res.text)}</span>
+            <span class="web-result-url">${esc(res.url)}</span>
+          </a>
+          <span class="web-result-provider badge">${esc(res.provider)}</span>
+        </div>`;
+    }
+    html += '</div>';
+    card.innerHTML = html;
     return card;
   }
 

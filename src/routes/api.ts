@@ -8,9 +8,10 @@ import { lookupIp } from '../providers/ip/index.js';
 import { lookupLocation } from '../providers/location/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
 import { lookupTel } from '../providers/tel/index.js';
+import { lookupWeb } from '../providers/web/index.js';
 import type { LookupResponse, LookupType } from '../types/common.js';
 
-const VALID_TYPES = new Set<string>(['tel', 'ip', 'email', 'location', 'parcel']);
+const VALID_TYPES = new Set<string>(['tel', 'ip', 'email', 'location', 'parcel', 'web']);
 
 const responseSchema = {
   200: {
@@ -280,5 +281,7 @@ function getLookupFunction(type: LookupType) {
       return lookupLocation;
     case 'parcel':
       return lookupParcel;
+    case 'web':
+      return lookupWeb;
   }
 }

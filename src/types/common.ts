@@ -1,5 +1,5 @@
 /** Supported lookup types */
-export type LookupType = 'tel' | 'ip' | 'email' | 'location' | 'parcel';
+export type LookupType = 'tel' | 'ip' | 'email' | 'location' | 'parcel' | 'web';
 
 /** Result from a single provider */
 export interface ProviderResult {

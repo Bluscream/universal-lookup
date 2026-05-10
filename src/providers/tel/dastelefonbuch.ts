@@ -24,6 +24,7 @@ export const dastelefonbuch: Provider = {
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
           Accept: 'text/html,application/xhtml+xml',
+          Referer: 'https://www.dastelefonbuch.de/',
         },
       });
 
@@ -73,6 +74,15 @@ export const dastelefonbuch: Provider = {
         duration: Date.now() - start,
       };
     } catch (error) {
+      if (axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 410)) {
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          error: 'No results found',
+          duration: Date.now() - start,
+        };
+      }
       return {
         provider: PROVIDER_NAME,
         success: false,

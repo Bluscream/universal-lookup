@@ -150,6 +150,10 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
       if (!(key in merged) || isEmpty(merged[key])) {
         merged[key] = value;
       }
+      // If both values are arrays, concatenate them
+      else if (Array.isArray(merged[key]) && Array.isArray(value)) {
+        merged[key] = [...(merged[key] as unknown[]), ...(value as unknown[])];
+      }
       // If both values are objects, merge recursively
       else if (
         typeof merged[key] === 'object' &&

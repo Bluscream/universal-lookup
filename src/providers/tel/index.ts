@@ -1,15 +1,28 @@
 import { config } from '../../config.js';
 import type { Provider, ProviderResult } from '../../types/common.js';
+import { filterAndSortProviders } from '../../lib/providers.js';
 import { provider11880 } from './11880.js';
 import { dasoertliche } from './dasoertliche.js';
 import { dastelefonbuch } from './dastelefonbuch.js';
 import { fritzbox } from './fritzbox.js';
 import { tellows } from './tellows.js';
 
-const ALL_PROVIDERS: Provider[] = [fritzbox, tellows, dastelefonbuch, provider11880, dasoertliche];
+import { googleProvider, bingProvider, duckduckgoProvider, yahooProvider } from '../web/index.js';
+
+const ALL_PROVIDERS: Provider[] = [
+  fritzbox,
+  tellows,
+  dastelefonbuch,
+  provider11880,
+  dasoertliche,
+  googleProvider,
+  bingProvider,
+  duckduckgoProvider,
+  yahooProvider,
+];
 
 export async function lookupTel(query: string): Promise<ProviderResult[]> {
-  const providers = ALL_PROVIDERS.filter((p) => p.isAvailable());
+  const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersTel);
 
   const results = await Promise.allSettled(
     providers.map((provider) =>

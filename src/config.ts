@@ -48,10 +48,40 @@ export const config = {
   fritzboxHost: env('FRITZBOX_HOST', 'fritz.box'),
   fritzboxUser: env('FRITZBOX_USER'),
   fritzboxPass: env('FRITZBOX_PASS'),
+  phoneLocalPrefix: env('PHONE_LOCALPREFIX'), // e.g. 00496131
 
   // Puppeteer
   puppeteerSkipDownload: envBool('PUPPETEER_SKIP_DOWNLOAD', false),
   puppeteerExecutablePath: env('PUPPETEER_EXECUTABLE_PATH'),
+
+  // Providers configuration
+  providersTel: env(
+    'PROVIDERS_TEL',
+    'fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo',
+  ),
+  providersIp: env(
+    'PROVIDERS_IP',
+    'ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo',
+  ),
+  providersEmail: env(
+    'PROVIDERS_EMAIL',
+    'dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo',
+  ),
+  providersLocation: env(
+    'PROVIDERS_LOCATION',
+    'nominatim,google-maps,google,bing,duckduckgo,yahoo',
+  ),
+  providersParcel: env(
+    'PROVIDERS_PARCEL',
+    'dhl-web,dhl,parcelsapp,google,bing,duckduckgo,yahoo',
+  ),
+  providersWeb: env(
+    'PROVIDERS_WEB',
+    'google,bing,duckduckgo,yahoo',
+  ),
+
+  // Universal Search
+  universalResultsLimit: envInt('UNIVERSAL_RESULTS_LIMIT', 3),
 
   // Auth & Feature Flags
   requireToken: env('REQUIRE_TOKEN'), // If set, require this token via ?token= or Authorization header

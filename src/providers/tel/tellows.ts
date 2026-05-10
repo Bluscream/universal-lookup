@@ -100,8 +100,19 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
     const name = callerIdEl.text().trim();
     if (name) data.name = name;
   } else {
-    // Fallback: extract from <h1>
-    const h1Text = $('h1').first().text().trim();
+    // Fallback: extract from <h1> (excluding consent banner title)
+    const h1 = $('h1')
+      .filter((_, el) => {
+        const txt = $(el).text().trim();
+        return (
+          txt !== 'Datenschutz und Werbung' &&
+          !$(el).hasClass('head5') &&
+          !$(el).closest('#cmpscreen').length
+        );
+      })
+      .first();
+
+    const h1Text = h1.text().trim();
     const h1Name = h1Text.replace(/\s*[\d+/\s]+$/, '').trim();
     if (h1Name && h1Name.length > 2) data.name = h1Name;
   }
@@ -205,6 +216,13 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
 
   const populationMatch = html.match(/<b>Einwohner:<\/b>\s*([\d]+)/);
   if (populationMatch) data.population = parseInt(populationMatch[1], 10);
+
+  // --- Network Provider ---
+  const networkMatch = html.match(/<strong>Vorwahl:\s*<\/strong>\s*([^<]+)/);
+  if (networkMatch) {
+    const network = networkMatch[1].trim().split(' - ')[0];
+    if (network) data.provider = network;
+  }
 
   // --- Comments ---
   const comments: { text: string; date?: string; score?: number; author?: string }[] = [];

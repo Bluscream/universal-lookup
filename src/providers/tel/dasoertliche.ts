@@ -15,13 +15,14 @@ export const dasoertliche: Provider = {
     const start = Date.now();
     try {
       const num = query.replace(/^0049/, '0').replace(/^00/, '');
-      const url = `https://www.dasoertliche.de/Controller?form_name=search_inv&ph=${encodeURIComponent(num)}`;
+      const url = `https://www.dasoertliche.de/rueckwaertssuche/?ph=${encodeURIComponent(num)}`;
       const resp = await axios.get(url, {
         timeout: config.providerTimeout,
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept-Language': 'de-DE,de;q=0.9',
+          Referer: 'https://www.dasoertliche.de/',
         },
       });
 
@@ -57,6 +58,15 @@ export const dasoertliche: Provider = {
         duration: Date.now() - start,
       };
     } catch (error) {
+      if (axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 410)) {
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          error: 'No results found',
+          duration: Date.now() - start,
+        };
+      }
       return {
         provider: PROVIDER_NAME,
         success: false,

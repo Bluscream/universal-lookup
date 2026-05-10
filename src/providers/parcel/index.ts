@@ -1,13 +1,24 @@
 import { config } from '../../config.js';
 import type { Provider, ProviderResult } from '../../types/common.js';
+import { filterAndSortProviders } from '../../lib/providers.js';
 import { dhl } from './dhl.js';
 import { dhlWeb } from './dhl-web.js';
 import { parcelsapp } from './parcelsapp.js';
 
-const ALL_PROVIDERS: Provider[] = [dhlWeb, dhl, parcelsapp];
+import { googleProvider, bingProvider, duckduckgoProvider, yahooProvider } from '../web/index.js';
+
+const ALL_PROVIDERS: Provider[] = [
+  dhlWeb,
+  dhl,
+  parcelsapp,
+  googleProvider,
+  bingProvider,
+  duckduckgoProvider,
+  yahooProvider,
+];
 
 export async function lookupParcel(query: string): Promise<ProviderResult[]> {
-  const providers = ALL_PROVIDERS.filter((p) => p.isAvailable());
+  const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersParcel);
   if (providers.length === 0) {
     return [
       {

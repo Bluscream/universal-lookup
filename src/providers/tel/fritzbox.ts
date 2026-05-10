@@ -147,6 +147,12 @@ export const fritzbox: Provider = {
           numClean.replace(/^0049/, ''),
         ];
 
+        // Add local version if prefix is configured
+        if (config.phoneLocalPrefix && numClean.startsWith(config.phoneLocalPrefix)) {
+          const localNum = numClean.substring(config.phoneLocalPrefix.length);
+          if (localNum) searchTerms.push(localNum);
+        }
+
         for (let contactXml of contacts) {
           const startIdx = contactXml.indexOf('<contact>');
           if (startIdx === -1) continue;
