@@ -54,7 +54,7 @@ export interface Provider {
   /** Unique provider name */
   name: string;
   /** Execute the lookup */
-  lookup(query: string): Promise<ProviderResult>;
+  lookup(query: string, type?: LookupType): Promise<ProviderResult>;
   /** Whether this provider is available (has required config/API keys) */
   isAvailable(): boolean;
 }

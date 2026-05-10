@@ -1,18 +1,17 @@
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
 import { filterAndSortProviders } from '../../lib/providers.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 import { dnsProvider } from '../domain/dns.js';
+import { subdomainProvider } from '../domain/subdomain.js';
+import { whois } from '../domain/whois.js';
+import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { ipApiCom } from './ip-api-com.js';
 import { ipApiIo } from './ip-api-io.js';
 import { ipApiIoRisk } from './ip-api-io-risk.js';
 import { maxmind } from './maxmind.js';
 import { pingProvider } from './ping.js';
 import { portscanProvider } from './portscan.js';
-import { subdomainProvider } from '../domain/subdomain.js';
 import { tracerouteProvider } from './traceroute.js';
-import { whois } from '../domain/whois.js';
-
-import { googleProvider, bingProvider, duckduckgoProvider, yahooProvider } from '../web/index.js';
 
 /** All IP lookup providers in priority order */
 const ALL_PROVIDERS: Provider[] = [
@@ -35,13 +34,13 @@ const ALL_PROVIDERS: Provider[] = [
 /**
  * Run all available IP providers in parallel with timeout.
  */
-export async function lookupIp(query: string): Promise<ProviderResult[]> {
+export async function lookupIp(query: string, type?: LookupType): Promise<ProviderResult[]> {
   const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersIp);
 
   const results = await Promise.allSettled(
     providers.map((provider) =>
       Promise.race([
-        provider.lookup(query),
+        provider.lookup(query, type),
         new Promise<ProviderResult>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), config.providerTimeout),
         ),

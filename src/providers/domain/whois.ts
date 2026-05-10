@@ -4,7 +4,7 @@ const require = createRequire(import.meta.url);
 const whoisLib = require('whois');
 
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'whois';
 
@@ -19,7 +19,7 @@ export const whois: Provider = {
     return true; // Always available
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
 
     try {

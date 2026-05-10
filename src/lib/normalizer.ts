@@ -3,8 +3,6 @@ import { isIP } from 'node:net';
 import { config } from '../config.js';
 import type { LookupType } from '../types/common.js';
 
-
-
 /**
  * Special numbers that skip standard normalization and return hardcoded data.
  */
@@ -32,7 +30,12 @@ export function normalizeTel(input: string): string {
   // Short number completion logic:
   // If numeric and short (e.g. < 9 digits) and doesn't start with 0 or +,
   // prepend country + local prefix.
-  if (/^\d+$/.test(cleaned) && cleaned.length < 9 && !cleaned.startsWith('0') && !cleaned.startsWith('+')) {
+  if (
+    /^\d+$/.test(cleaned) &&
+    cleaned.length < 9 &&
+    !cleaned.startsWith('0') &&
+    !cleaned.startsWith('+')
+  ) {
     cleaned = `${config.phoneCountryPrefix}${config.phoneLocalPrefix}${cleaned}`;
   }
 
@@ -172,7 +175,9 @@ export function detectType(query: string): LookupType {
 
   // 4. Domain Name
   // Matches something.tld or sub.something.tld
-  if (/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(trimmed)) {
+  if (
+    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(trimmed)
+  ) {
     return 'domain';
   }
 

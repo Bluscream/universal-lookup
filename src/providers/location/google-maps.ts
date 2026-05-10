@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
 import { normalizeLocation } from '../../lib/normalizer.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'google-maps';
 
@@ -11,7 +11,7 @@ export const googleMaps: Provider = {
     return !!config.googleMapsApiKey;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const loc = normalizeLocation(query);
@@ -38,7 +38,8 @@ export const googleMaps: Provider = {
 
       const r = raw.results[0];
       const comps = r.address_components || [];
-      const getComp = (type: string) => comps.find((c: { types?: string[] }) => c.types?.includes(type));
+      const getComp = (type: string) =>
+        comps.find((c: { types?: string[] }) => c.types?.includes(type));
 
       const data: Record<string, unknown> = {
         formatted_address: r.formatted_address,

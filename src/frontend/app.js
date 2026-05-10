@@ -79,7 +79,9 @@
   });
 
   // Parse URL on load (e.g. /ip/8.8.8.8)
-  const pathMatch = location.pathname.match(/^\/(auto|tel|ip|domain|email|location|parcel|web)\/(.+)$/);
+  const pathMatch = location.pathname.match(
+    /^\/(auto|tel|ip|domain|email|location|parcel|web)\/(.+)$/,
+  );
   if (pathMatch) {
     typeSelect.value = pathMatch[1];
     queryInput.value = decodeURIComponent(pathMatch[2]);
@@ -185,8 +187,6 @@
       }
     }
 
-
-
     if (Array.isArray(response.emails)) {
       for (const email of response.emails) {
         resultCards.appendChild(createCard('email', email));
@@ -195,7 +195,14 @@
 
     // Remaining keys not in the priority list
     for (const [key, value] of Object.entries(response)) {
-      if (!CARD_KEYS.includes(key) && key !== 'web' && key !== 'emails' && value !== null && value !== undefined && value !== '') {
+      if (
+        !CARD_KEYS.includes(key) &&
+        key !== 'web' &&
+        key !== 'emails' &&
+        value !== null &&
+        value !== undefined &&
+        value !== ''
+      ) {
         if (typeof value !== 'object') {
           resultCards.appendChild(createCard(key, value));
         }
@@ -242,7 +249,7 @@
     const card = document.createElement('div');
     card.className = 'result-card web-results-card';
     card.style.gridColumn = '1 / -1'; // Full width
-    
+
     let html = '<div class="card-label">Web Results</div><div class="web-results-list">';
     for (const res of results) {
       html += `

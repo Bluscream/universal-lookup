@@ -3,16 +3,25 @@ import { config, getCacheTtl } from '../config.js';
 import { getCached, setCache } from '../db/cache.js';
 import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/merger.js';
 import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.js';
+import { lookupDomain } from '../providers/domain/index.js';
 import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
 import { lookupLocation } from '../providers/location/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
 import { lookupTel } from '../providers/tel/index.js';
-import { lookupDomain } from '../providers/domain/index.js';
 import { lookupWeb } from '../providers/web/index.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
-const VALID_TYPES = new Set<string>(['tel', 'ip', 'domain', 'email', 'location', 'parcel', 'web', 'auto']);
+const VALID_TYPES = new Set<string>([
+  'tel',
+  'ip',
+  'domain',
+  'email',
+  'location',
+  'parcel',
+  'web',
+  'auto',
+]);
 
 const responseSchema = {
   200: {
@@ -147,14 +156,10 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { type: string; '*': string };
     Querystring: { raw?: string; fresh?: string };
-  }>(
-    '/api/:type/*',
-    { schema: { hide: true } },
-    async (request) => {
-      const query = (request.params as Record<string, string>)['*'];
-      return handleLookup(request.params.type, query, request.query, request.ip);
-    },
-  );
+  }>('/api/:type/*', { schema: { hide: true } }, async (request) => {
+    const query = (request.params as Record<string, string>)['*'];
+    return handleLookup(request.params.type, query, request.query, request.ip);
+  });
 }
 
 export async function registerShortcutRoutes(app: FastifyInstance): Promise<void> {
@@ -256,34 +261,35 @@ async function handleLookup(
 
   // Run providers
   let results: ProviderResult[] = [];
-  
+
   if (type === 'auto' && (resolvedType === 'ip' || resolvedType === 'domain')) {
     // Dual lookup logic
-    const firstResults = await getLookupFunction(resolvedType)(normalizedQuery);
+    const firstResults = await getLookupFunction(resolvedType)(normalizedQuery, resolvedType);
     results = [...firstResults];
-    
+
     // Attempt to find the "other" query
     if (resolvedType === 'ip') {
       // IP -> Domain
-      const dnsResult = firstResults.find(r => r.provider === 'dns' && r.success);
+      const dnsResult = firstResults.find((r) => r.provider === 'dns' && r.success);
       const domain = (dnsResult?.data?.reverse_dns as string[])?.[0];
       if (domain) {
-        const domainResults = await lookupDomain(domain);
+        const domainResults = await lookupDomain(domain, 'domain');
         results = [...results, ...domainResults];
       }
     } else {
       // Domain -> IP
-      const dnsResult = firstResults.find(r => r.provider === 'dns' && r.success);
-      const ip = (dnsResult?.data?.dns_a as string[])?.[0] || (dnsResult?.data?.dns_aaaa as string[])?.[0];
+      const dnsResult = firstResults.find((r) => r.provider === 'dns' && r.success);
+      const ip =
+        (dnsResult?.data?.dns_a as string[])?.[0] || (dnsResult?.data?.dns_aaaa as string[])?.[0];
       if (ip) {
-        const ipResults = await lookupIp(ip);
+        const ipResults = await lookupIp(ip, 'ip');
         results = [...results, ...ipResults];
       }
     }
   } else {
     // Normal single lookup
     const lookupFn = getLookupFunction(resolvedType);
-    results = await lookupFn(normalizedQuery);
+    results = await lookupFn(normalizedQuery, resolvedType);
   }
 
   // Build response
@@ -352,7 +358,7 @@ function sortObjectKeys<T>(obj: T): T {
   if (Array.isArray(obj)) {
     return obj.map(sortObjectKeys) as unknown as T;
   }
-  
+
   if (typeof obj !== 'object' || obj === null) {
     return obj;
   }

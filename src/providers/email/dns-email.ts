@@ -1,5 +1,5 @@
 import dns from 'node:dns/promises';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns-email';
 
@@ -13,7 +13,7 @@ export const dnsEmail: Provider = {
     return true;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       // Validate syntax

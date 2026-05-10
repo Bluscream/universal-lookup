@@ -6,7 +6,7 @@ import type { Provider } from '../types/common.js';
  */
 export function filterAndSortProviders(allProviders: Provider[], names?: string): Provider[] {
   const available = allProviders.filter((p) => p.isAvailable());
-  
+
   if (!names || names.trim() === '') {
     return available;
   }
@@ -38,7 +38,7 @@ export function filterAndSortProviders(allProviders: Provider[], names?: string)
   for (const name of requestedNames) {
     const cleanName = name.replace(/[^a-z0-9]/g, '');
     const provider = providerMap.get(name) || providerMap.get(cleanName);
-    
+
     if (provider && !seen.has(provider.name)) {
       sorted.push(provider);
       seen.add(provider.name);

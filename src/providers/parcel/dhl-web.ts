@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dhl-web';
 
@@ -17,7 +17,7 @@ export const dhlWeb: Provider = {
     return true;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const url = `https://www.dhl.de/int-verfolgen/data/search?piececode=${encodeURIComponent(query)}&language=de`;
@@ -122,4 +122,3 @@ export const dhlWeb: Provider = {
     }
   },
 };
-

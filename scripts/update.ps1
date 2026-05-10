@@ -116,18 +116,33 @@ $tags = @(
     "bluscream1/universal-lookup:$version"
 )
 
-$buildCmd = "docker build "
-foreach ($tag in $tags) { $buildCmd += "-t $tag " }
-$buildCmd += "."
-Invoke-Expression $buildCmd
-
-# 5. Docker Push
-Write-Host "Pushing images to registries..." -ForegroundColor Cyan
-foreach ($tag in $tags) {
-    Write-Host "Pushing $tag..." -ForegroundColor Gray
-    docker push $tag
+# Check for buildx
+$hasBuildx = (docker buildx version 2>$null) -ne $null
+if ($hasBuildx) {
+    Write-Host "Using Docker Buildx for multi-arch support (linux/amd64, linux/arm64)..." -ForegroundColor Magenta
+    $tagFlags = ""
+    foreach ($tag in $tags) { $tagFlags += "-t $tag " }
+    
+    # Try to use existing builder or create one
+    docker buildx create --use --name universal-builder 2>$null
+    
+    docker buildx build --platform linux/amd64,linux/arm64 $tagFlags --push .
+    Write-Host "Docker buildx build and push complete." -ForegroundColor Green
+} else {
+    Write-Host "Docker Buildx not found. Falling back to legacy build (single architecture)..." -ForegroundColor Yellow
+    $buildCmd = "docker build "
+    foreach ($tag in $tags) { $buildCmd += "-t $tag " }
+    $buildCmd += "."
+    Invoke-Expression $buildCmd
+    
+    # 5. Docker Push (Legacy)
+    Write-Host "Pushing images to registries..." -ForegroundColor Cyan
+    foreach ($tag in $tags) {
+        Write-Host "Pushing $tag..." -ForegroundColor Gray
+        docker push $tag
+    }
+    Write-Host "Docker push complete." -ForegroundColor Green
 }
-Write-Host "Docker push complete." -ForegroundColor Green
 
 # 6. Unraid Template Deploy
 if (Test-Path $NasTemplatePath) {

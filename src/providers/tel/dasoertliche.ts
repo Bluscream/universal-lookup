@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dasoertliche';
 
@@ -11,7 +11,7 @@ export const dasoertliche: Provider = {
     return true;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const num = query.replace(/^0049/, '0').replace(/^00/, '');
@@ -58,7 +58,10 @@ export const dasoertliche: Provider = {
         duration: Date.now() - start,
       };
     } catch (error) {
-      if (axios.isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 410)) {
+      if (
+        axios.isAxiosError(error) &&
+        (error.response?.status === 404 || error.response?.status === 410)
+      ) {
         return {
           provider: PROVIDER_NAME,
           success: false,

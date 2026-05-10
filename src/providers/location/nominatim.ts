@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
 import { normalizeLocation } from '../../lib/normalizer.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'nominatim';
 
@@ -11,7 +11,7 @@ export const nominatim: Provider = {
     return true;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const loc = normalizeLocation(query);

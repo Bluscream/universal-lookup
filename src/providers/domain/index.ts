@@ -1,10 +1,10 @@
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
 import { filterAndSortProviders } from '../../lib/providers.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { dnsProvider } from './dns.js';
-import { whois } from './whois.js';
 import { subdomainProvider } from './subdomain.js';
-import { googleProvider, bingProvider, duckduckgoProvider, yahooProvider } from '../web/index.js';
+import { whois } from './whois.js';
 
 /** All domain lookup providers in priority order */
 const ALL_PROVIDERS: Provider[] = [
@@ -20,13 +20,13 @@ const ALL_PROVIDERS: Provider[] = [
 /**
  * Run all available Domain providers in parallel with timeout.
  */
-export async function lookupDomain(query: string): Promise<ProviderResult[]> {
+export async function lookupDomain(query: string, type?: LookupType): Promise<ProviderResult[]> {
   const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersDomain);
 
   const results = await Promise.allSettled(
     providers.map((provider) =>
       Promise.race([
-        provider.lookup(query),
+        provider.lookup(query, type),
         new Promise<ProviderResult>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), config.providerTimeout),
         ),

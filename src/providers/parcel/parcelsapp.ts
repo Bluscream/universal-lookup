@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'parcelsapp';
 
@@ -16,7 +16,7 @@ export const parcelsapp: Provider = {
     return true;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       if (config.parcelsAppApiKey) {

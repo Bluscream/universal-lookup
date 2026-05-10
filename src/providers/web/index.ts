@@ -1,10 +1,8 @@
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
 import { filterAndSortProviders } from '../../lib/providers.js';
-import type { Provider, ProviderResult, SearchResult } from '../../types/common.js';
-
-
+import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
+import type { LookupType, Provider, ProviderResult, SearchResult } from '../../types/common.js';
 
 function cleanUrl(url: string): string {
   if (!url) return '';
@@ -15,7 +13,11 @@ function cleanUrl(url: string): string {
       return u.searchParams.get('q') || url;
     }
     // DuckDuckGo redirect (https://duckduckgo.com/l/?uddg=...)
-    if ((u.hostname.includes('duckduckgo.com') || u.hostname === 'www.google.com') && u.pathname === '/l/' && u.searchParams.has('uddg')) {
+    if (
+      (u.hostname.includes('duckduckgo.com') || u.hostname === 'www.google.com') &&
+      u.pathname === '/l/' &&
+      u.searchParams.has('uddg')
+    ) {
       return u.searchParams.get('uddg') || url;
     }
     // Generic cleanup (remove common tracking params)
@@ -35,6 +37,7 @@ async function scrape(
   providerName: string,
   // biome-ignore lint/suspicious/noExplicitAny: Puppeteer/Cheerio element
   mapper: ($el: any) => { title: string; url: string; description: string } | null,
+  limit?: number,
 ): Promise<SearchResult[]> {
   try {
     const html = await scrapeWithPuppeteer(url, selector);
@@ -43,7 +46,7 @@ async function scrape(
 
     const seenUrls = new Set<string>();
     $(selector).each((_, el) => {
-      if (results.length >= config.universalResultsLimit) return;
+      if (limit !== undefined && results.length >= limit) return;
       const res = mapper($(el));
       if (res?.title && res.url) {
         const cleaned = cleanUrl(res.url);
@@ -63,23 +66,26 @@ async function scrape(
 export const googleProvider: Provider = {
   name: 'google',
   isAvailable: () => true,
-  lookup: async (query: string): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
     const start = Date.now();
+    const limit = type === 'web' ? undefined : config.universalResultsLimit;
     const results = await scrape(
       `https://www.google.com/search?q=${encodeURIComponent(query)}`,
       '.g',
       'google',
       ($el) => {
         // Skip ads
-        if ($el.hasClass('ads-ad') || $el.find('.commercial-unit-desktop-top').length > 0) return null;
-        
+        if ($el.hasClass('ads-ad') || $el.find('.commercial-unit-desktop-top').length > 0)
+          return null;
+
         const title = $el.find('h3').text().trim();
         const link = $el.find('a').attr('href') || '';
         const desc = $el.find('div[style*="-webkit-line-clamp"], .VwiC3b, .yXK7lf').text().trim();
-        
+
         if (!title || !link || title.includes('Ad ·')) return null;
         return { title, url: link, description: desc };
       },
+      limit,
     );
     return {
       provider: 'google',
@@ -94,8 +100,9 @@ export const googleProvider: Provider = {
 export const bingProvider: Provider = {
   name: 'bing',
   isAvailable: () => true,
-  lookup: async (query: string): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
     const start = Date.now();
+    const limit = type === 'web' ? undefined : config.universalResultsLimit;
     const results = await scrape(
       `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
       '.b_algo',
@@ -107,6 +114,7 @@ export const bingProvider: Provider = {
         if (!title || !link) return null;
         return { title, url: link, description: desc };
       },
+      limit,
     );
     return {
       provider: 'bing',
@@ -121,8 +129,9 @@ export const bingProvider: Provider = {
 export const duckduckgoProvider: Provider = {
   name: 'duckduckgo',
   isAvailable: () => true,
-  lookup: async (query: string): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
     const start = Date.now();
+    const limit = type === 'web' ? undefined : config.universalResultsLimit;
     const results = await scrape(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
       '.result',
@@ -134,10 +143,10 @@ export const duckduckgoProvider: Provider = {
         const title = $el.find('.result__title, h2').text().trim();
         const link = $el.find('a.result__a, a').attr('href') || '';
         const desc = $el.find('.result__snippet').text().trim();
-        
+
         // Final check for "Ad" text in title or description as fallback
-        const isAd = 
-          title.toLowerCase().includes(' ad ') || 
+        const isAd =
+          title.toLowerCase().includes(' ad ') ||
           title.toLowerCase().includes('\nad\n') ||
           /\sAd\s/i.test(title) ||
           desc.includes('Viewing ads is privacy protected') ||
@@ -145,9 +154,10 @@ export const duckduckgoProvider: Provider = {
           link.includes('y.js?');
 
         if (!title || !link || isAd) return null;
-        
+
         return { title, url: link, description: desc };
       },
+      limit,
     );
     return {
       provider: 'duckduckgo',
@@ -162,8 +172,9 @@ export const duckduckgoProvider: Provider = {
 export const yahooProvider: Provider = {
   name: 'yahoo',
   isAvailable: () => true,
-  lookup: async (query: string): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
     const start = Date.now();
+    const limit = type === 'web' ? undefined : config.universalResultsLimit;
     const results = await scrape(
       `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`,
       '.algo',
@@ -175,6 +186,7 @@ export const yahooProvider: Provider = {
         if (!title || !link) return null;
         return { title, url: link, description: desc };
       },
+      limit,
     );
     return {
       provider: 'yahoo',
@@ -188,15 +200,21 @@ export const yahooProvider: Provider = {
 
 const ALL_WEB_PROVIDERS = [googleProvider, bingProvider, duckduckgoProvider, yahooProvider];
 
-export async function lookupWeb(query: string): Promise<ProviderResult[]> {
+export async function lookupWeb(
+  query: string,
+  type: LookupType = 'web',
+): Promise<ProviderResult[]> {
   const providers = filterAndSortProviders(ALL_WEB_PROVIDERS, config.providersWeb);
 
   const results = await Promise.allSettled(
     providers.map((provider) =>
       Promise.race([
-        provider.lookup(query),
+        provider.lookup(query, type),
         new Promise<ProviderResult>((_, reject) =>
-          setTimeout(() => reject(new Error(`${provider.name} provider timed out`)), config.providerTimeout + 2000),
+          setTimeout(
+            () => reject(new Error(`${provider.name} provider timed out`)),
+            config.providerTimeout + 2000,
+          ),
         ),
       ]).catch(
         (error): ProviderResult => ({

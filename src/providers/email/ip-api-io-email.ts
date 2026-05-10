@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
 import { decrementRateLimit, isRateLimited, updateRateLimit } from '../../lib/rate-limiter.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'ip-api.io/email';
 
@@ -11,7 +11,7 @@ export const ipApiIoEmail: Provider = {
     return !!config.ipApiIoKey;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const wait = isRateLimited(PROVIDER_NAME);

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'fritzbox';
 
@@ -19,7 +19,7 @@ export const fritzbox: Provider = {
     return !!(config.fritzboxHost && config.fritzboxUser && config.fritzboxPass);
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const { normalizeTel } = await import('../../lib/normalizer.js');
     const start = Date.now();
     const numClean = normalizeTel(query);
@@ -40,7 +40,7 @@ export const fritzbox: Provider = {
         const protocol = host.includes('49443') ? 'https' : 'http';
         baseUrl = `${protocol}://${host}`;
       }
-      
+
       const soapUrl = `${baseUrl}/upnp/control/x_contact`;
 
       // Helper for Digest Auth
@@ -161,16 +161,19 @@ export const fritzbox: Provider = {
           for (const term of searchTerms) {
             const termEscaped = term.replace('+', '\\+');
             // Regex to match the number and capture its type attribute
-            const numberRegex = new RegExp(`<number[^>]*type="([^"]*)"[^>]*>${termEscaped}<\\/number>`, 'i');
+            const numberRegex = new RegExp(
+              `<number[^>]*type="([^"]*)"[^>]*>${termEscaped}<\\/number>`,
+              'i',
+            );
             const match = contactXml.match(numberRegex);
-            
+
             if (match) {
               const type = match[1] || 'unknown';
-              
+
               // 1. Basic Info
               const nameMatch = contactXml.match(/<realName>([^<]+)<\/realName>/);
               if (nameMatch) data.name = nameMatch[1];
-              
+
               data.number_type = type;
 
               // 2. Emails

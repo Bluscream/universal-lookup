@@ -2,7 +2,7 @@ import { exec } from 'node:child_process';
 import { platform } from 'node:os';
 import { promisify } from 'node:util';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const execAsync = promisify(exec);
 const PROVIDER_NAME = 'traceroute';
@@ -13,7 +13,7 @@ export const tracerouteProvider: Provider = {
     return true;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const isWin = platform() === 'win32';
@@ -49,7 +49,13 @@ export const tracerouteProvider: Provider = {
           };
         }
       }
-      return { provider: PROVIDER_NAME, success: false, data: {}, error: err.message ?? String(error), duration: Date.now() - start };
+      return {
+        provider: PROVIDER_NAME,
+        success: false,
+        data: {},
+        error: err.message ?? String(error),
+        duration: Date.now() - start,
+      };
     }
   },
 };
@@ -59,7 +65,10 @@ interface TracerouteHop {
   rtt_ms?: number | null;
 }
 
-function parseTraceroute(output: string, _isWin: boolean): { hops: TracerouteHop[]; totalHops: number } {
+function parseTraceroute(
+  output: string,
+  _isWin: boolean,
+): { hops: TracerouteHop[]; totalHops: number } {
   const hops: TracerouteHop[] = [];
   const lines = output.split('\n');
   let maxHopFound = 0;
@@ -91,4 +100,3 @@ function parseTraceroute(output: string, _isWin: boolean): { hops: TracerouteHop
 
   return { hops, totalHops: maxHopFound };
 }
-

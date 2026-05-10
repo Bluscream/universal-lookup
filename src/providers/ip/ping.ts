@@ -2,7 +2,7 @@ import { exec } from 'node:child_process';
 import { platform } from 'node:os';
 import { promisify } from 'node:util';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const execAsync = promisify(exec);
 const PROVIDER_NAME = 'ping';
@@ -13,7 +13,7 @@ export const pingProvider: Provider = {
     return true;
   },
 
-  async lookup(query: string): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
       const isWin = platform() === 'win32';
@@ -72,4 +72,3 @@ function parsePing(out: string, isWin: boolean): Record<string, unknown> {
   }
   return d;
 }
-

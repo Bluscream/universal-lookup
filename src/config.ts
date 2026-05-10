@@ -67,10 +67,7 @@ export const config = {
     'PROVIDERS_IP',
     'ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo',
   ),
-  providersDomain: env(
-    'PROVIDERS_DOMAIN',
-    'whois,dns,subdomain,google,bing,duckduckgo,yahoo',
-  ),
+  providersDomain: env('PROVIDERS_DOMAIN', 'whois,dns,subdomain,google,bing,duckduckgo,yahoo'),
   providersEmail: env(
     'PROVIDERS_EMAIL',
     'dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo',
@@ -79,14 +76,8 @@ export const config = {
     'PROVIDERS_LOCATION',
     'nominatim,google-maps,google,bing,duckduckgo,yahoo',
   ),
-  providersParcel: env(
-    'PROVIDERS_PARCEL',
-    'dhl-web,dhl,parcelsapp,google,bing,duckduckgo,yahoo',
-  ),
-  providersWeb: env(
-    'PROVIDERS_WEB',
-    'google,bing,duckduckgo,yahoo',
-  ),
+  providersParcel: env('PROVIDERS_PARCEL', 'dhl-web,dhl,parcelsapp,google,bing,duckduckgo,yahoo'),
+  providersWeb: env('PROVIDERS_WEB', 'google,bing,duckduckgo,yahoo'),
 
   // Universal Search
   universalResultsLimit: envInt('UNIVERSAL_RESULTS_LIMIT', 3),
