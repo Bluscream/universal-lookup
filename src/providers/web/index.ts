@@ -1,40 +1,30 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
 import { filterAndSortProviders } from '../../lib/providers.js';
+import type { Provider, ProviderResult, SearchResult } from '../../types/common.js';
 
-export interface SearchResult {
-  text: string;
-  url: string;
-  provider: string;
-}
 
-const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 async function scrape(
   url: string,
   selector: string,
   providerName: string,
-  // biome-ignore lint/suspicious/noExplicitAny: Cheerio element type is complex to export correctly here
-  mapper: ($: cheerio.CheerioAPI, el: any) => { text: string; url: string } | null,
+  // biome-ignore lint/suspicious/noExplicitAny: Puppeteer/Cheerio element
+  mapper: ($el: any) => { text: string; url: string } | null,
 ): Promise<SearchResult[]> {
   try {
-    const { data } = await axios.get(url, {
-      headers: { 'User-Agent': USER_AGENT },
-      timeout: config.providerTimeout,
-    });
-    const $ = cheerio.load(data);
+    const html = await scrapeWithPuppeteer(url, selector);
+    const $ = cheerio.load(html);
     const results: SearchResult[] = [];
-    const elements = $(selector).get();
-    for (const el of elements) {
-      if (results.length >= config.universalResultsLimit) break;
-      const res = mapper($, el);
+
+    $(selector).each((_, el) => {
+      if (results.length >= config.universalResultsLimit) return;
+      const res = mapper($(el));
       if (res?.text && res.url) {
         results.push({ ...res, provider: providerName });
       }
-    }
+    });
     return results;
   } catch (error) {
     console.error(`Error scraping ${url}:`, error);
@@ -49,11 +39,12 @@ export const googleProvider: Provider = {
     const start = Date.now();
     const results = await scrape(
       `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-      '.g',
+      '.g, .tF2Cxc, .MjjYud, div[data-hveid]',
       'google',
-      ($, el) => {
-        const title = $(el).find('h3').text().trim();
-        const link = $(el).find('a').attr('href') || '';
+      ($el) => {
+        const title = $el.find('h3').text().trim();
+        const link = $el.find('a').attr('href') || '';
+        if (!title || !link) return null;
         return { text: title, url: link };
       },
     );
@@ -74,11 +65,12 @@ export const bingProvider: Provider = {
     const start = Date.now();
     const results = await scrape(
       `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
-      '.b_algo',
+      '.b_algo, .b_result, li.b_algo',
       'bing',
-      ($, el) => {
-        const title = $(el).find('h2').text().trim();
-        const link = $(el).find('a').attr('href') || '';
+      ($el) => {
+        const title = $el.find('h2').text().trim();
+        const link = $el.find('a').attr('href') || '';
+        if (!title || !link) return null;
         return { text: title, url: link };
       },
     );
@@ -99,11 +91,12 @@ export const duckduckgoProvider: Provider = {
     const start = Date.now();
     const results = await scrape(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
-      '.result',
+      '.result, .result__body',
       'duckduckgo',
-      ($, el) => {
-        const title = $(el).find('.result__title').text().trim();
-        const link = $(el).find('.result__url').attr('href')?.trim() || '';
+      ($el) => {
+        const title = $el.find('.result__title, h2').text().trim();
+        const link = $el.find('a.result__a, a').attr('href') || '';
+        if (!title || !link) return null;
         return { text: title, url: link };
       },
     );
@@ -126,9 +119,10 @@ export const yahooProvider: Provider = {
       `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`,
       '.algo',
       'yahoo',
-      ($, el) => {
-        const title = $(el).find('h3').text().trim();
-        const link = $(el).find('a').attr('href') || '';
+      ($el) => {
+        const title = $el.find('h3, .title').text().trim();
+        const link = $el.find('a').attr('href') || '';
+        if (!title || !link) return null;
         return { text: title, url: link };
       },
     );

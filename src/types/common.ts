@@ -1,6 +1,12 @@
 /** Supported lookup types */
 export type LookupType = 'tel' | 'ip' | 'email' | 'location' | 'parcel' | 'web';
 
+export interface SearchResult {
+  text: string;
+  url: string;
+  provider: string;
+}
+
 /** Result from a single provider */
 export interface ProviderResult {
   /** Provider identifier (e.g. "ip-api.com", "tellows") */

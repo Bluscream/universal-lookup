@@ -12,6 +12,7 @@ data/
 
 # References (HAR captures, pcaps — large + potentially sensitive)
 .references/
+scratch/
 
 # Agent/IDE working files
 .agent/
