@@ -40,7 +40,8 @@ export const config = {
   tellowsApiKey: env('TELLOWS_API_KEY'),
   maxmindLicenseKey: env('MAXMIND_LICENSE_KEY'),
   maxmindDbPath: env('MAXMIND_DB_PATH', './data/maxmind'),
-  googleMapsApiKey: env('GOOGLE_MAPS_API_KEY'),
+  googleApiKey: env('GOOGLE_API_KEY'),
+  googleSearchCx: env('GOOGLE_SEARCH_CX'),
   parcelsAppApiKey: env('PARCELSAPP_API_KEY'),
   dhlApiKey: env('DHL_API_KEY'),
 

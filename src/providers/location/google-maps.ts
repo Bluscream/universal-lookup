@@ -8,7 +8,7 @@ const PROVIDER_NAME = 'google-maps';
 export const googleMaps: Provider = {
   name: PROVIDER_NAME,
   isAvailable() {
-    return !!config.googleMapsApiKey;
+    return !!config.googleApiKey;
   },
 
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
@@ -17,9 +17,9 @@ export const googleMaps: Provider = {
       const loc = normalizeLocation(query);
       let url: string;
       if (loc.isCoords && loc.lat !== undefined && loc.lon !== undefined) {
-        url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${loc.lat},${loc.lon}&key=${config.googleMapsApiKey}`;
+        url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${loc.lat},${loc.lon}&key=${config.googleApiKey}`;
       } else {
-        url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(loc.query)}&key=${config.googleMapsApiKey}`;
+        url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(loc.query)}&key=${config.googleApiKey}`;
       }
 
       const resp = await axios.get(url, { timeout: config.providerTimeout });

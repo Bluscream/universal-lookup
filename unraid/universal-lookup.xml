@@ -28,7 +28,8 @@
   <Config Name="ip-api.io Key" Target="IP_API_IO_KEY" Default="" Mode="" Description="API key for ip-api.io advanced features" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="Tellows API Key" Target="TELLOWS_API_KEY" Default="" Mode="" Description="Tellows partner API key (optional, falls back to scraping)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="MaxMind License Key" Target="MAXMIND_LICENSE_KEY" Default="" Mode="" Description="MaxMind GeoLite2 license key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
-  <Config Name="Google Maps Key" Target="GOOGLE_MAPS_API_KEY" Default="" Mode="" Description="Google Maps Geocoding API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Google API Key" Target="GOOGLE_API_KEY" Default="" Mode="" Description="Google Maps & Search API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Google Search CX" Target="GOOGLE_SEARCH_CX" Default="" Mode="" Description="Google Custom Search Engine ID (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="ParcelsApp API Key" Target="PARCELSAPP_API_KEY" Default="" Mode="" Description="ParcelsApp tracking API key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="FritzBox Host" Target="FRITZBOX_HOST" Default="fritz.box" Mode="" Description="FritzBox hostname/IP" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="FritzBox User" Target="FRITZBOX_USER" Default="" Mode="" Description="FritzBox username" Type="Variable" Display="advanced" Required="false" Mask="false"/>

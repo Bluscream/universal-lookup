@@ -97,7 +97,8 @@ Copy `.env.example` to `.env` to customize the service.
 | `IP_API_IO_KEY` | API key for ip-api.io features |
 | `TELLOWS_API_KEY` | Partner key for Tellows |
 | `MAXMIND_LICENSE_KEY` | License for GeoLite2 downloads |
-| `GOOGLE_MAPS_API_KEY` | Key for Geocoding API |
+| `GOOGLE_API_KEY` | Key for Google Maps & Search API |
+| `GOOGLE_SEARCH_CX`| Google Custom Search Engine ID |
 | `PARCELSAPP_API_KEY` | Key for ParcelsApp tracking |
 | `DHL_API_KEY` | Key for official DHL API |
 

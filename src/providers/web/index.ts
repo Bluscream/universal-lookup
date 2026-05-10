@@ -1,3 +1,4 @@
+import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
 import { filterAndSortProviders } from '../../lib/providers.js';
@@ -8,10 +9,27 @@ function cleanUrl(url: string): string {
   if (!url) return '';
   try {
     const u = new URL(url, 'https://www.google.com');
+
     // Google redirect
     if (u.pathname === '/url' && u.searchParams.has('q')) {
       return u.searchParams.get('q') || url;
     }
+
+    // Bing redirect (https://www.bing.com/ck/a?...!&u=a1<BASE64>&ntb=1)
+    if (u.hostname.includes('bing.com') && u.pathname === '/ck/a' && u.searchParams.has('u')) {
+      let b64 = u.searchParams.get('u') || '';
+      if (b64.startsWith('a1')) {
+        b64 = b64.substring(2);
+        // Add padding if necessary
+        while (b64.length % 4 !== 0) b64 += '=';
+        try {
+          return Buffer.from(b64, 'base64').toString('utf8');
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
     // DuckDuckGo redirect (https://duckduckgo.com/l/?uddg=...)
     if (
       (u.hostname.includes('duckduckgo.com') || u.hostname === 'www.google.com') &&
@@ -20,8 +38,21 @@ function cleanUrl(url: string): string {
     ) {
       return u.searchParams.get('uddg') || url;
     }
+
     // Generic cleanup (remove common tracking params)
-    const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'cvid', 'FORM', 'pq'];
+    const trackingParams = [
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_term',
+      'utm_content',
+      'cvid',
+      'FORM',
+      'pq',
+      'msclkid',
+      'gclid',
+      'fbclid',
+    ];
     for (const p of trackingParams) {
       u.searchParams.delete(p);
     }
@@ -69,6 +100,32 @@ export const googleProvider: Provider = {
   lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
+
+    // Use Official API if configured
+    if (config.googleApiKey && config.googleSearchCx) {
+      try {
+        const url = `https://www.googleapis.com/customsearch/v1?key=${config.googleApiKey}&cx=${config.googleSearchCx}&q=${encodeURIComponent(query)}&num=${limit || 10}`;
+        const resp = await axios.get(url, { timeout: config.providerTimeout });
+        const items = resp.data.items || [];
+        const results: SearchResult[] = items.map((item: any) => ({
+          title: item.title,
+          url: item.link,
+          description: item.snippet,
+          provider: 'google-api',
+        }));
+        return {
+          provider: 'google',
+          success: results.length > 0,
+          data: { web: results },
+          raw: resp.data,
+          duration: Date.now() - start,
+        };
+      } catch (error) {
+        console.warn('Google Search API failed, falling back to scraping:', error instanceof Error ? error.message : error);
+      }
+    }
+
+    // Fallback to Scraping
     const results = await scrape(
       `https://www.google.com/search?q=${encodeURIComponent(query)}`,
       '.g',

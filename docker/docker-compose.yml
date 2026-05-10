@@ -32,7 +32,8 @@ services:
       # - IP_API_IO_KEY=
       # - TELLOWS_API_KEY=
       # - MAXMIND_LICENSE_KEY=
-      # - GOOGLE_MAPS_API_KEY=
+      # - GOOGLE_API_KEY=
+      # - GOOGLE_SEARCH_CX=
       # - PARCELSAPP_API_KEY=
       # - FRITZBOX_HOST=fritz.box
       # - FRITZBOX_USER=
