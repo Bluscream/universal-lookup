@@ -2,35 +2,36 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { config, getCacheTtl } from '../config.js';
 import { getCached, setCache } from '../db/cache.js';
 import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/merger.js';
-import { normalizeQuery } from '../lib/normalizer.js';
+import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.js';
 import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
 import { lookupLocation } from '../providers/location/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
 import { lookupTel } from '../providers/tel/index.js';
+import { lookupDomain } from '../providers/domain/index.js';
 import { lookupWeb } from '../providers/web/index.js';
-import type { LookupResponse, LookupType } from '../types/common.js';
+import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
-const VALID_TYPES = new Set<string>(['tel', 'ip', 'email', 'location', 'parcel', 'web']);
+const VALID_TYPES = new Set<string>(['tel', 'ip', 'domain', 'email', 'location', 'parcel', 'web', 'auto']);
 
 const responseSchema = {
   200: {
     type: 'object',
     properties: {
-      lookup_time: { type: 'string' },
-      success: { type: 'boolean' },
-      response: { type: 'object', additionalProperties: true },
       errors: { type: 'object', additionalProperties: { type: 'string' } },
+      lookup_time: { type: 'string' },
       raw: { type: 'object', additionalProperties: true },
       request: {
         type: 'object',
         properties: {
-          time: { type: 'string' },
           ip: { type: 'string' },
-          type: { type: 'string' },
           query: { type: 'string' },
+          time: { type: 'string' },
+          type: { type: 'string' },
         },
       },
+      response: { type: 'object', additionalProperties: true },
+      success: { type: 'boolean' },
     },
   },
 };
@@ -222,8 +223,40 @@ async function handleLookup(
     };
   }
 
+  // Handle auto-detection
+  let resolvedType = type as LookupType;
+  if (resolvedType === 'auto') {
+    resolvedType = detectType(query);
+  }
+
   // Normalize the query
-  const normalizedQuery = await normalizeQuery(type as LookupType, query);
+  const normalizedQuery = await normalizeQuery(resolvedType, query);
+  const normalizedLower = normalizedQuery.toLowerCase();
+
+  // Handle special emergency numbers
+  if (resolvedType === 'tel' || resolvedType === 'auto') {
+    if (normalizedLower in SPECIAL_NUMBERS) {
+      const info = SPECIAL_NUMBERS[normalizedLower];
+      const response: LookupResponse = {
+        lookup_time: `${Date.now() - startTime}ms`,
+        success: true,
+        response: {
+          name: info.name,
+          number_type: info.number_type,
+          phone: normalizedQuery,
+        },
+        errors: {},
+        raw: {},
+        request: {
+          time: new Date().toISOString(),
+          ip: clientIp,
+          type: resolvedType,
+          query: normalizedQuery,
+        },
+      };
+      return sortObjectKeys(response) as LookupResponse;
+    }
+  }
 
   // Check cache (unless ?fresh=true)
   if (!forceFresh) {
@@ -239,8 +272,36 @@ async function handleLookup(
   }
 
   // Run providers
-  const lookupFn = getLookupFunction(type as LookupType);
-  const results = await lookupFn(normalizedQuery);
+  let results: ProviderResult[] = [];
+  
+  if (type === 'auto' && (resolvedType === 'ip' || resolvedType === 'domain')) {
+    // Dual lookup logic
+    const firstResults = await getLookupFunction(resolvedType)(normalizedQuery);
+    results = [...firstResults];
+    
+    // Attempt to find the "other" query
+    if (resolvedType === 'ip') {
+      // IP -> Domain
+      const dnsResult = firstResults.find(r => r.provider === 'dns' && r.success);
+      const domain = (dnsResult?.data?.reverse_dns as string[])?.[0];
+      if (domain) {
+        const domainResults = await lookupDomain(domain);
+        results = [...results, ...domainResults];
+      }
+    } else {
+      // Domain -> IP
+      const dnsResult = firstResults.find(r => r.provider === 'dns' && r.success);
+      const ip = (dnsResult?.data?.dns_a as string[])?.[0] || (dnsResult?.data?.dns_aaaa as string[])?.[0];
+      if (ip) {
+        const ipResults = await lookupIp(ip);
+        results = [...results, ...ipResults];
+      }
+    }
+  } else {
+    // Normal single lookup
+    const lookupFn = getLookupFunction(resolvedType);
+    results = await lookupFn(normalizedQuery);
+  }
 
   // Build response
   const merged = mergeResponses(results);
@@ -257,7 +318,7 @@ async function handleLookup(
     request: {
       time: new Date().toISOString(),
       ip: clientIp,
-      type: type as LookupType,
+      type: resolvedType,
       query: normalizedQuery,
     },
   };
@@ -266,7 +327,7 @@ async function handleLookup(
   const fullResponse = { ...response, raw: collectRaw(results) };
   setCache(type, normalizedQuery, fullResponse, getCacheTtl(type));
 
-  return deepClean(response);
+  return sortObjectKeys(deepClean(response)) as LookupResponse;
 }
 
 function getLookupFunction(type: LookupType) {
@@ -275,6 +336,8 @@ function getLookupFunction(type: LookupType) {
       return lookupIp;
     case 'tel':
       return lookupTel;
+    case 'domain':
+      return lookupDomain;
     case 'email':
       return lookupEmail;
     case 'location':
@@ -283,5 +346,29 @@ function getLookupFunction(type: LookupType) {
       return lookupParcel;
     case 'web':
       return lookupWeb;
+    default:
+      return lookupWeb;
   }
+}
+
+/**
+ * Sort object keys alphabetically.
+ */
+function sortObjectKeys(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(sortObjectKeys);
+  }
+  
+  if (typeof obj !== 'object' || obj === null) {
+    return obj;
+  }
+
+  const sorted: Record<string, any> = {};
+  const keys = Object.keys(obj).sort();
+
+  for (const key of keys) {
+    sorted[key] = sortObjectKeys(obj[key]);
+  }
+
+  return sorted;
 }

@@ -1,42 +1,51 @@
 import { resolve4 } from 'node:dns/promises';
 import { isIP } from 'node:net';
+import { config } from '../config.js';
 import type { LookupType } from '../types/common.js';
+
+
+
+/**
+ * Special numbers that skip standard normalization and return hardcoded data.
+ */
+export const SPECIAL_NUMBERS: Record<string, { name: string; number_type: string }> = {
+  '110': { name: 'Polizei Notruf', number_type: 'emergency' },
+  '112': { name: 'Feuerwehr Notruf', number_type: 'emergency' },
+  '911': { name: 'Notruf', number_type: 'emergency' },
+  '19222': { name: 'Krankentransport', number_type: 'emergency' },
+};
 
 /**
  * Normalize a phone number to a clean format.
- * Strips whitespace, dashes, parentheses, dots.
- * Converts common German prefixes.
  */
 export function normalizeTel(input: string): string {
-  // Strip common noise characters
-  let cleaned = input.replace(/[\s\-.()/]/g, '');
+  const trimmed = input.trim().replace(/[\s\-.()/]/g, '');
+  if (!trimmed) return '';
 
-  // Remove any non-digit characters except leading +
+  // Skip normalization for special numbers
+  if (trimmed in SPECIAL_NUMBERS) {
+    return trimmed;
+  }
+
+  let cleaned = trimmed;
+
+  // Short number completion logic:
+  // If numeric and short (e.g. < 9 digits) and doesn't start with 0 or +,
+  // prepend country + local prefix.
+  if (/^\d+$/.test(cleaned) && cleaned.length < 9 && !cleaned.startsWith('0') && !cleaned.startsWith('+')) {
+    cleaned = `${config.phoneCountryPrefix}${config.phoneLocalPrefix}${cleaned}`;
+  }
+
+  // Standard normalization
   if (cleaned.startsWith('+')) {
-    cleaned = `+${cleaned.slice(1).replace(/\D/g, '')}`;
+    cleaned = `00${cleaned.slice(1).replace(/\D/g, '')}`;
   } else {
     cleaned = cleaned.replace(/\D/g, '');
   }
 
-  // Convert +49 prefix to 0049
-  if (cleaned.startsWith('+49')) {
-    cleaned = `0049${cleaned.slice(3)}`;
-  }
-  // Convert +XX prefix to 00XX
-  else if (cleaned.startsWith('+')) {
-    cleaned = `00${cleaned.slice(1)}`;
-  }
-  // Already 0049 — keep as is
-  else if (cleaned.startsWith('0049')) {
-    // noop
-  }
-  // Convert 00XX prefix — keep as is
-  else if (cleaned.startsWith('00') && cleaned.length > 4) {
-    // noop
-  }
-  // Convert leading 0 (German local format) to 0049
-  else if (cleaned.startsWith('0') && cleaned.length > 3) {
-    cleaned = `0049${cleaned.slice(1)}`;
+  // Convert leading 0 (local format) to country prefix
+  if (cleaned.startsWith('0') && !cleaned.startsWith('00') && cleaned.length > 3) {
+    cleaned = `${config.phoneCountryPrefix}${cleaned.slice(1)}`;
   }
 
   return cleaned;
@@ -140,4 +149,38 @@ export async function normalizeQuery(type: LookupType, input: string): Promise<s
     default:
       return input.trim();
   }
+}
+
+/**
+ * Automatically detect the likely lookup type for a query.
+ */
+export function detectType(query: string): LookupType {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return 'web';
+
+  // 1. IP Address
+  if (isIP(trimmed)) return 'ip';
+
+  // 2. Email
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) return 'email';
+
+  // 3. Phone Number (best effort)
+  // Starts with +, 00, or is just digits and long enough
+  if (/^(\+|00|0)[0-9]{5,15}$/.test(trimmed.replace(/[\s\-.()/]/g, ''))) {
+    return 'tel';
+  }
+
+  // 4. Domain Name
+  // Matches something.tld or sub.something.tld
+  if (/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(trimmed)) {
+    return 'domain';
+  }
+
+  // 5. Parcel (best effort, numeric and long)
+  if (/^[0-9]{10,30}$/.test(trimmed)) {
+    return 'parcel';
+  }
+
+  // Default fallback
+  return 'web';
 }

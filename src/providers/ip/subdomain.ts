@@ -73,7 +73,7 @@ export const subdomainProvider: Provider = {
           found.add(s);
         });
       }
-      const sorted = [...found].sort();
+      const sorted = [...found].sort().slice(0, config.universalResultsLimit);
       return {
         provider: PROVIDER_NAME,
         success: sorted.length > 0,

@@ -48,7 +48,11 @@ export const config = {
   fritzboxHost: env('FRITZBOX_HOST', 'fritz.box'),
   fritzboxUser: env('FRITZBOX_USER'),
   fritzboxPass: env('FRITZBOX_PASS'),
-  phoneLocalPrefix: env('PHONE_LOCALPREFIX'), // e.g. 00496131
+  phoneCountryPrefix: env('PHONE_COUNTRY_PREFIX', '0049'),
+  phoneLocalPrefix: env('PHONE_LOCAL_PREFIX'), // e.g. 6131
+  get phoneLocalPrefixFull(): string {
+    return `${this.phoneCountryPrefix}${this.phoneLocalPrefix}`;
+  },
 
   // Puppeteer
   puppeteerSkipDownload: envBool('PUPPETEER_SKIP_DOWNLOAD', false),
@@ -57,11 +61,15 @@ export const config = {
   // Providers configuration
   providersTel: env(
     'PROVIDERS_TEL',
-    'fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo',
+    'emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo',
   ),
   providersIp: env(
     'PROVIDERS_IP',
     'ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo',
+  ),
+  providersDomain: env(
+    'PROVIDERS_DOMAIN',
+    'whois,dns,subdomain,google,bing,duckduckgo,yahoo',
   ),
   providersEmail: env(
     'PROVIDERS_EMAIL',

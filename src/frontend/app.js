@@ -21,7 +21,9 @@
   const optFresh = document.getElementById('opt-fresh');
 
   const PLACEHOLDERS = {
-    ip: 'e.g. 8.8.8.8, google.com',
+    auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034...',
+    ip: 'e.g. 8.8.8.8',
+    domain: 'e.g. google.com',
     tel: 'e.g. +493012345678',
     email: 'e.g. user@example.com',
     location: 'e.g. Berlin, Germany or 52.52,13.40',
@@ -77,12 +79,14 @@
   });
 
   // Parse URL on load (e.g. /ip/8.8.8.8)
-  const pathMatch = location.pathname.match(/^\/(tel|ip|email|location|parcel|web)\/(.+)$/);
+  const pathMatch = location.pathname.match(/^\/(auto|tel|ip|domain|email|location|parcel|web)\/(.+)$/);
   if (pathMatch) {
     typeSelect.value = pathMatch[1];
     queryInput.value = decodeURIComponent(pathMatch[2]);
     queryInput.placeholder = PLACEHOLDERS[pathMatch[1]] || '';
     form.dispatchEvent(new Event('submit'));
+  } else {
+    queryInput.placeholder = PLACEHOLDERS[typeSelect.value] || '';
   }
 
   // Keyboard shortcut: Ctrl+K to focus search
@@ -181,10 +185,7 @@
       }
     }
 
-    // Special handling for arrays (like web results or emails)
-    if (Array.isArray(response.web)) {
-      resultCards.appendChild(createWebResultsCard(response.web));
-    }
+
 
     if (Array.isArray(response.emails)) {
       for (const email of response.emails) {
@@ -199,6 +200,11 @@
           resultCards.appendChild(createCard(key, value));
         }
       }
+    }
+
+    // Always put web results at the bottom
+    if (Array.isArray(response.web)) {
+      resultCards.appendChild(createWebResultsCard(response.web));
     }
 
     // JSON viewer

@@ -14,6 +14,10 @@ function cleanUrl(url: string): string {
     if (u.pathname === '/url' && u.searchParams.has('q')) {
       return u.searchParams.get('q') || url;
     }
+    // DuckDuckGo redirect (https://duckduckgo.com/l/?uddg=...)
+    if ((u.hostname.includes('duckduckgo.com') || u.hostname === 'www.google.com') && u.pathname === '/l/' && u.searchParams.has('uddg')) {
+      return u.searchParams.get('uddg') || url;
+    }
     // Generic cleanup (remove common tracking params)
     const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'cvid', 'FORM', 'pq'];
     for (const p of trackingParams) {
@@ -61,10 +65,14 @@ export const googleProvider: Provider = {
       '.g, .tF2Cxc, .MjjYud, div[data-hveid]',
       'google',
       ($el) => {
+        // Skip ads
+        if ($el.hasClass('ads-ad') || $el.find('.commercial-unit-desktop-top').length > 0) return null;
+        
         const title = $el.find('h3').text().trim();
         const link = $el.find('a').attr('href') || '';
         const desc = $el.find('div[style*="-webkit-line-clamp"], .VwiC3b, .yXK7lf').text().trim();
-        if (!title || !link) return null;
+        
+        if (!title || !link || title.includes('Ad ·')) return null;
         return { title, url: link, description: desc };
       },
     );
@@ -115,10 +123,24 @@ export const duckduckgoProvider: Provider = {
       '.result, .result__body',
       'duckduckgo',
       ($el) => {
+        // Skip ads
+        if ($el.hasClass('result--ad') || $el.find('.result__badge--ad').length > 0) return null;
+
         const title = $el.find('.result__title, h2').text().trim();
         const link = $el.find('a.result__a, a').attr('href') || '';
         const desc = $el.find('.result__snippet').text().trim();
-        if (!title || !link) return null;
+        
+        // Final check for "Ad" text in title or description as fallback
+        const isAd = 
+          title.toLowerCase().includes(' ad ') || 
+          title.toLowerCase().includes('\nad\n') ||
+          /\sAd\s/i.test(title) ||
+          desc.includes('Viewing ads is privacy protected') ||
+          link.includes('ad_domain=') ||
+          link.includes('y.js?');
+
+        if (!title || !link || isAd) return null;
+        
         return { title, url: link, description: desc };
       },
     );

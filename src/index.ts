@@ -161,9 +161,15 @@ async function main() {
         },
         {
           id: 'ip',
-          name: 'IP / Domain',
-          description: 'IP geolocation, WHOIS, DNS, ping, traceroute, port scan, security analysis',
+          name: 'IP Address',
+          description: 'IP geolocation, security analysis, reverse DNS',
           example: '8.8.8.8',
+        },
+        {
+          id: 'domain',
+          name: 'Domain Name',
+          description: 'WHOIS, DNS records, subdomain enumeration',
+          example: 'google.com',
         },
         {
           id: 'email',

@@ -24,24 +24,21 @@
   </nav>
 
   <main class="main-container">
-    <header class="hero">
-      <h1 class="hero-title">
-        <span class="gradient-text">Universal Lookup</span>
-      </h1>
-      <p class="hero-subtitle">Aggregated intelligence from multiple sources — phone numbers, IPs, emails, locations, and parcels.</p>
-    </header>
+
 
     <section class="search-section">
       <form id="lookup-form" class="search-form">
         <div class="form-row">
           <div class="select-wrapper">
             <select id="lookup-type" class="form-select" aria-label="Lookup type">
-              <option value="ip">🌐 IP / Domain</option>
+              <option value="auto" selected>✨ Auto Detect</option>
+              <option value="ip">🌍 IP Address</option>
+              <option value="domain">📡 Domain Name</option>
               <option value="tel">📞 Phone Number</option>
               <option value="email">📧 Email</option>
               <option value="location">📍 Location</option>
               <option value="parcel">📦 Parcel</option>
-              <option value="web">🌐 Web Search</option>
+              <option value="web">🔍 Web Search</option>
             </select>
           </div>
           <div class="input-wrapper">

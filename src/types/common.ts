@@ -1,5 +1,5 @@
 /** Supported lookup types */
-export type LookupType = 'tel' | 'ip' | 'email' | 'location' | 'parcel' | 'web';
+export type LookupType = 'tel' | 'ip' | 'domain' | 'email' | 'location' | 'parcel' | 'web' | 'auto';
 
 export interface SearchResult {
   title: string;
