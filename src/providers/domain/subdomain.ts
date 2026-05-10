@@ -48,16 +48,32 @@ export const subdomainProvider: Provider = {
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
+      let domain = query.replace(/^www\./, '');
+
       if (isIP(query)) {
-        return {
-          provider: PROVIDER_NAME,
-          success: false,
-          data: {},
-          error: 'Subdomain enumeration requires a domain, not an IP',
-          duration: Date.now() - start,
-        };
+        try {
+          const hostnames = await dns.reverse(query);
+          if (hostnames && hostnames.length > 0) {
+            domain = hostnames[0].replace(/^www\./, '');
+          } else {
+            return {
+              provider: PROVIDER_NAME,
+              success: false,
+              data: {},
+              error: 'Could not resolve hostname for IP to enumerate subdomains',
+              duration: Date.now() - start,
+            };
+          }
+        } catch (err) {
+          return {
+            provider: PROVIDER_NAME,
+            success: false,
+            data: {},
+            error: 'Failed to resolve hostname for IP to enumerate subdomains',
+            duration: Date.now() - start,
+          };
+        }
       }
-      const domain = query.replace(/^www\./, '');
       const [crtResults, dnsResults] = await Promise.allSettled([
         searchCrtSh(domain),
         bruteforceSubdomains(domain),
