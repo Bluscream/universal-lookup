@@ -117,7 +117,14 @@ $tags = @(
 )
 
 # Check for buildx
-$hasBuildx = (docker buildx version 2>$null) -ne $null
+$hasBuildx = $false
+try {
+    $check = docker buildx version 2>&1
+    if ($check -match "version") { $hasBuildx = $true }
+} catch {
+    $hasBuildx = $false
+}
+
 if ($hasBuildx) {
     Write-Host "Using Docker Buildx for multi-arch support (linux/amd64, linux/arm64)..." -ForegroundColor Magenta
     $tagFlags = ""
