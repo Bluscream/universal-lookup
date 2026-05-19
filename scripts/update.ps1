@@ -35,13 +35,18 @@ function Invoke-ProjectStep {
     )
     Write-Host "$Name ($Command)..." -ForegroundColor Cyan
     
-    npm run $Command
-    if ($LASTEXITCODE -ne 0) {
+    # Biome writes diagnostics to stderr; only fail on exit code, not stderr noise
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    npm run $Command 2>&1 | Out-Host
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+    if ($exitCode -ne 0) {
         if ($IgnoreErrors) {
-            Write-Host "$Name failed (Exit Code: $LASTEXITCODE) but IgnoreErrors is set. Continuing..." -ForegroundColor Yellow
+            Write-Host "$Name failed (Exit Code: $exitCode) but IgnoreErrors is set. Continuing..." -ForegroundColor Yellow
         } else {
-            Write-Host "$Name failed (Exit Code: $LASTEXITCODE)" -ForegroundColor Red
-            exit $LASTEXITCODE
+            Write-Host "$Name failed (Exit Code: $exitCode)" -ForegroundColor Red
+            exit $exitCode
         }
     } else {
         Write-Host "$Name passed" -ForegroundColor Green

@@ -107,12 +107,14 @@ export const googleProvider: Provider = {
         const url = `https://www.googleapis.com/customsearch/v1?key=${config.googleApiKey}&cx=${config.googleSearchCx}&q=${encodeURIComponent(query)}&num=${limit || 10}`;
         const resp = await axios.get(url, { timeout: config.providerTimeout });
         const items = resp.data.items || [];
-        const results: SearchResult[] = items.map((item: any) => ({
-          title: item.title,
-          url: item.link,
-          description: item.snippet,
-          provider: 'google-api',
-        }));
+        const results: SearchResult[] = items.map(
+          (item: { title?: string; link?: string; snippet?: string }) => ({
+            title: item.title || '',
+            url: item.link || '',
+            description: item.snippet || '',
+            provider: 'google-api',
+          }),
+        );
         return {
           provider: 'google',
           success: results.length > 0,
@@ -121,7 +123,10 @@ export const googleProvider: Provider = {
           duration: Date.now() - start,
         };
       } catch (error) {
-        console.warn('Google Search API failed, falling back to scraping:', error instanceof Error ? error.message : error);
+        console.warn(
+          'Google Search API failed, falling back to scraping:',
+          error instanceof Error ? error.message : error,
+        );
       }
     }
 

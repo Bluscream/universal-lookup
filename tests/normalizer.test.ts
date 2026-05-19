@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  detectType,
   normalizeEmail,
   normalizeLocation,
   normalizeParcel,
+  normalizeSteam,
   normalizeTel,
+  normalizeUrl,
 } from '../src/lib/normalizer.js';
 
 describe('normalizeTel', () => {
@@ -82,5 +85,53 @@ describe('normalizeLocation', () => {
     expect(result.isCoords).toBe(true);
     expect(result.lat).toBeCloseTo(-33.8688);
     expect(result.lon).toBeCloseTo(151.2093);
+  });
+});
+
+describe('normalizeSteam', () => {
+  it('converts SteamID2 mathematically to SteamID64', () => {
+    expect(normalizeSteam('STEAM_0:1:61786227')).toBe('76561198083838183');
+  });
+
+  it('converts SteamID3 mathematically to SteamID64', () => {
+    expect(normalizeSteam('[U:1:123572455]')).toBe('76561198083838183');
+  });
+
+  it('extracts ID64 from Steam profiles URL', () => {
+    expect(normalizeSteam('https://steamcommunity.com/profiles/76561198083838183')).toBe(
+      '76561198083838183',
+    );
+  });
+
+  it('extracts vanity name from Steam custom URL', () => {
+    expect(normalizeSteam('https://steamcommunity.com/id/bluscream')).toBe('bluscream');
+  });
+
+  it('returns raw strings as-is', () => {
+    expect(normalizeSteam('gabelogannewell')).toBe('gabelogannewell');
+  });
+});
+
+describe('normalizeUrl', () => {
+  it('prepends https if protocol is missing', () => {
+    expect(normalizeUrl('github.com/Bluscream/universal-lookup')).toBe(
+      'https://github.com/Bluscream/universal-lookup',
+    );
+  });
+
+  it('preserves existing protocols', () => {
+    expect(normalizeUrl('http://127.0.0.1:24010/health')).toBe('http://127.0.0.1:24010/health');
+  });
+});
+
+describe('detectType', () => {
+  it('auto-detects steam type', () => {
+    expect(detectType('STEAM_0:1:61786227')).toBe('steam');
+    expect(detectType('https://steamcommunity.com/id/bluscream/')).toBe('steam');
+    expect(detectType('76561198083838183')).toBe('steam');
+  });
+
+  it('auto-detects url type', () => {
+    expect(detectType('https://github.com/Bluscream')).toBe('url');
   });
 });

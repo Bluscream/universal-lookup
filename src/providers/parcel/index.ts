@@ -5,11 +5,13 @@ import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from 
 import { dhl } from './dhl.js';
 import { dhlWeb } from './dhl-web.js';
 import { parcelsapp } from './parcelsapp.js';
+import { pkge } from './pkge.js';
 
 const ALL_PROVIDERS: Provider[] = [
   dhlWeb,
   dhl,
   parcelsapp,
+  pkge,
   googleProvider,
   bingProvider,
   duckduckgoProvider,

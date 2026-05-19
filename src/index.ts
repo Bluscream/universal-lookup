@@ -190,6 +190,19 @@ async function main() {
           description: 'Package tracking',
           example: '00340434515310596216',
         },
+        {
+          id: 'steam',
+          name: 'Steam Profile',
+          description: 'SteamID conversions, player reputation, profile summary, inventory stats',
+          example: '76561198083838183',
+        },
+        {
+          id: 'url',
+          name: 'URL Scanning & Info',
+          description:
+            'SSL certificates, redirect chains, HTML metadata, threat analysis, DNS/IP lookup',
+          example: 'https://github.com',
+        },
       ],
     }),
   );

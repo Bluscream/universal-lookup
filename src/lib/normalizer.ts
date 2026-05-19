@@ -146,6 +146,62 @@ export function normalizeDomain(input: string): string {
 }
 
 /**
+ * Normalize a Steam ID or profile URL to SteamID64 or vanity name.
+ */
+export function normalizeSteam(input: string): string {
+  const trimmed = input.trim();
+
+  // 1. Check if it's a Steam Community URL
+  const idMatch = trimmed.match(/steamcommunity\.com\/profiles\/([0-9]+)/i);
+  if (idMatch) {
+    return idMatch[1];
+  }
+
+  const vanityMatch = trimmed.match(/steamcommunity\.com\/id\/([a-zA-Z0-9_-]+)/i);
+  if (vanityMatch) {
+    return vanityMatch[1];
+  }
+
+  // 2. Check if it's SteamID2 (e.g., STEAM_0:1:61786227)
+  const id2Match = trimmed.match(/^STEAM_[0-5]:([0-1]):([0-9]+)$/i);
+  if (id2Match) {
+    const y = BigInt(id2Match[1]);
+    const z = BigInt(id2Match[2]);
+    const steamId64 = 76561197960265728n + z * 2n + y;
+    return steamId64.toString();
+  }
+
+  // 3. Check if it's SteamID3 (e.g., [U:1:123572455])
+  const id3Match = trimmed.match(/^\[U:[0-9]:([0-9]+)\]$/i);
+  if (id3Match) {
+    const w = BigInt(id3Match[1]);
+    const steamId64 = 76561197960265728n + w;
+    return steamId64.toString();
+  }
+
+  return trimmed;
+}
+
+/**
+ * Normalize a URL.
+ */
+export function normalizeUrl(input: string): string {
+  let trimmed = input.trim();
+  if (!trimmed) return '';
+
+  if (!/^[a-zA-Z0-9+.-]+:\/\//.test(trimmed)) {
+    trimmed = `https://${trimmed}`;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
+/**
  * Normalize input based on lookup type.
  * Returns the normalized query string.
  */
@@ -163,6 +219,10 @@ export async function normalizeQuery(type: LookupType, input: string): Promise<s
       return normalizeLocation(input).query;
     case 'parcel':
       return normalizeParcel(input);
+    case 'steam':
+      return normalizeSteam(input);
+    case 'url':
+      return normalizeUrl(input);
     default:
       return input.trim();
   }
@@ -175,33 +235,50 @@ export function detectType(query: string): LookupType {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) return 'web';
 
-  // 1. URL parsing or Domain Name
+  // 1. Steam Queries
+  if (
+    /steamcommunity\.com\/(id|profiles)\//i.test(trimmed) ||
+    /^steam_[0-5]:[0-1]:[0-9]+$/i.test(trimmed) ||
+    /^\[u:[0-9]:[0-9]+\]$/i.test(trimmed) ||
+    /^7656119[0-9]{10}$/.test(trimmed)
+  ) {
+    return 'steam';
+  }
+
+  // 2. Explicit URLs
+  if (/^https?:\/\//i.test(trimmed)) {
+    return 'url';
+  }
+
+  // 3. URL parsing or Domain Name
   const domainCandidate = trimmed
     .replace(/^(?:https?|ftp):\/\//, '')
     .replace(/\/.*$/, '')
     .replace(/:.*$/, '');
 
-  // 2. IP Address
+  // 4. IP Address
   if (isIP(domainCandidate)) return 'ip';
 
-  // 3. Email
+  // 5. Email
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) return 'email';
 
-  // 4. Phone Number (best effort)
+  // 6. Phone Number (best effort)
   // Starts with +, 00, or is just digits and long enough
   if (/^(\+|00|0)[0-9]{5,15}$/.test(trimmed.replace(/[\s\-.()/]/g, ''))) {
     return 'tel';
   }
 
-  // 5. Domain Name
+  // 7. Domain Name
   // Matches something.tld or sub.something.tld
   if (
-    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(domainCandidate)
+    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(
+      domainCandidate,
+    )
   ) {
     return 'domain';
   }
 
-  // 6. Parcel (best effort, numeric and long)
+  // 8. Parcel (best effort, numeric and long)
   if (/^[0-9]{10,30}$/.test(trimmed)) {
     return 'parcel';
   }

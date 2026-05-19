@@ -1,10 +1,9 @@
 services:
   universal-lookup:
-    image: ghcr.io/bluscream/universal-lookup:latest
-    # Or build locally:
-    # build:
-    #   context: ..
-    #   dockerfile: Dockerfile
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    # image: ghcr.io/bluscream/universal-lookup:latest
     container_name: universal-lookup
     restart: unless-stopped
     ports:
@@ -27,7 +26,13 @@ services:
       - PROVIDERS_LOCATION=nominatim,google-maps,google,bing,duckduckgo,yahoo
       - PROVIDERS_PARCEL=dhl-web,dhl,parcelsapp,google,bing,duckduckgo,yahoo
       - PROVIDERS_WEB=google,bing,duckduckgo,yahoo
-      # Uncomment and fill in API keys as needed:
+      - PROVIDERS_STEAM=playerdb,steam-xml,steam-api,steam-inventory
+      - PROVIDERS_URL=dns-lookup,ip-info,metadata,urlscan,virustotal
+      # Forward API keys and credentials from host environment:
+      - STEAM_API_KEY
+      - VIRUSTOTAL_API_KEY
+      - URLSCAN_API_KEY
+      # Uncomment and fill in other API keys if not set in host env:
       # - IP_API_COM_KEY=
       # - IP_API_IO_KEY=
       # - TELLOWS_API_KEY=

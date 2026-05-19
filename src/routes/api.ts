@@ -8,7 +8,9 @@ import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
 import { lookupLocation } from '../providers/location/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
+import { lookupSteam } from '../providers/steam/index.js';
 import { lookupTel } from '../providers/tel/index.js';
+import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
@@ -20,6 +22,8 @@ const VALID_TYPES = new Set<string>([
   'location',
   'parcel',
   'web',
+  'steam',
+  'url',
   'auto',
 ]);
 
@@ -346,6 +350,10 @@ function getLookupFunction(type: LookupType) {
       return lookupParcel;
     case 'web':
       return lookupWeb;
+    case 'steam':
+      return lookupSteam;
+    case 'url':
+      return lookupUrl;
     default:
       return lookupWeb;
   }

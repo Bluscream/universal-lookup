@@ -1,5 +1,15 @@
 /** Supported lookup types */
-export type LookupType = 'tel' | 'ip' | 'domain' | 'email' | 'location' | 'parcel' | 'web' | 'auto';
+export type LookupType =
+  | 'tel'
+  | 'ip'
+  | 'domain'
+  | 'email'
+  | 'location'
+  | 'parcel'
+  | 'web'
+  | 'steam'
+  | 'url'
+  | 'auto';
 
 export interface SearchResult {
   title: string;
@@ -54,7 +64,7 @@ export interface Provider {
   /** Unique provider name */
   name: string;
   /** Execute the lookup */
-  lookup(query: string, type?: LookupType): Promise<ProviderResult>;
+  lookup(query: string, type?: LookupType, originalQuery?: string): Promise<ProviderResult>;
   /** Whether this provider is available (has required config/API keys) */
   isAvailable(): boolean;
 }

@@ -64,7 +64,7 @@ export const subdomainProvider: Provider = {
               duration: Date.now() - start,
             };
           }
-        } catch (err) {
+        } catch {
           return {
             provider: PROVIDER_NAME,
             success: false,

@@ -34,13 +34,17 @@ const ALL_PROVIDERS: Provider[] = [
 /**
  * Run all available IP providers in parallel with timeout.
  */
-export async function lookupIp(query: string, type?: LookupType): Promise<ProviderResult[]> {
+export async function lookupIp(
+  query: string,
+  type?: LookupType,
+  originalQuery?: string,
+): Promise<ProviderResult[]> {
   const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersIp);
 
   const results = await Promise.allSettled(
     providers.map((provider) =>
       Promise.race([
-        provider.lookup(query, type),
+        provider.lookup(query, type, originalQuery),
         new Promise<ProviderResult>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), config.providerTimeout),
         ),

@@ -2,13 +2,16 @@
 FROM node:22-slim AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --ignore-scripts
+RUN npm install -g npm@latest && npm install --ignore-scripts
 COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npx tsc
 
 # Stage 2: Production
 FROM node:22-slim
+
+# Suppress debconf interactive frontend warnings during package installs
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Chromium for Puppeteer + traceroute + ping
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -27,7 +30,7 @@ WORKDIR /app
 
 # Copy package files and install production deps only
 COPY package*.json ./
-RUN npm install --omit=dev --ignore-scripts
+RUN npm install -g npm@latest && npm install --omit=dev --ignore-scripts
 
 # Copy built app
 COPY --from=builder /app/dist ./dist/

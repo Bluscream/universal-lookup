@@ -44,6 +44,10 @@ export const config = {
   googleSearchCx: env('GOOGLE_SEARCH_CX'),
   parcelsAppApiKey: env('PARCELSAPP_API_KEY'),
   dhlApiKey: env('DHL_API_KEY'),
+  steamApiKey: env('STEAM_API_KEY'),
+  virustotalApiKey: env('VIRUSTOTAL_API_KEY'),
+  urlscanApiKey: env('URLSCAN_API_KEY'),
+  backpackTfApiKey: env('BACKPACK_TF_API_KEY'),
 
   // FritzBox
   fritzboxHost: env('FRITZBOX_HOST', 'fritz.box'),
@@ -77,8 +81,10 @@ export const config = {
     'PROVIDERS_LOCATION',
     'nominatim,google-maps,google,bing,duckduckgo,yahoo',
   ),
-  providersParcel: env('PROVIDERS_PARCEL', 'dhl-web,dhl,parcelsapp,google,bing,duckduckgo,yahoo'),
+  providersParcel: env('PROVIDERS_PARCEL', 'dhl-web,dhl,parcelsapp,pkge,google,bing,duckduckgo,yahoo'),
   providersWeb: env('PROVIDERS_WEB', 'google,bing,duckduckgo,yahoo'),
+  providersSteam: env('PROVIDERS_STEAM', 'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat'),
+  providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,urlscan,virustotal'),
 
   // Universal Search
   universalResultsLimit: envInt('UNIVERSAL_RESULTS_LIMIT', 3),
