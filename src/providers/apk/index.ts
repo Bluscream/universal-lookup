@@ -1,4 +1,5 @@
-import { config } from '../../config.js';
+import { config, getCacheTtl } from '../../config.js';
+import { getCached, setCache } from '../../db/cache.js';
 import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
 import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
 import { getGooglePlayMetadata } from './subproviders/googleplay.js';
@@ -13,6 +14,7 @@ import {
   getApkSupportDownload,
 } from './subproviders/other.js';
 import type { ApkDownloadInfo } from './subproviders/aptoide.js';
+import { parseApkFromUrl, type ApkMetadata } from './subproviders/parser.js';
 
 const PROVIDER_NAME = 'apk';
 
@@ -102,6 +104,44 @@ export const apkProvider: Provider = {
         })
       );
 
+      // Filter out invalid downloads and remove `is_alive`
+      const validDownloads = downloads
+        .filter(dl => dl.status && dl.status >= 200 && dl.status < 400)
+        .map(dl => {
+          const { is_alive, ...rest } = dl;
+          return rest;
+        });
+
+      const validDownload = validDownloads.find(dl => dl.status === 200 && dl.size && dl.size > 0);
+      if (validDownload) {
+        // Run parsing entirely in the background so we don't block the provider response
+        Promise.resolve().then(async () => {
+          try {
+            const parsedMetadata = await parseApkFromUrl(validDownload.url);
+            // Wait briefly to ensure orchestrator has written the initial cache
+            setTimeout(() => {
+              const cached = getCached('apk', pkg);
+              if (cached) {
+                cached.response = {
+                  ...cached.response,
+                  ...parsedMetadata,
+                };
+                if (cached.raw && cached.raw.apk) {
+                  cached.raw.apk = {
+                    ...cached.raw.apk,
+                    ...parsedMetadata,
+                  };
+                }
+                setCache('apk', pkg, cached, getCacheTtl('apk'));
+                console.log(`[APK] Background parsing finished and cache updated for ${pkg}`);
+              }
+            }, 5000);
+          } catch (err) {
+            console.error(`[APK] Error parsing APK from ${validDownload.url} in background:`, err);
+          }
+        });
+      }
+
       const data: Record<string, unknown> = {
         package_name: pkg,
         title: metadata.title,
@@ -116,7 +156,7 @@ export const apkProvider: Provider = {
         updated: new Date(metadata.updated).toISOString(),
         url: metadata.url,
         icon: metadata.icon,
-        downloads,
+        downloads: validDownloads,
       };
 
       return {

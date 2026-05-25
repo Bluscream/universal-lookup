@@ -55,7 +55,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   // GET: /api/:type/:query
   app.get<{
     Params: { type: string; query: string };
-    Querystring: { raw?: string; fresh?: string };
+    Querystring: { raw?: string; fresh?: string; wait?: string };
   }>(
     '/api/:type/:query',
     {
@@ -76,6 +76,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
           properties: {
             raw: { type: 'string', enum: ['true', 'false', '1', '0'] },
             fresh: { type: 'string', enum: ['true', 'false', '1', '0'] },
+            wait: { type: 'string', enum: ['true', 'false', '1', '0'] },
           },
         },
         response: responseSchema,
@@ -89,7 +90,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   // POST: /api/:type (Home Assistant / rest_command support)
   app.post<{
     Params: { type: string };
-    Body: { query?: string; raw?: boolean | string; fresh?: boolean | string };
+    Body: { query?: string; raw?: boolean | string; fresh?: boolean | string; wait?: boolean | string };
   }>(
     '/api/:type',
     {
@@ -110,6 +111,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
             query: { type: 'string' },
             raw: { type: ['boolean', 'string'] },
             fresh: { type: ['boolean', 'string'] },
+            wait: { type: ['boolean', 'string'] },
           },
           required: ['query'],
         },
@@ -117,10 +119,11 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request) => {
-      const { query, raw, fresh } = request.body;
+      const { query, raw, fresh, wait } = request.body;
       const queryParams = {
         raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
         fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
+        wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
       };
       return handleLookup(request.params.type, query || '', queryParams, request.ip);
     },
@@ -128,7 +131,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
   // POST: /api/lookup (Generic)
   app.post<{
-    Body: { type: string; query: string; raw?: boolean | string; fresh?: boolean | string };
+    Body: { type: string; query: string; raw?: boolean | string; fresh?: boolean | string; wait?: boolean | string };
   }>(
     '/api/lookup',
     {
@@ -142,6 +145,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
             query: { type: 'string' },
             raw: { type: ['boolean', 'string'] },
             fresh: { type: ['boolean', 'string'] },
+            wait: { type: ['boolean', 'string'] },
           },
           required: ['type', 'query'],
         },
@@ -149,10 +153,11 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request) => {
-      const { type, query, raw, fresh } = request.body;
+      const { type, query, raw, fresh, wait } = request.body;
       const queryParams = {
         raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
         fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
+        wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
       };
       return handleLookup(type, query, queryParams, request.ip);
     },
@@ -161,7 +166,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   // Wildcard for multi-segment queries
   app.get<{
     Params: { type: string; '*': string };
-    Querystring: { raw?: string; fresh?: string };
+    Querystring: { raw?: string; fresh?: string; wait?: string };
   }>('/api/:type/*', { schema: { hide: true } }, async (request) => {
     const query = (request.params as Record<string, string>)['*'];
     return handleLookup(request.params.type, query, request.query, request.ip);
@@ -213,13 +218,15 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
 async function handleLookup(
   type: string,
   query: string,
-  queryParams: { raw?: string; fresh?: string },
+  queryParams: { raw?: string; fresh?: string; wait?: string },
   clientIp: string,
 ): Promise<LookupResponse> {
   const startTime = Date.now();
   const includeRaw = !config.disableRaw && (queryParams.raw === 'true' || queryParams.raw === '1');
   const forceFresh =
     !config.disableFresh && (queryParams.fresh === 'true' || queryParams.fresh === '1');
+  const waitForFull =
+    !config.disableWait && (queryParams.wait === 'true' || queryParams.wait === '1');
 
   if (!VALID_TYPES.has(type)) {
     return {
@@ -267,12 +274,12 @@ async function handleLookup(
 
   // Run providers
   let clientResults: ProviderResult[] = [];
-  let serverPromise: Promise<ProviderResult[]>;
+  let serverPromise: Promise<ProviderResult[]> | null = null;
 
   if (type === 'auto' && (resolvedType === 'ip' || resolvedType === 'domain')) {
     // Dual lookup logic
     const firstDual = getLookupFunction(resolvedType)(normalizedQuery, resolvedType);
-    const firstResults = await firstDual.clientPromise;
+    const firstResults = await (waitForFull ? firstDual.serverPromise : firstDual.clientPromise);
     clientResults = [...firstResults];
 
     let secondDual: import('../lib/providers.js').DualPromiseResult | null = null;
@@ -296,20 +303,24 @@ async function handleLookup(
     }
 
     if (secondDual) {
-      const secondResults = await secondDual.clientPromise;
+      const secondResults = await (waitForFull ? secondDual.serverPromise : secondDual.clientPromise);
       clientResults = [...clientResults, ...secondResults];
-      serverPromise = Promise.all([firstDual.serverPromise, secondDual.serverPromise]).then(
-        ([a, b]) => [...a, ...b]
-      );
-    } else {
+      if (!waitForFull) {
+        serverPromise = Promise.all([firstDual.serverPromise, secondDual.serverPromise]).then(
+          ([a, b]) => [...a, ...b]
+        );
+      }
+    } else if (!waitForFull) {
       serverPromise = firstDual.serverPromise;
     }
   } else {
     // Normal single lookup
     const lookupFn = getLookupFunction(resolvedType);
     const dual = lookupFn(normalizedQuery, resolvedType);
-    clientResults = await dual.clientPromise;
-    serverPromise = dual.serverPromise;
+    clientResults = await (waitForFull ? dual.serverPromise : dual.clientPromise);
+    if (!waitForFull) {
+      serverPromise = dual.serverPromise;
+    }
   }
 
   // Build client response
@@ -348,33 +359,35 @@ async function handleLookup(
   setCache(type, normalizedQuery, fullResponse, getCacheTtl(type));
 
   // Background caching: wait for server promise and update cache if needed
-  serverPromise.then((serverResults) => {
-    let finalMerged = mergeResponses(serverResults);
-    if (specialInfo) {
-      finalMerged = {
-        ...finalMerged,
-        name: specialInfo.name,
-        number_type: specialInfo.number_type,
-        phone: normalizedQuery,
+  if (serverPromise) {
+    serverPromise.then((serverResults) => {
+      let finalMerged = mergeResponses(serverResults);
+      if (specialInfo) {
+        finalMerged = {
+          ...finalMerged,
+          name: specialInfo.name,
+          number_type: specialInfo.number_type,
+          phone: normalizedQuery,
+        };
+      }
+      const finalResponse: LookupResponse = {
+        lookup_time: `${Date.now() - startTime}ms (background)`,
+        success: serverResults.some((r) => r.success) || !!specialInfo,
+        response: finalMerged,
+        errors: collectErrors(serverResults),
+        raw: collectRaw(serverResults), // Always cache full raw
+        request: {
+          time: new Date().toISOString(),
+          ip: clientIp,
+          type: resolvedType,
+          query: normalizedQuery,
+        },
       };
-    }
-    const finalResponse: LookupResponse = {
-      lookup_time: `${Date.now() - startTime}ms (background)`,
-      success: serverResults.some((r) => r.success) || !!specialInfo,
-      response: finalMerged,
-      errors: collectErrors(serverResults),
-      raw: collectRaw(serverResults), // Always cache full raw
-      request: {
-        time: new Date().toISOString(),
-        ip: clientIp,
-        type: resolvedType,
-        query: normalizedQuery,
-      },
-    };
-    setCache(type, normalizedQuery, finalResponse, getCacheTtl(type));
-  }).catch(() => {
-    // Ignore background errors
-  });
+      setCache(type, normalizedQuery, finalResponse, getCacheTtl(type));
+    }).catch(() => {
+      // Ignore background errors
+    });
+  }
 
   return sortObjectKeys(deepClean(response)) as LookupResponse;
 }

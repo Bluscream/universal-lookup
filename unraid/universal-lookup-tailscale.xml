@@ -19,44 +19,71 @@
   <DonateLink/>
   <Requires/>
 
+  <!-- Ports & Paths -->
   <Config Name="Web Port" Target="24010" Default="24010" Mode="tcp" Description="Port for the web interface and API" Type="Port" Display="always" Required="true" Mask="false">24010</Config>
   <Config Name="Data Path" Target="/app/data" Default="/mnt/user/appdata/universal-lookup" Mode="rw" Description="Persistent data (cache DB, MaxMind databases)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/universal-lookup</Config>
   <Config Name="Tailscale State Path" Target="/var/lib/tailscale" Default="/mnt/user/appdata/universal-lookup/tailscale" Mode="rw" Description="Persistent state for Tailscale" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/universal-lookup/tailscale</Config>
-  <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Logging level (error, warn, info, debug)" Type="Variable" Display="always" Required="false" Mask="false">info</Config>
-  <Config Name="Cache TTL (seconds)" Target="CACHE_TTL" Default="86400" Mode="" Description="How long to cache lookup results (default: 24 hours)" Type="Variable" Display="always" Required="false" Mask="false">86400</Config>
-  <Config Name="Provider Timeout (ms)" Target="PROVIDER_TIMEOUT" Default="10000" Mode="" Description="Timeout for each provider in milliseconds" Type="Variable" Display="always" Required="false" Mask="false">10000</Config>
-  <Config Name="Auth Token" Target="REQUIRE_TOKEN" Default="" Mode="" Description="If set, require this token for API access" Type="Variable" Display="always" Required="false" Mask="true"/>
-  <Config Name="Rate Limit Max" Target="RATE_LIMIT_MAX" Default="100" Mode="" Description="Max requests per time window" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+
+  <!-- API Keys (alphabetical) -->
+  <Config Name="Backpack.tf API Key" Target="BACKPACK_TF_API_KEY" Default="" Mode="" Description="backpack.tf API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="DHL API Key" Target="DHL_API_KEY" Default="" Mode="" Description="Key for official DHL API" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Google API Key" Target="GOOGLE_API_KEY" Default="" Mode="" Description="Google Maps &amp; Search API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Google Search CX" Target="GOOGLE_SEARCH_CX" Default="" Mode="" Description="Google Custom Search Engine ID (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="ip-api.com Key" Target="IP_API_COM_KEY" Default="" Mode="" Description="API key for ip-api.com (optional, enables HTTPS + unlimited)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="ip-api.io Key" Target="IP_API_IO_KEY" Default="" Mode="" Description="API key for ip-api.io advanced features" Type="Variable" Display="advanced" Required="false" Mask="true"/>
-  <Config Name="Tellows API Key" Target="TELLOWS_API_KEY" Default="" Mode="" Description="Tellows partner API key (optional, falls back to scraping)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="MaxMind License Key" Target="MAXMIND_LICENSE_KEY" Default="" Mode="" Description="MaxMind GeoLite2 license key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
-  <Config Name="Google API Key" Target="GOOGLE_API_KEY" Default="" Mode="" Description="Google Maps & Search API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
-  <Config Name="Google Search CX" Target="GOOGLE_SEARCH_CX" Default="" Mode="" Description="Google Custom Search Engine ID (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="ParcelsApp API Key" Target="PARCELSAPP_API_KEY" Default="" Mode="" Description="ParcelsApp tracking API key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Steam API Key" Target="STEAM_API_KEY" Default="" Mode="" Description="Steam Web API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="Tellows API Key" Target="TELLOWS_API_KEY" Default="" Mode="" Description="Tellows partner API key (optional, falls back to scraping)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="URLScan API Key" Target="URLSCAN_API_KEY" Default="" Mode="" Description="urlscan.io API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="VirusTotal API Key" Target="VIRUSTOTAL_API_KEY" Default="" Mode="" Description="VirusTotal API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+
+  <!-- Auth & Feature Flags (alphabetical) -->
+  <Config Name="Auth Token" Target="REQUIRE_TOKEN" Default="" Mode="" Description="If set, require this token for API access" Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Disable Fresh" Target="DISABLE_FRESH" Default="false" Mode="" Description="Set to true to disable ?fresh query param" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Disable Raw" Target="DISABLE_RAW" Default="false" Mode="" Description="Set to true to disable ?raw query param" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Disable Wait" Target="DISABLE_WAIT" Default="false" Mode="" Description="Set to true to disable ?wait query param" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+
+  <!-- Cache Settings (alphabetical) -->
+  <Config Name="Cache TTL (seconds)" Target="CACHE_TTL" Default="86400" Mode="" Description="How long to cache lookup results (default: 24 hours)" Type="Variable" Display="always" Required="false" Mask="false">86400</Config>
+  <Config Name="Cache TTL Parcel (seconds)" Target="CACHE_TTL_PARCEL" Default="3600" Mode="" Description="Cache duration for parcels" Type="Variable" Display="advanced" Required="false" Mask="false">3600</Config>
+
+  <!-- FritzBox (alphabetical) -->
   <Config Name="FritzBox Host" Target="FRITZBOX_HOST" Default="fritz.box" Mode="" Description="FritzBox hostname/IP" Type="Variable" Display="advanced" Required="false" Mask="false"/>
-  <Config Name="FritzBox User" Target="FRITZBOX_USER" Default="" Mode="" Description="FritzBox username" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="FritzBox Password" Target="FRITZBOX_PASS" Default="" Mode="" Description="FritzBox password" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="FritzBox User" Target="FRITZBOX_USER" Default="" Mode="" Description="FritzBox username" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+
+  <!-- Phone Settings (alphabetical) -->
   <Config Name="Phone Country Prefix" Target="PHONE_COUNTRY_PREFIX" Default="0049" Mode="" Description="Country prefix for phone numbers" Type="Variable" Display="always" Required="false" Mask="false">0049</Config>
   <Config Name="Phone Local Prefix" Target="PHONE_LOCAL_PREFIX" Default="6131" Mode="" Description="Local prefix for phone numbers" Type="Variable" Display="always" Required="false" Mask="false">6131</Config>
-  <Config Name="Universal Results Limit" Target="UNIVERSAL_RESULTS_LIMIT" Default="3" Mode="" Description="Max results per provider" Type="Variable" Display="always" Required="false" Mask="false">3</Config>
-  <Config Name="Providers Domain" Target="PROVIDERS_DOMAIN" Default="whois,dns,subdomain,google,bing,duckduckgo,yahoo" Mode="" Description="Domain lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">whois,dns,subdomain,google,bing,duckduckgo,yahoo</Config>
-  <Config Name="Providers URL" Target="PROVIDERS_URL" Default="dns-lookup,ip-info,metadata,urlscan,virustotal" Mode="" Description="URL lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">dns-lookup,ip-info,metadata,urlscan,virustotal</Config>
+
+  <!-- Provider Lists (alphabetical) -->
   <Config Name="Providers APK" Target="PROVIDERS_APK" Default="googleplay,aptoide,apkpure,apkmirror,evozi,apkcombo,apkpremier,apkdl,apksupport" Mode="" Description="APK lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">googleplay,aptoide,apkpure,apkmirror,evozi,apkcombo,apkpremier,apkdl,apksupport</Config>
-  <Config Name="Host" Target="HOST" Default="0.0.0.0" Mode="" Description="Binding address" Type="Variable" Display="advanced" Required="false" Mask="false">0.0.0.0</Config>
-  <Config Name="Disable Raw" Target="DISABLE_RAW" Default="false" Mode="" Description="Set to true to disable ?raw query param" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
-  <Config Name="Disable Fresh" Target="DISABLE_FRESH" Default="false" Mode="" Description="Set to true to disable ?fresh query param" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
-  <Config Name="Rate Limit Window" Target="RATE_LIMIT_WINDOW" Default="1 minute" Mode="" Description="Rate limit time window" Type="Variable" Display="advanced" Required="false" Mask="false">1 minute</Config>
-  <Config Name="Cache TTL Parcel (seconds)" Target="CACHE_TTL_PARCEL" Default="3600" Mode="" Description="Cache duration for parcels" Type="Variable" Display="advanced" Required="false" Mask="false">3600</Config>
-  <Config Name="Client Timeout (ms)" Target="CLIENT_TIMEOUT" Default="5000" Mode="" Description="Max time to wait for initial API response" Type="Variable" Display="advanced" Required="false" Mask="false">5000</Config>
-  <Config Name="Server Timeout (ms)" Target="SERVER_TIMEOUT" Default="30000" Mode="" Description="Max time for background processing to update cache" Type="Variable" Display="advanced" Required="false" Mask="false">30000</Config>
-  <Config Name="Puppeteer Timeout (ms)" Target="PUPPETEER_TIMEOUT" Default="10000" Mode="" Description="Max wait time for headless browser" Type="Variable" Display="advanced" Required="false" Mask="false">10000</Config>
-  <Config Name="DHL API Key" Target="DHL_API_KEY" Default="" Mode="" Description="Key for official DHL API" Type="Variable" Display="advanced" Required="false" Mask="true"/>
-  <Config Name="Providers Telephone" Target="PROVIDERS_TEL" Default="emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo" Mode="" Description="Telephone lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo</Config>
-  <Config Name="Providers IP" Target="PROVIDERS_IP" Default="ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo" Mode="" Description="IP lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo</Config>
+  <Config Name="Providers Domain" Target="PROVIDERS_DOMAIN" Default="whois,dns,subdomain,google,bing,duckduckgo,yahoo" Mode="" Description="Domain lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">whois,dns,subdomain,google,bing,duckduckgo,yahoo</Config>
   <Config Name="Providers Email" Target="PROVIDERS_EMAIL" Default="dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo" Mode="" Description="Email lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo</Config>
+  <Config Name="Providers IP" Target="PROVIDERS_IP" Default="ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo" Mode="" Description="IP lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo</Config>
   <Config Name="Providers Location" Target="PROVIDERS_LOCATION" Default="nominatim,google-maps,google,bing,duckduckgo,yahoo" Mode="" Description="Location lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">nominatim,google-maps,google,bing,duckduckgo,yahoo</Config>
-  <Config Name="Providers Parcel" Target="PROVIDERS_PARCEL" Default="dhl-web,dhl,parcelsapp,google,bing,duckduckgo,yahoo" Mode="" Description="Parcel tracking providers" Type="Variable" Display="advanced" Required="false" Mask="false">dhl-web,dhl,parcelsapp,google,bing,duckduckgo,yahoo</Config>
-  <Config Name="Puppeteer Skip Download" Target="PUPPETEER_SKIP_DOWNLOAD" Default="true" Mode="" Description="Skip downloading Chromium (use system binary in Docker)" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="Providers Parcel" Target="PROVIDERS_PARCEL" Default="dhl-web,dhl,parcelsapp,pkge,google,bing,duckduckgo,yahoo" Mode="" Description="Parcel tracking providers" Type="Variable" Display="advanced" Required="false" Mask="false">dhl-web,dhl,parcelsapp,pkge,google,bing,duckduckgo,yahoo</Config>
+  <Config Name="Providers Steam" Target="PROVIDERS_STEAM" Default="playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat" Mode="" Description="Steam lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat</Config>
+  <Config Name="Providers Telephone" Target="PROVIDERS_TEL" Default="emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo" Mode="" Description="Telephone lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo</Config>
+  <Config Name="Providers URL" Target="PROVIDERS_URL" Default="dns-lookup,ip-info,metadata,urlscan,virustotal" Mode="" Description="URL lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">dns-lookup,ip-info,metadata,urlscan,virustotal</Config>
+  <Config Name="Providers Web" Target="PROVIDERS_WEB" Default="google,bing,duckduckgo,yahoo" Mode="" Description="Web search providers" Type="Variable" Display="advanced" Required="false" Mask="false">google,bing,duckduckgo,yahoo</Config>
+
+  <!-- Puppeteer (alphabetical) -->
   <Config Name="Puppeteer Executable Path" Target="PUPPETEER_EXECUTABLE_PATH" Default="/usr/bin/chromium" Mode="" Description="Path to Chromium (Docker/Unraid: /usr/bin/chromium)" Type="Variable" Display="advanced" Required="false" Mask="false">/usr/bin/chromium</Config>
+  <Config Name="Puppeteer Skip Download" Target="PUPPETEER_SKIP_DOWNLOAD" Default="true" Mode="" Description="Skip downloading Chromium (use system binary in Docker)" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+
+  <!-- Rate Limiting (alphabetical) -->
+  <Config Name="Rate Limit Max" Target="RATE_LIMIT_MAX" Default="100" Mode="" Description="Max requests per time window" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="Rate Limit Window" Target="RATE_LIMIT_WINDOW" Default="1 minute" Mode="" Description="Rate limit time window" Type="Variable" Display="advanced" Required="false" Mask="false">1 minute</Config>
+
+  <!-- Server Settings (alphabetical) -->
+  <Config Name="Host" Target="HOST" Default="0.0.0.0" Mode="" Description="Binding address" Type="Variable" Display="advanced" Required="false" Mask="false">0.0.0.0</Config>
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Logging level (error, warn, info, debug)" Type="Variable" Display="always" Required="false" Mask="false">info</Config>
+  <Config Name="Universal Results Limit" Target="UNIVERSAL_RESULTS_LIMIT" Default="3" Mode="" Description="Max results per provider" Type="Variable" Display="always" Required="false" Mask="false">3</Config>
+
+  <!-- Timeouts (alphabetical) -->
+  <Config Name="Client Timeout (ms)" Target="CLIENT_TIMEOUT" Default="5000" Mode="" Description="Max time to wait for initial API response" Type="Variable" Display="advanced" Required="false" Mask="false">5000</Config>
+  <Config Name="Puppeteer Timeout (ms)" Target="PUPPETEER_TIMEOUT" Default="10000" Mode="" Description="Max wait time for headless browser" Type="Variable" Display="advanced" Required="false" Mask="false">10000</Config>
+  <Config Name="Server Timeout (ms)" Target="SERVER_TIMEOUT" Default="30000" Mode="" Description="Max time for background processing to update cache" Type="Variable" Display="advanced" Required="false" Mask="false">30000</Config>
 </Container>

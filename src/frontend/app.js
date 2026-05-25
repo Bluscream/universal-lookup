@@ -140,6 +140,7 @@
     // Premium custom cards
     const isSteam = reqType === 'steam' || 'steam_id_64' in response;
     const isUrl = reqType === 'url' || 'landing_url' in response;
+    const isApk = reqType === 'apk' || 'package_name' in response;
 
     let excludedKeys = [];
 
@@ -180,6 +181,15 @@
       excludedKeys = [
         'query', 'landing_url', 'http_status', 'content_type', 'content_length', 'server',
         'powered_by', 'redirect_chain', 'is_redirected', 'security_headers', 'ssl', 'meta'
+      ];
+    } else if (isApk) {
+      const apkCard = createApkCard(response);
+      if (apkCard) resultCards.appendChild(apkCard);
+
+      excludedKeys = [
+        'package_name', 'package', 'title', 'version', 'versionName', 'developer', 'developer_email',
+        'score', 'installs', 'genre', 'price', 'is_free', 'free_provider', 'updated', 'url', 'icon',
+        'downloads', 'application', 'manifest', 'usesPermissions', 'permissions', 'checksums', 'filelist'
       ];
     }
 

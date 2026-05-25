@@ -94,6 +94,7 @@ export const config = {
   requireToken: env('REQUIRE_TOKEN'), // If set, require this token via ?token= or Authorization header
   disableRaw: envBool('DISABLE_RAW', false), // Disable ?raw query param
   disableFresh: envBool('DISABLE_FRESH', false), // Disable ?fresh query param
+  disableWait: envBool('DISABLE_WAIT', false), // Disable ?wait query param
 
   // Rate Limiting (our API)
   rateLimitMax: envInt('RATE_LIMIT_MAX', 100), // Max requests per window
