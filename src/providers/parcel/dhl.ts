@@ -23,7 +23,7 @@ export const dhl: Provider = {
       const url = `https://api-eu.dhl.com/track/shipments?trackingNumber=${encodeURIComponent(query)}`;
 
       const resp = await axios.get(url, {
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
         headers: {
           'DHL-API-Key': apiKey,
         },

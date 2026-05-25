@@ -1,17 +1,59 @@
+import { existsSync } from 'node:fs';
 import puppeteer, { type Browser } from 'puppeteer';
 import { cloudscraperGet } from './cloudscraper-fetch.js';
 import { config } from '../config.js';
 
+/** Common system Chromium paths (Docker / Unraid). */
+const CHROMIUM_CANDIDATES = [
+  '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
+  '/usr/bin/google-chrome-stable',
+];
+
 let browser: Browser | null = null;
+let resolvedExecutablePath: string | undefined;
+
+/**
+ * Resolve Chromium binary. Unraid templates often set PUPPETEER_EXECUTABLE_PATH=""
+ * which overrides the image ENV; auto-detect when unset or empty.
+ */
+export function resolvePuppeteerExecutablePath(): string | undefined {
+  if (resolvedExecutablePath !== undefined) {
+    return resolvedExecutablePath || undefined;
+  }
+
+  const fromEnv = config.puppeteerExecutablePath.trim();
+  if (fromEnv) {
+    resolvedExecutablePath = fromEnv;
+    return fromEnv;
+  }
+
+  for (const candidate of CHROMIUM_CANDIDATES) {
+    if (existsSync(candidate)) {
+      resolvedExecutablePath = candidate;
+      return candidate;
+    }
+  }
+
+  resolvedExecutablePath = '';
+  return undefined;
+}
 
 export async function getBrowser(): Promise<Browser> {
   if (browser?.connected) {
     return browser;
   }
 
+  const executablePath = resolvePuppeteerExecutablePath();
+  if (!executablePath) {
+    throw new Error(
+      'Chromium not found. Set PUPPETEER_EXECUTABLE_PATH (e.g. /usr/bin/chromium) or install system Chromium.',
+    );
+  }
+
   browser = await puppeteer.launch({
     headless: true,
-    executablePath: config.puppeteerExecutablePath || undefined,
+    executablePath,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',

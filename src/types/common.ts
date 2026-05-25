@@ -9,6 +9,7 @@ export type LookupType =
   | 'web'
   | 'steam'
   | 'url'
+  | 'apk'
   | 'auto';
 
 export interface SearchResult {

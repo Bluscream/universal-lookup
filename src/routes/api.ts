@@ -12,6 +12,7 @@ import { lookupSteam } from '../providers/steam/index.js';
 import { lookupTel } from '../providers/tel/index.js';
 import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
+import { lookupApk } from '../providers/apk/index.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
 const VALID_TYPES = new Set<string>([
@@ -24,6 +25,7 @@ const VALID_TYPES = new Set<string>([
   'web',
   'steam',
   'url',
+  'apk',
   'auto',
 ]);
 
@@ -264,12 +266,16 @@ async function handleLookup(
   }
 
   // Run providers
-  let results: ProviderResult[] = [];
+  let clientResults: ProviderResult[] = [];
+  let serverPromise: Promise<ProviderResult[]>;
 
   if (type === 'auto' && (resolvedType === 'ip' || resolvedType === 'domain')) {
     // Dual lookup logic
-    const firstResults = await getLookupFunction(resolvedType)(normalizedQuery, resolvedType);
-    results = [...firstResults];
+    const firstDual = getLookupFunction(resolvedType)(normalizedQuery, resolvedType);
+    const firstResults = await firstDual.clientPromise;
+    clientResults = [...firstResults];
+
+    let secondDual: import('../lib/providers.js').DualPromiseResult | null = null;
 
     // Attempt to find the "other" query
     if (resolvedType === 'ip') {
@@ -277,8 +283,7 @@ async function handleLookup(
       const dnsResult = firstResults.find((r) => r.provider === 'dns' && r.success);
       const domain = (dnsResult?.data?.reverse_dns as string[])?.[0];
       if (domain) {
-        const domainResults = await lookupDomain(domain, 'domain');
-        results = [...results, ...domainResults];
+        secondDual = lookupDomain(domain, 'domain');
       }
     } else {
       // Domain -> IP
@@ -286,21 +291,32 @@ async function handleLookup(
       const ip =
         (dnsResult?.data?.dns_a as string[])?.[0] || (dnsResult?.data?.dns_aaaa as string[])?.[0];
       if (ip) {
-        const ipResults = await lookupIp(ip, 'ip');
-        results = [...results, ...ipResults];
+        secondDual = lookupIp(ip, 'ip');
       }
+    }
+
+    if (secondDual) {
+      const secondResults = await secondDual.clientPromise;
+      clientResults = [...clientResults, ...secondResults];
+      serverPromise = Promise.all([firstDual.serverPromise, secondDual.serverPromise]).then(
+        ([a, b]) => [...a, ...b]
+      );
+    } else {
+      serverPromise = firstDual.serverPromise;
     }
   } else {
     // Normal single lookup
     const lookupFn = getLookupFunction(resolvedType);
-    results = await lookupFn(normalizedQuery, resolvedType);
+    const dual = lookupFn(normalizedQuery, resolvedType);
+    clientResults = await dual.clientPromise;
+    serverPromise = dual.serverPromise;
   }
 
-  // Build response
-  let merged = mergeResponses(results);
-  const errors = collectErrors(results);
-  const raw = includeRaw ? collectRaw(results) : {};
-  let success = results.some((r) => r.success);
+  // Build client response
+  let merged = mergeResponses(clientResults);
+  const errors = collectErrors(clientResults);
+  const raw = includeRaw ? collectRaw(clientResults) : {};
+  let success = clientResults.some((r) => r.success);
 
   // Apply special info if it was a special number
   if (specialInfo) {
@@ -327,9 +343,38 @@ async function handleLookup(
     },
   };
 
-  // Cache the response (with raw for potential future ?raw requests)
-  const fullResponse = { ...response, raw: collectRaw(results) };
+  // Cache the initial response (with full raw for potential future ?raw requests)
+  const fullResponse = { ...response, raw: collectRaw(clientResults) };
   setCache(type, normalizedQuery, fullResponse, getCacheTtl(type));
+
+  // Background caching: wait for server promise and update cache if needed
+  serverPromise.then((serverResults) => {
+    let finalMerged = mergeResponses(serverResults);
+    if (specialInfo) {
+      finalMerged = {
+        ...finalMerged,
+        name: specialInfo.name,
+        number_type: specialInfo.number_type,
+        phone: normalizedQuery,
+      };
+    }
+    const finalResponse: LookupResponse = {
+      lookup_time: `${Date.now() - startTime}ms (background)`,
+      success: serverResults.some((r) => r.success) || !!specialInfo,
+      response: finalMerged,
+      errors: collectErrors(serverResults),
+      raw: collectRaw(serverResults), // Always cache full raw
+      request: {
+        time: new Date().toISOString(),
+        ip: clientIp,
+        type: resolvedType,
+        query: normalizedQuery,
+      },
+    };
+    setCache(type, normalizedQuery, finalResponse, getCacheTtl(type));
+  }).catch(() => {
+    // Ignore background errors
+  });
 
   return sortObjectKeys(deepClean(response)) as LookupResponse;
 }
@@ -354,6 +399,8 @@ function getLookupFunction(type: LookupType) {
       return lookupSteam;
     case 'url':
       return lookupUrl;
+    case 'apk':
+      return lookupApk;
     default:
       return lookupWeb;
   }

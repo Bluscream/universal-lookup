@@ -17,9 +17,9 @@ export const pingProvider: Provider = {
     const start = Date.now();
     try {
       const isWin = platform() === 'win32';
-      const t = Math.max(1, Math.floor(config.providerTimeout / 1000));
+      const t = Math.max(1, Math.floor(config.serverTimeout / 1000));
       const cmd = isWin ? `ping -n 3 -w ${t * 1000} ${query}` : `ping -c 3 -W ${t} ${query}`;
-      const { stdout } = await execAsync(cmd, { timeout: config.providerTimeout + 2000 });
+      const { stdout } = await execAsync(cmd, { timeout: config.serverTimeout + 2000 });
       return {
         provider: PROVIDER_NAME,
         success: true,

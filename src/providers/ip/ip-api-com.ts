@@ -40,7 +40,7 @@ export const ipApiCom: Provider = {
         'status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query';
 
       const url = `${protocol}://ip-api.com/json/${encodeURIComponent(query)}?fields=${fields}${keyParam}`;
-      const response = await axios.get(url, { timeout: config.providerTimeout });
+      const response = await axios.get(url, { timeout: config.serverTimeout });
 
       decrementRateLimit(PROVIDER_NAME);
       updateRateLimit(PROVIDER_NAME, response.headers as Record<string, string>);

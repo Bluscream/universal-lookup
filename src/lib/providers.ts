@@ -1,4 +1,5 @@
-import type { Provider } from '../types/common.js';
+import { config } from '../config.js';
+import type { LookupType, Provider, ProviderResult } from '../types/common.js';
 
 /**
  * Filter and sort providers based on a comma-separated list of names.
@@ -47,3 +48,65 @@ export function filterAndSortProviders(allProviders: Provider[], names?: string)
 
   return sorted;
 }
+
+export interface DualPromiseResult {
+  clientPromise: Promise<ProviderResult[]>;
+  serverPromise: Promise<ProviderResult[]>;
+}
+
+/**
+ * Execute providers with a dual-timeout strategy.
+ * Returns a clientPromise that resolves after CLIENT_TIMEOUT (with whatever is ready or timed out),
+ * and a serverPromise that resolves after SERVER_TIMEOUT (with the absolute final results).
+ */
+export function executeProvidersBackground(
+  providers: Provider[],
+  query: string,
+  type?: LookupType,
+  originalQuery?: string,
+): DualPromiseResult {
+  // Wrap each provider execution in a promise that respects the SERVER_TIMEOUT
+  const providerPromises = providers.map(async (provider) => {
+    try {
+      const result = await Promise.race([
+        provider.lookup(query, type, originalQuery),
+        new Promise<ProviderResult>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), config.serverTimeout),
+        ),
+      ]);
+      return result;
+    } catch (error) {
+      return {
+        provider: provider.name,
+        success: false,
+        data: {},
+        error: error instanceof Error ? error.message : String(error),
+        duration: config.serverTimeout,
+      };
+    }
+  });
+
+  // Client promise: Waits up to CLIENT_TIMEOUT for whatever has finished
+  const clientPromise = Promise.all(
+    providerPromises.map((p, index) =>
+      Promise.race([
+        p,
+        new Promise<ProviderResult>((resolve) =>
+          setTimeout(() => resolve({
+            provider: providers[index].name,
+            success: false,
+            data: {},
+            error: 'Timeout (Background processing)',
+            duration: config.clientTimeout,
+          }), config.clientTimeout),
+        ),
+      ]),
+    ),
+  );
+
+  // Server promise: Waits up to SERVER_TIMEOUT for absolutely everything
+  const serverPromise = Promise.all(providerPromises);
+
+  return { clientPromise, serverPromise };
+}
+

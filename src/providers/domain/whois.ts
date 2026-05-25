@@ -26,7 +26,7 @@ export const whois: Provider = {
       const raw = await new Promise<string>((resolve, reject) => {
         whoisLib.lookup(
           query,
-          { timeout: config.providerTimeout },
+          { timeout: config.serverTimeout },
           (err: Error | null, data: string) => {
             if (err) reject(err);
             else resolve(data);

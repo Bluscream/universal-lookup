@@ -23,7 +23,7 @@ export const nominatim: Provider = {
       }
 
       const resp = await axios.get(url, {
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
         headers: {
           'User-Agent': 'universal-lookup/1.0 (https://github.com/Bluscream/universal-lookup)',
         },

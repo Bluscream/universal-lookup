@@ -30,7 +30,7 @@ export const steamXmlProvider: Provider = {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
       });
 
       const $ = cheerio.load(response.data, { xmlMode: true });

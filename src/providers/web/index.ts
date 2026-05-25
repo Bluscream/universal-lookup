@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import { filterAndSortProviders } from '../../lib/providers.js';
+import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
 import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
 import type { LookupType, Provider, ProviderResult, SearchResult } from '../../types/common.js';
 
@@ -105,7 +105,7 @@ export const googleProvider: Provider = {
     if (config.googleApiKey && config.googleSearchCx) {
       try {
         const url = `https://www.googleapis.com/customsearch/v1?key=${config.googleApiKey}&cx=${config.googleSearchCx}&q=${encodeURIComponent(query)}&num=${limit || 10}`;
-        const resp = await axios.get(url, { timeout: config.providerTimeout });
+        const resp = await axios.get(url, { timeout: config.serverTimeout });
         const items = resp.data.items || [];
         const results: SearchResult[] = items.map(
           (item: { title?: string; link?: string; snippet?: string }) => ({
@@ -262,43 +262,11 @@ export const yahooProvider: Provider = {
 
 const ALL_WEB_PROVIDERS = [googleProvider, bingProvider, duckduckgoProvider, yahooProvider];
 
-export async function lookupWeb(
+export function lookupWeb(
   query: string,
   type: LookupType = 'web',
-): Promise<ProviderResult[]> {
+): DualPromiseResult {
   const providers = filterAndSortProviders(ALL_WEB_PROVIDERS, config.providersWeb);
 
-  const results = await Promise.allSettled(
-    providers.map((provider) =>
-      Promise.race([
-        provider.lookup(query, type),
-        new Promise<ProviderResult>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`${provider.name} provider timed out`)),
-            config.providerTimeout + 2000,
-          ),
-        ),
-      ]).catch(
-        (error): ProviderResult => ({
-          provider: provider.name,
-          success: false,
-          data: {},
-          error: error instanceof Error ? error.message : String(error),
-          duration: config.providerTimeout,
-        }),
-      ),
-    ),
-  );
-
-  return results.map((r) =>
-    r.status === 'fulfilled'
-      ? r.value
-      : {
-          provider: 'unknown',
-          success: false,
-          data: {},
-          error: 'Promise rejected',
-          duration: 0,
-        },
-  );
+  return executeProvidersBackground(providers, query, type);
 }

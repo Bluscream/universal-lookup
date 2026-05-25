@@ -42,7 +42,7 @@ export const backpackTfProvider: Provider = {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
       });
 
       const player = res.data?.response?.players?.[steamId];

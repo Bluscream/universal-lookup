@@ -21,7 +21,7 @@
   const optFresh = document.getElementById('opt-fresh');
 
   const PLACEHOLDERS = {
-    auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID...',
+    auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
     ip: 'e.g. 8.8.8.8',
     domain: 'e.g. google.com',
     tel: 'e.g. +493012345678',
@@ -30,6 +30,7 @@
     parcel: 'e.g. 00340434515310596216',
     steam: 'e.g. 76561197960287930 or steamcommunity.com/id/gabelogannewell',
     url: 'e.g. https://github.com or google.com',
+    apk: 'e.g. com.google.android.youtube or Play Store URL',
     web: 'e.g. what is my ip, tellows 01756350071',
   };
 
@@ -82,7 +83,7 @@
 
   // Parse URL on load (e.g. /ip/8.8.8.8)
   const pathMatch = location.pathname.match(
-    /^\/(auto|tel|ip|domain|email|location|parcel|web|steam|url)\/(.+)$/,
+    /^\/(auto|tel|ip|domain|email|location|parcel|web|steam|url|apk)\/(.+)$/,
   );
   if (pathMatch) {
     typeSelect.value = pathMatch[1];

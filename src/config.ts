@@ -31,8 +31,9 @@ export const config = {
   cacheTtlParcel: envInt('CACHE_TTL_PARCEL', 3600), // 1 hour
 
   // Timeouts
-  providerTimeout: envInt('PROVIDER_TIMEOUT', 10000),
-  puppeteerTimeout: envInt('PUPPETEER_TIMEOUT', 15000),
+  clientTimeout: envInt('CLIENT_TIMEOUT', 5000),
+  serverTimeout: envInt('SERVER_TIMEOUT', 30000),
+  puppeteerTimeout: envInt('PUPPETEER_TIMEOUT', 10000),
 
   // API Keys
   ipApiComKey: env('IP_API_COM_KEY'),

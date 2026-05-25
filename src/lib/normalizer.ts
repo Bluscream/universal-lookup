@@ -223,6 +223,8 @@ export async function normalizeQuery(type: LookupType, input: string): Promise<s
       return normalizeSteam(input);
     case 'url':
       return normalizeUrl(input);
+    case 'apk':
+      return input.trim();
     default:
       return input.trim();
   }
@@ -245,7 +247,19 @@ export function detectType(query: string): LookupType {
     return 'steam';
   }
 
-  // 2. Explicit URLs
+  // 2. APK Providers
+  if (
+    /play\.google\.com\/store\/apps\/details/i.test(trimmed) ||
+    /apkmirror\.com/i.test(trimmed) ||
+    /apkpure\.com/i.test(trimmed) ||
+    /aptoide\.com/i.test(trimmed) ||
+    // Simple heuristic for Android package names (e.g., com.google.android.youtube)
+    /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+[0-9a-z_]$/i.test(trimmed) && (trimmed.startsWith('com.') || trimmed.startsWith('net.') || trimmed.startsWith('org.'))
+  ) {
+    return 'apk';
+  }
+
+  // 3. Explicit URLs
   if (/^https?:\/\//i.test(trimmed)) {
     return 'url';
   }

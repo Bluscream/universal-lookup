@@ -22,7 +22,7 @@ export const googleMaps: Provider = {
         url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(loc.query)}&key=${config.googleApiKey}`;
       }
 
-      const resp = await axios.get(url, { timeout: config.providerTimeout });
+      const resp = await axios.get(url, { timeout: config.serverTimeout });
       const raw = resp.data;
 
       if (raw.status !== 'OK' || !raw.results?.length) {

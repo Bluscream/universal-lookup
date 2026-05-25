@@ -27,7 +27,7 @@ export const virustotalProvider: Provider = {
         headers: {
           'x-apikey': config.virustotalApiKey,
         },
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
       });
 
       const raw = response.data;

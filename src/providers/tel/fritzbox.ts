@@ -53,7 +53,7 @@ export const fritzbox: Provider = {
 
       const performSoapRequest = async (body: string, authHeader?: string) => {
         return axios.post(soapUrl, body, {
-          timeout: config.providerTimeout,
+          timeout: config.serverTimeout,
           httpsAgent,
           headers: {
             'Content-Type': 'text/xml; charset="utf-8"',
@@ -129,7 +129,7 @@ export const fritzbox: Provider = {
 
           const phonebookUrl = urlMatch[1].replace(/&amp;/g, '&');
           const pbResp = await axios.get(phonebookUrl, {
-            timeout: config.providerTimeout,
+            timeout: config.serverTimeout,
             httpsAgent,
           });
           pbData = pbResp.data as string;

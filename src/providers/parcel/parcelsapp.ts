@@ -40,7 +40,7 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
   const url = `https://parcelsapp.com/api/v1/parcels/${encodeURIComponent(query)}/Auto%20Detect/en/Germany/Default/android`;
 
   const resp = await axios.get(url, {
-    timeout: config.providerTimeout,
+    timeout: config.serverTimeout,
     headers: {
       'User-Agent': 'ParcelsApp/3.0 (Android)',
       Accept: 'application/json',
@@ -92,7 +92,7 @@ async function lookupV3(query: string, start: number): Promise<ProviderResult> {
       shipments: [{ trackingId: query, language: 'en', country: 'Germany' }],
       apiKey: config.parcelsAppApiKey,
     },
-    { timeout: config.providerTimeout },
+    { timeout: config.serverTimeout },
   );
 
   const uuid = initResp.data?.uuid;
@@ -115,7 +115,7 @@ async function lookupV3(query: string, start: number): Promise<ProviderResult> {
     const pollResp = await axios.get(
       `https://parcelsapp.com/api/v3/shipments?apiKey=${config.parcelsAppApiKey}&uuid=${uuid}`,
       {
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
       },
     );
     if (pollResp.data?.done || pollResp.data?.shipments?.length) {

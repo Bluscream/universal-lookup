@@ -24,7 +24,7 @@ export const playerDbProvider: Provider = {
         headers: {
           'User-Agent': 'Universal-Lookup/1.0 (https://github.com/Bluscream/universal-lookup)',
         },
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
       });
 
       const raw = response.data;

@@ -32,7 +32,8 @@ export const ipInfoProvider: Provider = {
 
     try {
       // Run the existing IP lookup pipeline
-      const ipResults = await lookupIp(query, 'ip');
+      const ipDual = lookupIp(query, 'ip');
+      const ipResults = await ipDual.clientPromise;
       const merged = mergeResponses(ipResults);
       const success = ipResults.some((r) => r.success);
 

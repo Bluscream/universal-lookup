@@ -49,7 +49,7 @@ export const steamInventoryProvider: Provider = {
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
               },
-              timeout: Math.min(5000, config.providerTimeout), // Fail fast for single game inventories
+              timeout: Math.min(5000, config.serverTimeout), // Fail fast for single game inventories
             });
 
             const data = resp.data;

@@ -36,7 +36,7 @@ export const ipApiIoRisk: Provider = {
       const url = `https://ip-api.io/api/v1/risk/ip/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`;
 
       const response = await axios.get(url, {
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
       });
 
       decrementRateLimit(PROVIDER_NAME);

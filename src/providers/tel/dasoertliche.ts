@@ -17,7 +17,7 @@ export const dasoertliche: Provider = {
       const num = query.replace(/^0049/, '0').replace(/^00/, '');
       const url = `https://www.dasoertliche.de/rueckwaertssuche/?ph=${encodeURIComponent(num)}`;
       const resp = await axios.get(url, {
-        timeout: config.providerTimeout,
+        timeout: config.serverTimeout,
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

@@ -37,7 +37,7 @@ async function lookupApi(num: string, start: number): Promise<ProviderResult> {
   // API uses national format (0xxx)
   const apiNum = num.replace(/^0049/, '0').replace(/^00/, '');
   const url = `https://www.tellows.de/basic/num/${apiNum}?json=1&partner=${config.tellowsApiKey}`;
-  const resp = await axios.get(url, { timeout: config.providerTimeout });
+  const resp = await axios.get(url, { timeout: config.serverTimeout });
   const raw = resp.data;
   const tel = raw?.tellows;
   if (!tel) {
@@ -72,7 +72,7 @@ async function lookupApi(num: string, start: number): Promise<ProviderResult> {
 async function lookupScrape(num: string, start: number): Promise<ProviderResult> {
   const url = `https://www.tellows.de/num/${encodeURIComponent(num)}`;
   const resp = await axios.get(url, {
-    timeout: config.providerTimeout,
+    timeout: config.serverTimeout,
     headers: {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

@@ -114,7 +114,7 @@ export const subdomainProvider: Provider = {
 
 async function searchCrtSh(domain: string): Promise<string[]> {
   const resp = await axios.get(`https://crt.sh/?q=%25.${encodeURIComponent(domain)}&output=json`, {
-    timeout: config.providerTimeout,
+    timeout: config.serverTimeout,
   });
   const subs = new Set<string>();
   for (const entry of resp.data) {

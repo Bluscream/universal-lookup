@@ -23,7 +23,7 @@ export const tracerouteProvider: Provider = {
         : `traceroute -n -m ${maxHops} -w 1 ${query}`;
 
       const { stdout } = await execAsync(cmd, {
-        timeout: Math.min(config.providerTimeout * 2, 30000),
+        timeout: Math.min(config.serverTimeout * 2, 30000),
       });
 
       const { hops, totalHops } = parseTraceroute(stdout, isWin);

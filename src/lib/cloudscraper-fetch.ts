@@ -8,7 +8,7 @@ export function cloudscraperGet(options: CloudscraperGetOptions): Promise<string
     cloudscraper.get(
       {
         ...options,
-        timeout: options.timeout ?? config.providerTimeout,
+        timeout: options.timeout ?? config.serverTimeout,
       },
       (error, response, body) => {
         if (error) {

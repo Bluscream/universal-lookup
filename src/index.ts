@@ -11,6 +11,7 @@ import { config } from './config.js';
 import { cleanExpiredCache, getCacheStats } from './db/cache.js';
 import { closeDatabase, initDatabase } from './db/migrations.js';
 import { ensureMaxmindDbs } from './lib/maxmind-downloader.js';
+import { resolvePuppeteerExecutablePath } from './lib/puppeteer.js';
 import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,6 +28,15 @@ async function main() {
 
   // Auto-download MaxMind DBs if missing
   await ensureMaxmindDbs();
+
+  const chromiumPath = resolvePuppeteerExecutablePath();
+  if (chromiumPath) {
+    console.log(`🌐 Puppeteer Chromium: ${chromiumPath}`);
+  } else {
+    console.warn(
+      '⚠️  Chromium not found — parcel/web scrapers needing Puppeteer will fail until PUPPETEER_EXECUTABLE_PATH is set',
+    );
+  }
 
   // Create Fastify instance
   const app = Fastify({
@@ -202,6 +212,12 @@ async function main() {
           description:
             'SSL certificates, redirect chains, HTML metadata, threat analysis, DNS/IP lookup',
           example: 'https://github.com',
+        },
+        {
+          id: 'apk',
+          name: 'APK Packages',
+          description: 'Google Play metadata and APK download links from Aptoide, APKMirror, APKPure',
+          example: 'com.google.android.apps.authenticator2',
         },
       ],
     }),

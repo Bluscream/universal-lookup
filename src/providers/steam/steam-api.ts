@@ -31,7 +31,7 @@ export const steamApiProvider: Provider = {
       // 1. Resolve vanity URL if it's not a SteamID64 (digits of length 17)
       if (!/^[0-9]{17}$/.test(steamId64)) {
         const resolveUrl = `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=${key}&vanityurl=${encodeURIComponent(steamId64)}`;
-        const resolveResp = await axios.get(resolveUrl, { timeout: config.providerTimeout });
+        const resolveResp = await axios.get(resolveUrl, { timeout: config.serverTimeout });
         const resolveData = resolveResp.data.response;
 
         if (resolveData?.success === 1 && resolveData.steamid) {
@@ -54,9 +54,9 @@ export const steamApiProvider: Provider = {
       const ownedGamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${key}&steamid=${steamId64}&include_appinfo=true&include_played_free_games=true`;
 
       const [summariesResp, bansResp, ownedGamesResp] = await Promise.all([
-        axios.get(summariesUrl, { timeout: config.providerTimeout }).catch(() => null),
-        axios.get(bansUrl, { timeout: config.providerTimeout }).catch(() => null),
-        axios.get(ownedGamesUrl, { timeout: config.providerTimeout }).catch(() => null),
+        axios.get(summariesUrl, { timeout: config.serverTimeout }).catch(() => null),
+        axios.get(bansUrl, { timeout: config.serverTimeout }).catch(() => null),
+        axios.get(ownedGamesUrl, { timeout: config.serverTimeout }).catch(() => null),
       ]);
 
       const summaryRaw = summariesResp?.data?.response?.players?.[0];

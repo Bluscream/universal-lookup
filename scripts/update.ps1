@@ -138,20 +138,34 @@ if (-not $SkipDocker) {
 }
 
 # 6. Unraid Template Deploy
+# Stock templates: unraid/*.xml -> templates-user/universal-lookup*.xml
+# Running containers use my-* templates (Unraid prefix for installed/customized containers).
 if (Test-Path $NasTemplatePath) {
-    Write-Host "Copying XML templates to NAS..." -ForegroundColor Cyan
-    Copy-Item "unraid\*.xml" $NasTemplatePath -Force
-    Write-Host "Templates copied to $NasTemplatePath" -ForegroundColor Green
+    Write-Host "Copying stock XML templates to NAS..." -ForegroundColor Cyan
+    Copy-Item "unraid\universal-lookup.xml" $NasTemplatePath -Force
+    Copy-Item "unraid\universal-lookup-tailscale.xml" $NasTemplatePath -Force
+    Write-Host "Stock templates copied to $NasTemplatePath" -ForegroundColor Green
+    $myTemplate = Join-Path $NasTemplatePath "my-universal-lookup.xml"
+    if (Test-Path $myTemplate) {
+        Write-Host "Merging new fields into my-universal-lookup.xml (preserving your settings)..." -ForegroundColor Cyan
+        & "$PSScriptRoot\merge-unraid-my-template.ps1" -MyTemplatePath $myTemplate -BaseTemplatePath "unraid\universal-lookup.xml"
+    } else {
+        Write-Host "No my-universal-lookup.xml on NAS; only stock templates were updated." -ForegroundColor Yellow
+    }
 } else {
     Write-Warning "NAS template path not found: $NasTemplatePath"
-    Write-Host "Skipping NAS upload. Please ensure your Unraid flash drive is mounted or update the path in this script." -ForegroundColor Yellow
-    Write-Host "If you're an agent reading this, please use your ssh mcp to upload to /boot/config/plugins/dockerMan/templates-user/my-universal-lookup.xml"
+    Write-Host "Skipping NAS upload. Mount \\UNRAID\flash\... or run: .\scripts\merge-unraid-my-template.ps1 then upload my-universal-lookup.xml via SSH." -ForegroundColor Yellow
 }
 
 # 7. NPM Publish
 if (-not $SkipNpm) {
-    if (-not $env:NPM_TOKEN) {
-        $env:NPM_TOKEN = [Environment]::GetEnvironmentVariable("NPM_TOKEN", "User")
+    if ($env:ChocolateyInstall -and (Test-Path "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1")) {
+        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+        refreshenv | Out-Null
+    }
+    $userToken = [Environment]::GetEnvironmentVariable("NPM_TOKEN", "User")
+    if ($userToken) {
+        $env:NPM_TOKEN = $userToken
     }
 
     if ($env:NPM_TOKEN) {
@@ -159,10 +173,23 @@ if (-not $SkipNpm) {
         # Create .npmrc with token
         Set-Content -Path ".npmrc" -Value "//registry.npmjs.org/:_authToken=$($env:NPM_TOKEN)"
         try {
-            npm publish --access public
-            Write-Host "npm publish complete." -ForegroundColor Green
+            $prevEap = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            npm publish --access public 2>&1 | Out-Host
+            $publishExit = $LASTEXITCODE
+            $ErrorActionPreference = $prevEap
+            if ($publishExit -ne 0) {
+                if ($IgnoreErrors) {
+                    Write-Host "npm publish failed (Exit Code: $publishExit) but IgnoreErrors is set. Continuing..." -ForegroundColor Yellow
+                } else {
+                    Write-Host "npm publish failed (Exit Code: $publishExit). Check NPM_TOKEN is valid and belongs to package maintainer 'bluscream1'." -ForegroundColor Red
+                    exit $publishExit
+                }
+            } else {
+                Write-Host "npm publish complete." -ForegroundColor Green
+            }
         } finally {
-            Remove-Item ".npmrc" -Force
+            Remove-Item ".npmrc" -Force -ErrorAction SilentlyContinue
         }
     } else {
         Write-Host "NPM_TOKEN not found in environment. Skipping npm publish." -ForegroundColor Yellow

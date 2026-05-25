@@ -36,7 +36,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Bluscream/universal-lookup.git"
+    "url": "git+https://github.com/Bluscream/universal-lookup.git"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -54,7 +54,9 @@
     "cloudscraper": "^4.6.0",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
+    "google-play-scraper": "^10.1.2",
     "ping": "^1.0.0",
+    "pkge-client": "^0.1.0",
     "puppeteer": "^24.43.0",
     "sql.js": "^1.14.1",
     "whois": "^2.16.1",

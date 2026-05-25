@@ -134,4 +134,12 @@ describe('detectType', () => {
   it('auto-detects url type', () => {
     expect(detectType('https://github.com/Bluscream')).toBe('url');
   });
+
+  it('auto-detects apk type', () => {
+    expect(detectType('https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2')).toBe('apk');
+    expect(detectType('https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=com.google.android.youtube')).toBe('apk');
+    expect(detectType('https://m.apkpure.com/search?q=net.wooga.junes')).toBe('apk');
+    expect(detectType('https://ws75.aptoide.com/api/7/app/get?package_name=com.whatsapp')).toBe('apk');
+    expect(detectType('com.google.android.apps.authenticator2')).toBe('apk');
+  });
 });

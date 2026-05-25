@@ -6,6 +6,7 @@ dist/
 
 # Environment (contains secrets)
 .env
+unraid/*.nas
 
 # Data (runtime caches, databases, MaxMind DBs)
 data/
@@ -36,3 +37,6 @@ coverage/
 
 # Puppeteer cache
 .cache/puppeteer/
+.playwright-mcp/
+*_test.json
+tracking_page.html

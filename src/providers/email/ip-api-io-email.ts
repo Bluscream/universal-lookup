@@ -27,7 +27,7 @@ export const ipApiIoEmail: Provider = {
       const resp = await axios.get(
         `https://ip-api.io/api/v1/email/validate/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`,
         {
-          timeout: config.providerTimeout,
+          timeout: config.serverTimeout,
         },
       );
       decrementRateLimit(PROVIDER_NAME);

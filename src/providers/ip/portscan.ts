@@ -47,7 +47,7 @@ export const portscanProvider: Provider = {
         }
       }
 
-      const timeout = Math.min(2000, config.providerTimeout / 10);
+      const timeout = Math.min(2000, config.serverTimeout / 10);
       const portEntries = Object.entries(COMMON_PORTS);
 
       const results = await Promise.allSettled(

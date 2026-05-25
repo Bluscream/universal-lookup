@@ -96,7 +96,7 @@ export const metadataProvider: Provider = {
           const resp = await axios.get(currentUrl, {
             maxRedirects: 0,
             validateStatus: (status) => status >= 200 && status < 400,
-            timeout: Math.min(5000, config.providerTimeout),
+            timeout: Math.min(5000, config.serverTimeout),
             headers: {
               'User-Agent':
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
