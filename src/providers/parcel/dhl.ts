@@ -13,13 +13,16 @@ const PROVIDER_NAME = 'dhl';
 export const dhl: Provider = {
   name: PROVIDER_NAME,
   isAvailable() {
-    return true;
+    return !!config.dhlApiKey;
   },
 
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
     const start = Date.now();
     try {
-      const apiKey = config.dhlApiKey || 'demo-key';
+      const apiKey = config.dhlApiKey;
+      if (!apiKey) {
+        throw new Error('Missing DHL API Key');
+      }
       const url = `https://api-eu.dhl.com/track/shipments?trackingNumber=${encodeURIComponent(query)}`;
 
       const resp = await axios.get(url, {
