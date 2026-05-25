@@ -991,6 +991,80 @@
     return card;
   }
 
+  function createApkCard(res) {
+    if (!res.package_name && !res.package) return null;
+    
+    const card = document.createElement('div');
+    card.className = 'apk-card';
+    card.style.gridColumn = '1 / -1';
+    
+    const icon = res.icon || 'https://via.placeholder.com/128';
+    const title = res.title || res.package_name || res.package || 'Unknown App';
+    const developer = res.developer || 'Unknown Developer';
+    const devEmail = res.developer_email ? `<a href="mailto:${esc(res.developer_email)}" class="detail-link">${esc(res.developer_email)}</a>` : '';
+    const version = res.version || res.versionName || 'N/A';
+    const price = res.price || (res.is_free ? 'Free' : 'N/A');
+    const score = res.score ? parseFloat(res.score).toFixed(1) : 'N/A';
+    const installs = res.installs || 'N/A';
+    const genre = res.genre || 'N/A';
+    const updated = res.updated ? new Date(res.updated).toLocaleDateString() : 'N/A';
+    
+    let downloadsHtml = '';
+    if (res.downloads && res.downloads.length > 0) {
+      downloadsHtml = `
+        <div class="apk-downloads-section">
+          <h4 class="section-title">📥 Downloads</h4>
+          <div class="apk-downloads-list">
+            ${res.downloads.map(dl => `
+              <div class="apk-download-item">
+                <a href="${esc(dl.url)}" target="_blank" rel="noopener" class="detail-link">
+                  <span class="dl-source font-bold">${esc(dl.source)}</span>
+                </a>
+                <div class="download-badges">
+                  ${dl.size ? `<span class="badge badge-info">${(dl.size / 1024 / 1024).toFixed(2)} MB</span>` : ''}
+                  <span class="badge ${dl.status === 200 ? 'badge-success' : 'badge-danger'}">HTTP ${dl.status || 'Unknown'}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    card.innerHTML = `
+      <div class="url-meta-header apk-header">
+        <div class="url-favicon-wrapper apk-icon-wrapper">
+          <img src="${esc(icon)}" alt="App Icon" class="url-favicon apk-icon" onerror="this.style.display='none'">
+        </div>
+        <div class="url-title-wrapper">
+          <h3 class="url-page-title">${esc(title)} <span class="badge badge-info">${esc(version)}</span></h3>
+          <div class="apk-developer" style="font-size:0.8rem;color:var(--text-secondary);">
+            ${esc(developer)} ${devEmail ? `(${devEmail})` : ''}
+          </div>
+        </div>
+        <div class="url-status-badge download-badges">
+          <span class="badge badge-warning">⭐ ${score}</span>
+          <span class="badge badge-success">⬇️ ${esc(installs)}</span>
+          <span class="badge badge-primary">🏷️ ${esc(genre)}</span>
+          <span class="badge badge-dark">💰 ${esc(price)}</span>
+        </div>
+      </div>
+      <div class="ssl-details-grid apk-meta-details" style="padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top: 1rem;">
+        <div class="ssl-detail-item">
+          <span class="ssl-label">Package Name</span>
+          <span class="ssl-value mono">${esc(res.package_name || res.package)}</span>
+        </div>
+        <div class="ssl-detail-item">
+          <span class="ssl-label">Last Updated</span>
+          <span class="ssl-value">${esc(updated)}</span>
+        </div>
+      </div>
+      ${downloadsHtml}
+    `;
+    
+    return card;
+  }
+
   function esc(str) {
     if (str === null || str === undefined) return '';
     const d = document.createElement('div');
