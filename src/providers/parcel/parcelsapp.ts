@@ -39,10 +39,41 @@ export const parcelsapp: Provider = {
 async function lookupV1(query: string, start: number): Promise<ProviderResult> {
   const url = `https://parcelsapp.com/api/v1/parcels/${encodeURIComponent(query)}/Auto%20Detect/en/Germany/Default/android`;
 
-  const resp = await axios.get(url, {
+  // Synthesize settings array matching official Android app logic
+  const settings: unknown[] = [
+    true,                  // Settings:push
+    false,                 // Settings:subscribed
+    1716723120000,         // Settings:installedAt
+    0,                     // Settings:goods
+    5,                     // ReviewPromptStats:appOpens
+    0,                     // totalParcels
+    false,                 // dummy/ad-free
+    'Pixel 6',             // Model
+    'oriole',              // Device ID
+    '89201f99c0d12e4f',    // Unique ID
+    'Google',              // Manufacturer
+    'com.android.vending', // Installer
+    '3.0.2',               // Readable Version
+    query                  // Tracking Number
+  ];
+
+  // Replicate hash_32_gc calculation on settings string
+  const jsonStr = JSON.stringify(settings);
+  const hash = hash_32_gc(jsonStr, 978);
+  settings.push(hash);
+
+  const payload = [
+    {
+      slug: 'ahkref',
+      data: settings,
+    },
+  ];
+
+  const resp = await axios.post(url, payload, {
     timeout: config.serverTimeout,
     headers: {
       'User-Agent': 'ParcelsApp/3.0 (Android)',
+      'Content-Type': 'application/json',
       Accept: 'application/json',
     },
   });
@@ -82,6 +113,53 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
 
   return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };
 }
+
+/** JS-equivalent MurmurHash2 (32-bit) hashing function */
+function hash_32_gc(text: string, seed: number): number {
+  let length = text.length;
+  let h = seed ^ length;
+  let i = 0;
+  while (length >= 4) {
+    let k = (text.charCodeAt(i) & 0xFF) |
+            ((text.charCodeAt(i + 1) & 0xFF) << 8) |
+            ((text.charCodeAt(i + 2) & 0xFF) << 16) |
+            ((text.charCodeAt(i + 3) & 0xFF) << 24);
+
+    k = Math.imul(k, 1540483477);
+    k ^= k >>> 24;
+    k = Math.imul(k, 1540483477);
+
+    h = Math.imul(h, 1540483477);
+    h ^= k;
+
+    length -= 4;
+    i += 4;
+  }
+
+  switch (length) {
+    case 3:
+      h ^= (text.charCodeAt(i + 2) & 0xFF) << 16;
+      h ^= (text.charCodeAt(i + 1) & 0xFF) << 8;
+      h ^= (text.charCodeAt(i) & 0xFF);
+      h = Math.imul(h, 1540483477);
+      break;
+    case 2:
+      h ^= (text.charCodeAt(i + 1) & 0xFF) << 8;
+      h ^= (text.charCodeAt(i) & 0xFF);
+      h = Math.imul(h, 1540483477);
+      break;
+    case 1:
+      h ^= (text.charCodeAt(i) & 0xFF);
+      h = Math.imul(h, 1540483477);
+      break;
+  }
+
+  h ^= h >>> 13;
+  h = Math.imul(h, 1540483477);
+  h ^= h >>> 15;
+  return h >>> 0;
+}
+
 
 /** Authenticated v3 API (requires key) */
 async function lookupV3(query: string, start: number): Promise<ProviderResult> {
