@@ -1,4 +1,4 @@
-import { config, getCacheTtl } from '../../config.js';
+import { getCacheTtl } from '../../config.js';
 import { getCached, setCache } from '../../db/cache.js';
 import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
 import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
@@ -14,7 +14,7 @@ import {
   getApkSupportDownload,
 } from './subproviders/other.js';
 import type { ApkDownloadInfo } from './subproviders/aptoide.js';
-import { parseApkFromUrl, type ApkMetadata } from './subproviders/parser.js';
+import { parseApkFromUrl, } from './subproviders/parser.js';
 
 const PROVIDER_NAME = 'apk';
 
@@ -97,7 +97,7 @@ export const apkProvider: Provider = {
                 dl.size = parseInt(contentLength, 10);
               }
             }
-          } catch (err) {
+          } catch (_err) {
             dl.status = 0;
             dl.is_alive = false;
           }
@@ -126,7 +126,7 @@ export const apkProvider: Provider = {
                   ...cached.response,
                   ...parsedMetadata,
                 };
-                if (cached.raw && cached.raw.apk) {
+                if (cached.raw?.apk) {
                   cached.raw.apk = {
                     ...cached.raw.apk,
                     ...parsedMetadata,

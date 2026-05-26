@@ -1,6 +1,6 @@
 import { config } from '../../config.js';
 import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, } from '../../types/common.js';
 import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { dnsEmail } from './dns-email.js';
 import { ipApiIoAdvEmail } from './ip-api-io-adv.js';

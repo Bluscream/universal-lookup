@@ -1,6 +1,6 @@
 import { config } from '../../config.js';
 import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, } from '../../types/common.js';
 import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { seventeenTrack } from './17track.js';
 import { dhl } from './dhl.js';

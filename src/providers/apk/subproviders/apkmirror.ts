@@ -28,7 +28,7 @@ export async function getApkmirrorDownload(pkg: string): Promise<ApkDownloadInfo
       
       if (href && downloadHref) {
         // Extract version from title if possible (e.g. "App Name 1.2.3")
-        const versionMatch = title.match(/[\d\.]+/);
+        const versionMatch = title.match(/[\d.]+/);
         const version = versionMatch ? versionMatch[0] : undefined;
 
         downloads.push({

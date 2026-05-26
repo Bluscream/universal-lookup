@@ -1,6 +1,6 @@
 import { config } from '../../config.js';
 import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, } from '../../types/common.js';
 import { dnsLookupProvider } from './dns-lookup.js';
 import { ipInfoProvider } from './ip-info.js';
 import { metadataProvider } from './metadata.js';

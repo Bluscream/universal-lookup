@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import { pipeline } from 'node:stream/promises';
-// @ts-ignore
+// @ts-expect-error
 import AppInfoParser from 'app-info-parser';
 
 export interface ApkMetadata {
@@ -27,7 +27,6 @@ export async function parseApkFromUrl(url: string): Promise<ApkMetadata> {
     }
 
     const fileStream = fs.createWriteStream(filePath);
-    // @ts-ignore
     await pipeline(response.body, fileStream);
 
     // Compute checksums
