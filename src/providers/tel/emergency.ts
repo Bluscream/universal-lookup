@@ -1,10 +1,10 @@
 import { SPECIAL_NUMBERS } from '../../lib/normalizer.js';
-import type { Provider, ProviderResult } from '../../types/common.js';
+import type { Provider, ProviderResult, TelData } from '../../types/common.js';
 
 export const emergencyProvider: Provider = {
   name: 'emergency',
   isAvailable: () => true,
-  lookup: async (query: string): Promise<ProviderResult> => {
+  lookup: async (query: string): Promise<ProviderResult<TelData>> => {
     const start = Date.now();
     const info = SPECIAL_NUMBERS[query];
 
@@ -15,6 +15,10 @@ export const emergencyProvider: Provider = {
         data: {
           name: info.name,
           number_type: info.number_type,
+          phone: query,
+        },
+        raw: {
+          ...info,
           phone: query,
         },
         duration: Date.now() - start,

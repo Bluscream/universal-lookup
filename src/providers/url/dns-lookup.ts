@@ -1,5 +1,5 @@
 import { promises as dns } from 'node:dns';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, UrlData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns-lookup';
 
@@ -13,14 +13,14 @@ export const dnsLookupProvider: Provider = {
     return true; // Always available
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<UrlData>> {
     const start = Date.now();
 
     try {
       const urlObj = new URL(query);
       const hostname = urlObj.hostname;
 
-      const data: Record<string, unknown> = { hostname };
+      const data: UrlData = { hostname };
       const raw: Record<string, unknown> = {};
 
       const _results = await Promise.allSettled([

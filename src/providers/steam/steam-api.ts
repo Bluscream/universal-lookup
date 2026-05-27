@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'steam-api';
 
@@ -21,7 +21,7 @@ export const steamApiProvider: Provider = {
     return !!config.steamApiKey;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<SteamData>> {
     const start = Date.now();
     const key = config.steamApiKey;
 
@@ -74,7 +74,7 @@ export const steamApiProvider: Provider = {
       }
 
       // Map details
-      const data: Record<string, unknown> = {
+      const data: SteamData = {
         steam_id_64: steamId64,
         username: summaryRaw.personaname,
         profile_url: summaryRaw.profileurl,
@@ -108,7 +108,7 @@ export const steamApiProvider: Provider = {
       // Calculate owned games & playtime stats
       if (ownedGamesRaw) {
         data.game_count = ownedGamesRaw.game_count || 0;
-        
+
         const games = ownedGamesRaw.games || [];
         if (games.length > 0) {
           let totalPlaytimeMinutes = 0;
@@ -116,7 +116,10 @@ export const steamApiProvider: Provider = {
 
           for (const g of games) {
             totalPlaytimeMinutes += g.playtime_forever || 0;
-            if (!maxPlaytimeGame || (g.playtime_forever || 0) > (maxPlaytimeGame.playtime_forever || 0)) {
+            if (
+              !maxPlaytimeGame ||
+              (g.playtime_forever || 0) > (maxPlaytimeGame.playtime_forever || 0)
+            ) {
               maxPlaytimeGame = g;
             }
           }

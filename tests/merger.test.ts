@@ -50,6 +50,55 @@ describe('mergeResponses', () => {
     const merged = mergeResponses(results);
     expect(merged.city).toBe('Good');
   });
+
+  it('merges, deduplicates, and sorts parcel events oldest-first', () => {
+    const results: ProviderResult[] = [
+      {
+        provider: 'dhl',
+        success: true,
+        data: {
+          events: [
+            { date: '2026-05-27T08:00:00Z', status: 'Delivered', source: 'dhl' },
+            { date: '2026-05-27T07:00:00Z', status: 'In Transit', source: 'dhl' },
+          ],
+        },
+        duration: 100,
+      },
+      {
+        provider: 'pkge',
+        success: true,
+        data: {
+          events: [
+            { date: '2026-05-27T07:00:00Z', status: 'In Transit', source: 'pkge' },
+            { date: '2026-05-27T06:00:00Z', status: 'Picked Up', source: 'pkge' },
+          ],
+        },
+        duration: 50,
+      },
+    ];
+    const merged = mergeResponses(results);
+    expect(merged.events).toBeDefined();
+    const events = merged.events as any[];
+    expect(events.length).toBe(3);
+    // Oldest-to-newest sorting
+    expect(events[0].status).toBe('Picked Up');
+    expect(events[0].date).toBe('2026-05-27T06:00:00Z');
+    expect(events[1].status).toBe('In Transit');
+    expect(events[1].date).toBe('2026-05-27T07:00:00Z');
+    // First source wins in duplicate matching
+    expect(events[1].source).toBe('dhl');
+    expect(events[2].status).toBe('Delivered');
+    expect(events[2].date).toBe('2026-05-27T08:00:00Z');
+  });
+
+  it('merges and deduplicates couriers keeping the last item as active', () => {
+    const results: ProviderResult[] = [
+      { provider: 'dhl', success: true, data: { couriers: ['dhl', 'usps'] }, duration: 100 },
+      { provider: 'pkge', success: true, data: { couriers: ['dhl', 'fedex'] }, duration: 50 },
+    ];
+    const merged = mergeResponses(results);
+    expect(merged.couriers).toEqual(['dhl', 'usps', 'fedex']);
+  });
 });
 
 describe('collectErrors', () => {

@@ -1,6 +1,6 @@
 import { promises as dns } from 'node:dns';
 import { isIP } from 'node:net';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, DomainData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns';
 
@@ -15,11 +15,11 @@ export const dnsProvider: Provider = {
     return true; // Always available
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<DomainData>> {
     const start = Date.now();
 
     try {
-      const data: Record<string, unknown> = {};
+      const data: DomainData = {};
       const raw: Record<string, unknown> = {};
 
       // If it's an IP address, do reverse DNS

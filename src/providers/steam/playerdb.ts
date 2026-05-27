@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'playerdb';
 
@@ -15,7 +15,7 @@ export const playerDbProvider: Provider = {
     return true; // Free public API
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<SteamData>> {
     const start = Date.now();
 
     try {
@@ -43,7 +43,7 @@ export const playerDbProvider: Provider = {
       const player = raw.data.player;
       const meta = player.meta || {};
 
-      const data: Record<string, unknown> = {
+      const data: SteamData = {
         steam_id_64: player.id || meta.steamid,
         username: player.username || meta.personaname,
         avatar_url: player.avatar || meta.avatarfull,

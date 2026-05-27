@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'steam-inventory';
 
@@ -26,7 +26,7 @@ export const steamInventoryProvider: Provider = {
     return true; // Uses public community endpoints
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<SteamData>> {
     const start = Date.now();
 
     // Inventory query requires SteamID64 (17 digits)
@@ -94,7 +94,7 @@ export const steamInventoryProvider: Provider = {
         }),
       );
 
-      const inventories: Record<string, unknown>[] = [];
+      const inventories: NonNullable<SteamData['inventories']> = [];
       let totalItems = 0;
       let hasPublic = false;
 

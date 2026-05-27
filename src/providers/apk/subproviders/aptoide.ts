@@ -8,21 +8,37 @@ export interface ApkDownloadInfo {
   is_alive?: boolean;
 }
 
+interface AptoideResponse {
+  nodes?: {
+    meta?: {
+      data?: {
+        file?: {
+          vername?: string;
+          md5sum?: string;
+          path?: string;
+          path_alt?: string;
+        };
+        size?: number;
+      };
+    };
+  };
+}
+
 export async function getAptoideDownload(pkg: string): Promise<ApkDownloadInfo[]> {
   try {
     const response = await fetch(`https://ws75.aptoide.com/api/7/app/get?package_name=${pkg}`);
     if (!response.ok) return [];
-    
-    const data: any = await response.json();
+
+    const data = (await response.json()) as AptoideResponse;
     if (!data?.nodes?.meta?.data?.file) return [];
-    
+
     const file = data.nodes.meta.data.file;
     const size = data.nodes.meta.data.size;
     const version = file.vername;
     const md5 = file.md5sum;
-    
+
     const downloads: ApkDownloadInfo[] = [];
-    
+
     if (file.path) {
       downloads.push({
         source: 'Aptoide',
@@ -32,7 +48,7 @@ export async function getAptoideDownload(pkg: string): Promise<ApkDownloadInfo[]
         md5,
       });
     }
-    
+
     if (file.path_alt && file.path_alt !== file.path) {
       downloads.push({
         source: 'Aptoide (Alt)',

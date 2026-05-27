@@ -1,9 +1,13 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
+import {
+  type DualPromiseResult,
+  executeProvidersBackground,
+  filterAndSortProviders,
+} from '../../lib/providers.js';
 import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
-import type { LookupType, Provider, ProviderResult, SearchResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, WebData, SearchResult } from '../../types/common.js';
 
 function cleanUrl(url: string): string {
   if (!url) return '';
@@ -97,7 +101,7 @@ async function scrape(
 export const googleProvider: Provider = {
   name: 'google',
   isAvailable: () => true,
-  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult<WebData>> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
 
@@ -153,6 +157,7 @@ export const googleProvider: Provider = {
       provider: 'google',
       success: results.length > 0,
       data: { web: results },
+      raw: { scraped: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };
@@ -162,7 +167,7 @@ export const googleProvider: Provider = {
 export const bingProvider: Provider = {
   name: 'bing',
   isAvailable: () => true,
-  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult<WebData>> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
     const results = await scrape(
@@ -182,6 +187,7 @@ export const bingProvider: Provider = {
       provider: 'bing',
       success: results.length > 0,
       data: { web: results },
+      raw: { scraped: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };
@@ -191,7 +197,7 @@ export const bingProvider: Provider = {
 export const duckduckgoProvider: Provider = {
   name: 'duckduckgo',
   isAvailable: () => true,
-  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult<WebData>> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
     const results = await scrape(
@@ -225,6 +231,7 @@ export const duckduckgoProvider: Provider = {
       provider: 'duckduckgo',
       success: results.length > 0,
       data: { web: results },
+      raw: { scraped: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };
@@ -234,7 +241,7 @@ export const duckduckgoProvider: Provider = {
 export const yahooProvider: Provider = {
   name: 'yahoo',
   isAvailable: () => true,
-  lookup: async (query: string, type?: LookupType): Promise<ProviderResult> => {
+  lookup: async (query: string, type?: LookupType): Promise<ProviderResult<WebData>> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
     const results = await scrape(
@@ -254,6 +261,7 @@ export const yahooProvider: Provider = {
       provider: 'yahoo',
       success: results.length > 0,
       data: { web: results },
+      raw: { scraped: results },
       error: results.length === 0 ? 'No results found' : undefined,
       duration: Date.now() - start,
     };
@@ -262,10 +270,7 @@ export const yahooProvider: Provider = {
 
 const ALL_WEB_PROVIDERS = [googleProvider, bingProvider, duckduckgoProvider, yahooProvider];
 
-export function lookupWeb(
-  query: string,
-  type: LookupType = 'web',
-): DualPromiseResult {
+export function lookupWeb(query: string, type: LookupType = 'web'): DualPromiseResult {
   const providers = filterAndSortProviders(ALL_WEB_PROVIDERS, config.providersWeb);
 
   return executeProvidersBackground(providers, query, type);

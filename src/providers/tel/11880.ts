@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, TelData } from '../../types/common.js';
 
 const PROVIDER_NAME = '11880';
 
@@ -11,7 +11,7 @@ export const provider11880: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<TelData>> {
     const start = Date.now();
     try {
       const num = query.replace(/^0049/, '0').replace(/^00/, '');
@@ -26,7 +26,7 @@ export const provider11880: Provider = {
       });
 
       const $ = cheerio.load(resp.data);
-      const data: Record<string, unknown> = {};
+      const data: TelData = {};
 
       // Try search result layout
       const entry = $('.result, .entry, [class*="result-item"], [class*="search-result"]').first();

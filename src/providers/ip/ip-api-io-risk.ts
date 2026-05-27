@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
 import { decrementRateLimit, isRateLimited, updateRateLimit } from '../../lib/rate-limiter.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'ip-api.io/risk';
 
@@ -18,7 +18,7 @@ export const ipApiIoRisk: Provider = {
     return !!config.ipApiIoKey;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<IpData>> {
     const start = Date.now();
 
     try {
@@ -44,7 +44,7 @@ export const ipApiIoRisk: Provider = {
 
       const raw = response.data;
 
-      const data: Record<string, unknown> = {
+      const data: IpData = {
         risk_score: raw.score,
         risk_level: raw.risk_level,
       };

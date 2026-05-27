@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
 import { decrementRateLimit, isRateLimited, updateRateLimit } from '../../lib/rate-limiter.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'ip-api.io';
 
@@ -18,7 +18,7 @@ export const ipApiIo: Provider = {
     return !!config.ipApiIoKey; // Requires API key
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<IpData>> {
     const start = Date.now();
 
     try {
@@ -45,7 +45,7 @@ export const ipApiIo: Provider = {
       const raw = response.data;
 
       // Map to normalized field names
-      const data: Record<string, unknown> = {
+      const data: IpData = {
         ip: raw.ip,
         country: raw.location?.country ?? raw.country,
         country_code: raw.location?.country_code ?? raw.country_code,

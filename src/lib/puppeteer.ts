@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import puppeteer, { type Browser } from 'puppeteer';
-import { cloudscraperGet } from './cloudscraper-fetch.js';
 import { config } from '../config.js';
+import { cloudscraperGet } from './cloudscraper-fetch.js';
 
 /** Common system Chromium paths (Docker / Unraid). */
 const CHROMIUM_CANDIDATES = [
@@ -51,19 +51,32 @@ export async function getBrowser(): Promise<Browser> {
     );
   }
 
+  const defaultArgs = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
+    '--no-zygote',
+    '--single-process', // <- this one is important for memory in docker
+    '--disable-gpu',
+  ];
+
+  if (config.puppeteerArgs) {
+    // Parse arguments, supporting quoted strings
+    const customArgs = config.puppeteerArgs.match(/[^"\s]+|"(?:\\"|[^"])+"/g) || [];
+    for (const arg of customArgs) {
+      const cleanArg = arg.replace(/^"|"$/g, '');
+      if (cleanArg) {
+        defaultArgs.push(cleanArg);
+      }
+    }
+  }
+
   browser = await puppeteer.launch({
     headless: true,
     executablePath,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process', // <- this one is important for memory in docker
-      '--disable-gpu',
-    ],
+    args: defaultArgs,
   });
 
   return browser;

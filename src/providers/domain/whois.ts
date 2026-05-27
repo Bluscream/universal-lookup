@@ -4,7 +4,7 @@ const require = createRequire(import.meta.url);
 const whoisLib = require('whois');
 
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, DomainData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'whois';
 
@@ -19,7 +19,7 @@ export const whois: Provider = {
     return true; // Always available
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<DomainData>> {
     const start = Date.now();
 
     try {
@@ -60,7 +60,7 @@ export const whois: Provider = {
  * Parse raw WHOIS text response into structured key-value pairs.
  */
 function parseWhoisData(raw: string): Record<string, unknown> {
-  const data: Record<string, unknown> = {};
+  const data: DomainData = {};
   const lines = raw.split('\n');
 
   for (const line of lines) {

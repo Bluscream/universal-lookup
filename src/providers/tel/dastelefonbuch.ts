@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, TelData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dastelefonbuch';
 
@@ -11,7 +11,7 @@ export const dastelefonbuch: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<TelData>> {
     const start = Date.now();
     try {
       // dastelefonbuch Rückwärts-Suche accepts both national 0xxx and 0049xxx formats
@@ -29,7 +29,7 @@ export const dastelefonbuch: Provider = {
       });
 
       const $ = cheerio.load(resp.data);
-      const data: Record<string, unknown> = {};
+      const data: TelData = {};
 
       // Extract from first entry using data-entry-data attribute
       const entryEl = $('[data-entry-data]').first();

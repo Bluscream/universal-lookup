@@ -45,7 +45,7 @@ RUN mkdir -p /app/data/maxmind && chown -R node:node /app/data
 # USER node
 
 # Default env vars
-ENV PORT=24010
+ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV DB_PATH=/app/data/cache.db
 ENV MAXMIND_DB_PATH=/app/data/maxmind
@@ -54,10 +54,10 @@ ENV PHONE_COUNTRY_PREFIX=0049
 ENV PHONE_LOCAL_PREFIX=6131
 ENV UNIVERSAL_RESULTS_LIMIT=3
 
-EXPOSE 24010
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "fetch('http://localhost:24010/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://localhost:3000/api/v1/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 
 LABEL org.opencontainers.image.source="https://github.com/Bluscream/universal-lookup"
 LABEL org.opencontainers.image.description="Universal Lookup — Aggregated intelligence service for phone numbers, IPs, emails, locations, and parcels"

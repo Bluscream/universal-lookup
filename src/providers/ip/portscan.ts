@@ -1,7 +1,7 @@
 import { resolve4 } from 'node:dns/promises';
 import { isIP, Socket } from 'node:net';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'portscan';
 
@@ -33,7 +33,7 @@ export const portscanProvider: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<IpData>> {
     const start = Date.now();
     try {
       // Resolve domain to IP if needed

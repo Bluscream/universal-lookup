@@ -1,8 +1,40 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
 
 const PROVIDER_NAME = '17track';
+
+interface SeventeenTrackCheckpoint {
+  a: string; // timestamp
+  z: string; // status text
+  c?: string; // location
+}
+
+interface SeventeenTrackStage {
+  z?: SeventeenTrackCheckpoint[];
+}
+
+interface SeventeenTrackInfo {
+  number?: string;
+  carrier?: number;
+  error?: {
+    code?: string | number;
+    message?: string;
+  };
+  track?: {
+    e?: number; // status code
+    z0?: SeventeenTrackStage; // origin
+    z1?: SeventeenTrackStage; // intl
+    z2?: SeventeenTrackStage; // destination
+  };
+}
+
+interface SeventeenTrackRawResponse {
+  data?: {
+    accepted?: SeventeenTrackInfo[];
+    rejected?: SeventeenTrackInfo[];
+  };
+}
 
 /**
  * 17TRACK — Universal parcel tracking aggregator via official API.
@@ -53,7 +85,7 @@ export const seventeenTrack: Provider = {
     return !!config.seventeenTrackApiKey;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ParcelData>> {
     const start = Date.now();
     const apiKey = config.seventeenTrackApiKey;
 
@@ -74,11 +106,10 @@ export const seventeenTrack: Provider = {
 
     try {
       // Step 1: Register the tracking number (idempotent — re-registering is fine)
-      await axios.post(
-        'https://api.17track.net/track/v2.2/register',
-        [{ number: query.trim() }],
-        { headers, timeout: config.serverTimeout },
-      );
+      await axios.post('https://api.17track.net/track/v2.2/register', [{ number: query.trim() }], {
+        headers,
+        timeout: config.serverTimeout,
+      });
 
       // Step 2: Retrieve tracking info
       const trackResp = await axios.post(
@@ -87,12 +118,14 @@ export const seventeenTrack: Provider = {
         { headers, timeout: config.serverTimeout },
       );
 
-      const raw = trackResp.data;
+      const raw = trackResp.data as SeventeenTrackRawResponse;
       const accepted = raw?.data?.accepted;
       const rejected = raw?.data?.rejected;
 
       if (rejected?.length && !accepted?.length) {
-        const reason = rejected[0]?.error?.message || rejected[0]?.error?.code || 'Tracking number rejected';
+        const reason = String(
+          rejected[0]?.error?.message || rejected[0]?.error?.code || 'Tracking number rejected',
+        );
         return {
           provider: PROVIDER_NAME,
           success: false,
@@ -130,7 +163,7 @@ export const seventeenTrack: Provider = {
         50: 'Alert',
       };
 
-      const allEvents: Array<{ date: string; status: string; location?: string }> = [];
+      const allEvents: Array<{ date: string; status: string; location?: string; source: string }> = [];
 
       // Collect events from all tracking stages (z0 = origin, z1 = intl, z2 = destination)
       for (const stage of [track.z0, track.z1, track.z2]) {
@@ -140,30 +173,27 @@ export const seventeenTrack: Provider = {
               date: evt.a, // timestamp
               status: evt.z, // status text
               location: evt.c || undefined, // location
+              source: PROVIDER_NAME,
             });
           }
         }
       }
 
-      // Sort events newest-first
-      allEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // Sort events oldest-first (so last is most recent)
+      allEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       const statusCode = info.track?.e ?? 0;
-      const data: Record<string, unknown> = {
+      const couriers = ['17track'];
+      if (info.carrier) {
+        couriers.push(String(info.carrier));
+      }
+
+      const data: ParcelData = {
         tracking_number: info.number || query,
-        carrier: info.carrier
-          ? `17TRACK (carrier: ${info.carrier})`
-          : '17TRACK',
+        couriers,
         status: statusMap[statusCode] || `Unknown (${statusCode})`,
         status_code: statusCode,
         delivered: statusCode === 40,
-        last_event: latestCheckpoint
-          ? {
-              date: latestCheckpoint.a,
-              status: latestCheckpoint.z,
-              location: latestCheckpoint.c || undefined,
-            }
-          : undefined,
         events: allEvents,
       };
 

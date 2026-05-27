@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dhl';
 
@@ -16,7 +16,7 @@ export const dhl: Provider = {
     return !!config.dhlApiKey;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ParcelData>> {
     const start = Date.now();
     try {
       const apiKey = config.dhlApiKey;
@@ -45,9 +45,9 @@ export const dhl: Provider = {
         };
       }
 
-      const data: Record<string, unknown> = {
+      const data: ParcelData = {
         tracking_number: shipment.id || query,
-        carrier: 'DHL',
+        couriers: ['DHL'],
         service: shipment.service,
         status: shipment.status?.status,
         status_code: shipment.status?.statusCode,
@@ -65,13 +65,16 @@ export const dhl: Provider = {
           ? `${shipment.details.weight.value} ${shipment.details.weight.unitText}`
           : undefined,
         // biome-ignore lint/suspicious/noExplicitAny: External API response
-        events: shipment.events?.map((e: any) => ({
-          date: e.timestamp,
-          status: e.status,
-          status_code: e.statusCode,
-          description: e.description,
-          location: e.location?.address?.addressLocality,
-        })),
+        events: (shipment.events || [])
+          .map((e: any) => ({
+            date: e.timestamp,
+            status: e.status,
+            status_code: e.statusCode,
+            description: e.description,
+            location: e.location?.address?.addressLocality,
+            source: PROVIDER_NAME,
+          }))
+          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()),
       };
 
       return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };

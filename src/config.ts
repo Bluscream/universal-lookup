@@ -64,6 +64,7 @@ export const config = {
   // Puppeteer
   puppeteerSkipDownload: envBool('PUPPETEER_SKIP_DOWNLOAD', false),
   puppeteerExecutablePath: env('PUPPETEER_EXECUTABLE_PATH'),
+  puppeteerArgs: env('PUPPETEER_ARGS'),
 
   // Providers configuration
   providersTel: env(
@@ -83,9 +84,15 @@ export const config = {
     'PROVIDERS_LOCATION',
     'nominatim,google-maps,google,bing,duckduckgo,yahoo',
   ),
-  providersParcel: env('PROVIDERS_PARCEL', 'dhl-web,dhl,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo'),
+  providersParcel: env(
+    'PROVIDERS_PARCEL',
+    'dhl-web,dhl,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo',
+  ),
   providersWeb: env('PROVIDERS_WEB', 'google,bing,duckduckgo,yahoo'),
-  providersSteam: env('PROVIDERS_STEAM', 'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat'),
+  providersSteam: env(
+    'PROVIDERS_STEAM',
+    'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat',
+  ),
   providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,urlscan,virustotal'),
 
   // Universal Search

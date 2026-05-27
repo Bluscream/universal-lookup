@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'parcelsapp';
 
@@ -16,7 +16,7 @@ export const parcelsapp: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ParcelData>> {
     const start = Date.now();
     try {
       if (config.parcelsAppApiKey) {
@@ -41,20 +41,20 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
 
   // Synthesize settings array matching official Android app logic
   const settings: unknown[] = [
-    true,                  // Settings:push
-    false,                 // Settings:subscribed
-    1716723120000,         // Settings:installedAt
-    0,                     // Settings:goods
-    5,                     // ReviewPromptStats:appOpens
-    0,                     // totalParcels
-    false,                 // dummy/ad-free
-    'Pixel 6',             // Model
-    'oriole',              // Device ID
-    '89201f99c0d12e4f',    // Unique ID
-    'Google',              // Manufacturer
+    true, // Settings:push
+    false, // Settings:subscribed
+    1716723120000, // Settings:installedAt
+    0, // Settings:goods
+    5, // ReviewPromptStats:appOpens
+    0, // totalParcels
+    false, // dummy/ad-free
+    'Pixel 6', // Model
+    'oriole', // Device ID
+    '89201f99c0d12e4f', // Unique ID
+    'Google', // Manufacturer
     'com.android.vending', // Installer
-    '3.0.2',               // Readable Version
-    query                  // Tracking Number
+    '3.0.2', // Readable Version
+    query, // Tracking Number
   ];
 
   // Replicate hash_32_gc calculation on settings string
@@ -92,9 +92,9 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
     };
   }
 
-  const data: Record<string, unknown> = {
+  const data: ParcelData = {
     tracking_number: raw.trackingId || raw.tracking_id || query,
-    carrier: raw.slug || raw.carrier || raw.origin,
+    couriers: [raw.slug || raw.carrier || raw.origin].filter(Boolean) as string[],
     status: raw.status || raw.lastState?.status,
     status_description: raw.statusDescription || raw.lastState?.description,
     origin: raw.origin,
@@ -103,12 +103,15 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
     delivered: raw.delivered,
     days_in_transit: raw.daysInTransit,
     // biome-ignore lint/suspicious/noExplicitAny: External API response
-    events: raw.states?.map((s: any) => ({
-      date: s.date,
-      status: s.status,
-      location: s.location,
-      description: s.description,
-    })),
+    events: (raw.states || [])
+      .map((s: any) => ({
+        date: s.date,
+        status: s.status,
+        location: s.location,
+        description: s.description,
+        source: PROVIDER_NAME,
+      }))
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()),
   };
 
   return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };
@@ -120,10 +123,11 @@ function hash_32_gc(text: string, seed: number): number {
   let h = seed ^ length;
   let i = 0;
   while (length >= 4) {
-    let k = (text.charCodeAt(i) & 0xFF) |
-            ((text.charCodeAt(i + 1) & 0xFF) << 8) |
-            ((text.charCodeAt(i + 2) & 0xFF) << 16) |
-            ((text.charCodeAt(i + 3) & 0xFF) << 24);
+    let k =
+      (text.charCodeAt(i) & 0xff) |
+      ((text.charCodeAt(i + 1) & 0xff) << 8) |
+      ((text.charCodeAt(i + 2) & 0xff) << 16) |
+      ((text.charCodeAt(i + 3) & 0xff) << 24);
 
     k = Math.imul(k, 1540483477);
     k ^= k >>> 24;
@@ -138,18 +142,18 @@ function hash_32_gc(text: string, seed: number): number {
 
   switch (length) {
     case 3:
-      h ^= (text.charCodeAt(i + 2) & 0xFF) << 16;
-      h ^= (text.charCodeAt(i + 1) & 0xFF) << 8;
-      h ^= (text.charCodeAt(i) & 0xFF);
+      h ^= (text.charCodeAt(i + 2) & 0xff) << 16;
+      h ^= (text.charCodeAt(i + 1) & 0xff) << 8;
+      h ^= text.charCodeAt(i) & 0xff;
       h = Math.imul(h, 1540483477);
       break;
     case 2:
-      h ^= (text.charCodeAt(i + 1) & 0xFF) << 8;
-      h ^= (text.charCodeAt(i) & 0xFF);
+      h ^= (text.charCodeAt(i + 1) & 0xff) << 8;
+      h ^= text.charCodeAt(i) & 0xff;
       h = Math.imul(h, 1540483477);
       break;
     case 1:
-      h ^= (text.charCodeAt(i) & 0xFF);
+      h ^= text.charCodeAt(i) & 0xff;
       h = Math.imul(h, 1540483477);
       break;
   }
@@ -159,7 +163,6 @@ function hash_32_gc(text: string, seed: number): number {
   h ^= h >>> 15;
   return h >>> 0;
 }
-
 
 /** Authenticated v3 API (requires key) */
 async function lookupV3(query: string, start: number): Promise<ProviderResult> {
@@ -214,21 +217,24 @@ async function lookupV3(query: string, start: number): Promise<ProviderResult> {
   }
 
   const ship = trackingData.shipments[0];
-  const data: Record<string, unknown> = {
+  const data: ParcelData = {
     tracking_number: ship.trackingId,
-    carrier: ship.slug || ship.carrier,
+    couriers: [ship.slug || ship.carrier].filter(Boolean) as string[],
     status: ship.status,
     status_description: ship.statusDescription,
     origin: ship.origin,
     destination: ship.destination,
     estimated_delivery: ship.estimatedDeliveryDate,
     // biome-ignore lint/suspicious/noExplicitAny: External API response
-    events: ship.states?.map((s: any) => ({
-      date: s.date,
-      status: s.status,
-      location: s.location,
-      description: s.description,
-    })),
+    events: (ship.states || [])
+      .map((s: any) => ({
+        date: s.date,
+        status: s.status,
+        location: s.location,
+        description: s.description,
+        source: PROVIDER_NAME,
+      }))
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()),
   };
 
   return {

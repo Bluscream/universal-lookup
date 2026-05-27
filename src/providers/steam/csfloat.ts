@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'csfloat';
 
@@ -15,13 +15,13 @@ export const csfloatProvider: Provider = {
     return true; // Publicly queryable without API key
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<SteamData>> {
     const start = Date.now();
 
     try {
       const steamId = query.trim();
       const url = `https://csfloat.com/api/v1/users/${steamId}`;
-      
+
       const res = await axios.get(url, {
         headers: {
           'User-Agent':

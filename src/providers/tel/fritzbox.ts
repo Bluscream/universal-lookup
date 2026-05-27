@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, TelData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'fritzbox';
 
@@ -19,7 +19,7 @@ export const fritzbox: Provider = {
     return !!(config.fritzboxHost && config.fritzboxUser && config.fritzboxPass);
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<TelData>> {
     const { normalizeTel } = await import('../../lib/normalizer.js');
     const start = Date.now();
     const numClean = normalizeTel(query);
@@ -107,7 +107,7 @@ export const fritzbox: Provider = {
 
       // 2. Iterate through phonebooks (ID 0, 1, 2)
       const phonebookIds = [0, 1, 2];
-      const data: Record<string, unknown> = {};
+      const data: TelData = {};
       let rawMatch: string | undefined;
       let authHeader: string | undefined;
 

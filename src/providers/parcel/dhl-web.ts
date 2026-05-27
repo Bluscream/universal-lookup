@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dhl-web';
 
@@ -17,7 +17,7 @@ export const dhlWeb: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ParcelData>> {
     const start = Date.now();
     try {
       const url = `https://www.dhl.de/int-verfolgen/data/search?piececode=${encodeURIComponent(query)}&language=de`;
@@ -63,9 +63,9 @@ export const dhlWeb: Provider = {
       const verlauf = details.sendungsverlauf || {};
       const zustellung = details.zustellung || {};
 
-      const data: Record<string, unknown> = {
+      const data: ParcelData = {
         tracking_number: sendung.id || query,
-        carrier: 'DHL',
+        couriers: ['DHL'],
         status: verlauf.status,
         delivered: !!details.istZugestellt,
         progress: verlauf.fortschritt,
@@ -93,11 +93,14 @@ export const dhlWeb: Provider = {
       const events = verlauf.events;
       if (Array.isArray(events) && events.length > 0) {
         // biome-ignore lint/suspicious/noExplicitAny: External API response
-        data.events = events.map((e: any) => ({
-          date: e.datum,
-          status: e.status,
-          is_return: e.ruecksendung || false,
-        }));
+        data.events = events
+          .map((e: any) => ({
+            date: e.datum,
+            status: e.status,
+            is_return: e.ruecksendung || false,
+            source: PROVIDER_NAME,
+          }))
+          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
       }
 
       return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };

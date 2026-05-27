@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'maxmind';
 
@@ -32,7 +32,7 @@ export const maxmind: Provider = {
     );
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<IpData>> {
     const start = Date.now();
 
     try {
@@ -41,7 +41,7 @@ export const maxmind: Provider = {
         initialized = true;
       }
 
-      const data: Record<string, unknown> = {};
+      const data: IpData = {};
       const raw: Record<string, unknown> = {};
 
       // City database

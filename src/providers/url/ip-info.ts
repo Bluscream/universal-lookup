@@ -1,5 +1,5 @@
 import { mergeResponses } from '../../lib/merger.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, UrlData } from '../../types/common.js';
 import { lookupIp } from '../ip/index.js';
 
 const PROVIDER_NAME = 'ip-info';
@@ -14,7 +14,7 @@ export const ipInfoProvider: Provider = {
     return true; // Always available
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<UrlData>> {
     const start = Date.now();
 
     // The query is expected to be a resolved IP address.

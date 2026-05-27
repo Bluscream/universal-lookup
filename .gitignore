@@ -40,3 +40,5 @@ coverage/
 .playwright-mcp/
 *_test.json
 tracking_page.html
+.scratch/
+.references/

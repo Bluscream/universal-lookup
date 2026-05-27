@@ -3,7 +3,7 @@ import type tls from 'node:tls';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, UrlData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'metadata';
 
@@ -80,7 +80,7 @@ export const metadataProvider: Provider = {
     return true; // Built-in scraper, always available
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<UrlData>> {
     const start = Date.now();
 
     try {
@@ -199,7 +199,7 @@ export const metadataProvider: Provider = {
         };
       }
 
-      const data: Record<string, unknown> = {
+      const data: UrlData = {
         query,
         landing_url: landingUrl,
         http_status: finalResponse.status,

@@ -172,6 +172,67 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
     }
   }
 
+  // --- Post-processing: remove redundant inferred fields & normalize arrays ---
+
+  // 1. Deduplicate events and sort chronologically oldest-to-newest
+  if (Array.isArray(merged.events)) {
+    const seen = new Set<string>();
+    const dedupedEvents = [];
+    for (const event of merged.events) {
+      if (event && typeof event === 'object') {
+        const ev = event as { date?: string; status?: string; location?: string; courier?: string; source?: string | null };
+        const key = `${ev.date || ''}|${ev.status || ''}|${ev.location || ''}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          dedupedEvents.push(ev);
+        }
+      }
+    }
+    // Sort oldest-to-newest
+    dedupedEvents.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+    merged.events = dedupedEvents;
+  }
+
+  // 2. Deduplicate couriers while preserving order (last item is most up-to-date)
+  if (Array.isArray(merged.couriers)) {
+    const seenCouriers = new Set<string>();
+    const dedupedCouriers = [];
+    for (const courier of merged.couriers) {
+      if (typeof courier === 'string' && courier.trim() !== '') {
+        const normalized = courier.trim();
+        if (!seenCouriers.has(normalized)) {
+          seenCouriers.add(normalized);
+          dedupedCouriers.push(normalized);
+        }
+      }
+    }
+    merged.couriers = dedupedCouriers;
+  }
+
+  // 3. Remove boolean vac_banned if vac_bans_count is present
+  if ('vac_bans_count' in merged) {
+    delete merged.vac_banned;
+  }
+
+  // 2. Remove count keys if associated array is present
+  for (const key of Object.keys(merged)) {
+    if (key.endsWith('_count') || key.endsWith('Count')) {
+      const prefix = key.replace(/_count$|Count$/, '');
+      const arrayKeys = [
+        prefix,
+        `${prefix}s`,
+        `${prefix}es`,
+        prefix.endsWith('s') ? prefix.slice(0, -1) : prefix,
+      ];
+      for (const k of arrayKeys) {
+        if (k in merged && Array.isArray(merged[k])) {
+          delete merged[key];
+          break;
+        }
+      }
+    }
+  }
+
   return deepClean(merged);
 }
 

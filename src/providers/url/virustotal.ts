@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, UrlData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'virustotal';
 
@@ -15,7 +15,7 @@ export const virustotalProvider: Provider = {
     return !!config.virustotalApiKey;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<UrlData>> {
     const start = Date.now();
 
     try {
@@ -49,7 +49,7 @@ export const virustotalProvider: Provider = {
       const maliciousVotes = (stats.malicious as number) ?? 0;
       const suspiciousVotes = stats.suspicious ?? 0;
 
-      const data: Record<string, unknown> = {
+      const data: UrlData = {
         registrar: attributes.registrar || null,
         creation_date: attributes.creation_date
           ? new Date(attributes.creation_date * 1000).toISOString()

@@ -1,5 +1,5 @@
-import cloudscraper from 'cloudscraper';
 import type { CloudscraperGetOptions } from 'cloudscraper';
+import cloudscraper from 'cloudscraper';
 import { config } from '../config.js';
 
 /** Fetch HTML via cloudscraper (Cloudflare bypass). */

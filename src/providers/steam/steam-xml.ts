@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'steam-xml';
 
@@ -16,7 +16,7 @@ export const steamXmlProvider: Provider = {
     return true; // Publicly available XML
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<SteamData>> {
     const start = Date.now();
 
     try {
@@ -61,7 +61,7 @@ export const steamXmlProvider: Provider = {
         };
       }
 
-      const data: Record<string, unknown> = {
+      const data: SteamData = {
         steam_id_64: steamID64,
         username: steamID,
         headline: $('profile > headline').text() || null,

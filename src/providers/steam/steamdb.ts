@@ -1,5 +1,5 @@
 import { cloudscraperGet } from '../../lib/cloudscraper-fetch.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'steam-db';
 
@@ -14,7 +14,7 @@ export const steamDbProvider: Provider = {
     return true; // Universally available
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<SteamData>> {
     const start = Date.now();
     const steamId = query.trim();
     const url = `https://steamdb.info/calculator/${steamId}/?cc=us`;
@@ -30,21 +30,25 @@ export const steamDbProvider: Provider = {
       });
 
       // Parse values using resilient regexes
-      const priceTodayMatch = html.match(/Today's prices<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
-                            html.match(/<span>Today's prices<\/span>\s*<b>([^<]+)<\/b>/i) ||
-                            html.match(/Today's prices[\s\S]*?currency-us">([^<]+)/i);
-      
-      const priceLowestMatch = html.match(/Lowest prices<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
-                             html.match(/<span>Lowest prices<\/span>\s*<b>([^<]+)<\/b>/i) ||
-                             html.match(/Lowest prices[\s\S]*?currency-us">([^<]+)/i);
+      const priceTodayMatch =
+        html.match(/Today's prices<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
+        html.match(/<span>Today's prices<\/span>\s*<b>([^<]+)<\/b>/i) ||
+        html.match(/Today's prices[\s\S]*?currency-us">([^<]+)/i);
 
-      const gamesOwnedMatch = html.match(/Games owned<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
-                            html.match(/<span>Games owned<\/span>\s*<b>([^<]+)<\/b>/i) ||
-                            html.match(/Games owned[\s\S]*?number">([^<]+)/i);
+      const priceLowestMatch =
+        html.match(/Lowest prices<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
+        html.match(/<span>Lowest prices<\/span>\s*<b>([^<]+)<\/b>/i) ||
+        html.match(/Lowest prices[\s\S]*?currency-us">([^<]+)/i);
 
-      const hoursMatch = html.match(/Hours on record<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
-                         html.match(/<span>Hours on record<\/span>\s*<b>([^<]+)<\/b>/i) ||
-                         html.match(/Hours on record[\s\S]*?number">([^<]+)/i);
+      const gamesOwnedMatch =
+        html.match(/Games owned<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
+        html.match(/<span>Games owned<\/span>\s*<b>([^<]+)<\/b>/i) ||
+        html.match(/Games owned[\s\S]*?number">([^<]+)/i);
+
+      const hoursMatch =
+        html.match(/Hours on record<\/span>\s*<span[^>]*>([^<]+)<\/span>/i) ||
+        html.match(/<span>Hours on record<\/span>\s*<b>([^<]+)<\/b>/i) ||
+        html.match(/Hours on record[\s\S]*?number">([^<]+)/i);
 
       if (!priceTodayMatch && !priceLowestMatch && !gamesOwnedMatch) {
         // If we received an HTML that does not look like SteamDB calculator (e.g. still blocked)

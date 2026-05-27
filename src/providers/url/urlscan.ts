@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, UrlData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'urlscan';
 
@@ -15,7 +15,7 @@ export const urlscanProvider: Provider = {
     return !!config.urlscanApiKey;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<UrlData>> {
     const start = Date.now();
 
     try {
@@ -52,7 +52,7 @@ export const urlscanProvider: Provider = {
       const stats = latest.stats || {};
       const verdict = latest.verdicts?.overall || {};
 
-      const data: Record<string, unknown> = {
+      const data: UrlData = {
         last_scan_id: task.uuid,
         last_scan_time: task.time,
         scan_url: task.url,

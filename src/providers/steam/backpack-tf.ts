@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'backpack-tf';
 
@@ -18,7 +18,7 @@ export const backpackTfProvider: Provider = {
     return !!config.backpackTfApiKey;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<SteamData>> {
     const start = Date.now();
     const key = config.backpackTfApiKey;
 
@@ -36,7 +36,7 @@ export const backpackTfProvider: Provider = {
       // Clean query of any spaces
       const steamId = query.trim();
       const url = `https://backpack.tf/api/users/info/v1?steamids=${steamId}&key=${key}`;
-      
+
       const res = await axios.get(url, {
         headers: {
           'User-Agent':

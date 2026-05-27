@@ -1,6 +1,10 @@
 import { config } from '../../config.js';
-import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
-import type { LookupType, Provider, } from '../../types/common.js';
+import {
+  type DualPromiseResult,
+  executeProvidersBackground,
+  filterAndSortProviders,
+} from '../../lib/providers.js';
+import type { LookupType, Provider } from '../../types/common.js';
 import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { provider11880 } from './11880.js';
 import { dasoertliche } from './dasoertliche.js';

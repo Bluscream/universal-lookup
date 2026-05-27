@@ -254,7 +254,8 @@ export function detectType(query: string): LookupType {
     /apkpure\.com/i.test(trimmed) ||
     /aptoide\.com/i.test(trimmed) ||
     // Simple heuristic for Android package names (e.g., com.google.android.youtube)
-    /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+[0-9a-z_]$/i.test(trimmed) && (trimmed.startsWith('com.') || trimmed.startsWith('net.') || trimmed.startsWith('org.'))
+    (/^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+[0-9a-z_]$/i.test(trimmed) &&
+      (trimmed.startsWith('com.') || trimmed.startsWith('net.') || trimmed.startsWith('org.')))
   ) {
     return 'apk';
   }

@@ -1,5 +1,5 @@
 import dns from 'node:dns/promises';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
+import type { LookupType, Provider, ProviderResult, EmailData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns-email';
 
@@ -13,7 +13,7 @@ export const dnsEmail: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<EmailData>> {
     const start = Date.now();
     try {
       // Validate syntax
@@ -28,7 +28,7 @@ export const dnsEmail: Provider = {
       }
 
       const [username, domain] = query.split('@');
-      const data: Record<string, unknown> = {
+      const data: EmailData = {
         email: query,
         email_username: username,
         email_domain: domain,
@@ -170,10 +170,18 @@ export const dnsEmail: Provider = {
         data.dmarc = false;
       }
 
+      const raw = {
+        mx: mxResult.status === 'fulfilled' ? mxResult.value : null,
+        a: aResult.status === 'fulfilled' ? aResult.value : null,
+        txt: txtResult.status === 'fulfilled' ? txtResult.value : null,
+        dmarc: dmarcResult.status === 'fulfilled' ? dmarcResult.value : null,
+      };
+
       return {
         provider: PROVIDER_NAME,
         success: true,
         data,
+        raw,
         duration: Date.now() - start,
       };
     } catch (error) {

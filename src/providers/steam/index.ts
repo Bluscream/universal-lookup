@@ -1,12 +1,16 @@
 import { config } from '../../config.js';
-import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
-import type { LookupType, Provider, } from '../../types/common.js';
+import {
+  type DualPromiseResult,
+  executeProvidersBackground,
+  filterAndSortProviders,
+} from '../../lib/providers.js';
+import type { LookupType, Provider } from '../../types/common.js';
+import { backpackTfProvider } from './backpack-tf.js';
+import { csfloatProvider } from './csfloat.js';
 import { playerDbProvider } from './playerdb.js';
 import { steamApiProvider } from './steam-api.js';
 import { steamInventoryProvider } from './steam-inventory.js';
 import { steamXmlProvider } from './steam-xml.js';
-import { backpackTfProvider } from './backpack-tf.js';
-import { csfloatProvider } from './csfloat.js';
 import { steamDbProvider } from './steamdb.js';
 
 /** All Steam lookup providers */
@@ -27,7 +31,8 @@ const ALL_STEAM_PROVIDERS: Provider[] = [
  */
 export function lookupSteam(
   query: string,
-  type?: LookupType, originalQuery?: string,
+  type?: LookupType,
+  originalQuery?: string,
 ): DualPromiseResult {
   const providers = filterAndSortProviders(ALL_STEAM_PROVIDERS, config.providersSteam);
 

@@ -13,6 +13,7 @@ import { closeDatabase, initDatabase } from './db/migrations.js';
 import { ensureMaxmindDbs } from './lib/maxmind-downloader.js';
 import { resolvePuppeteerExecutablePath } from './lib/puppeteer.js';
 import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
+import { registerDocsRoutes } from './routes/docs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -44,6 +45,11 @@ async function main() {
       level: config.logLevel,
     },
     trustProxy: true,
+    ajv: {
+      customOptions: {
+        allowUnionTypes: true,
+      },
+    },
   });
 
   // CORS
@@ -56,15 +62,24 @@ async function main() {
     allowList: ['127.0.0.1', '::1'],
   });
 
-  // Auth hook — if REQUIRE_TOKEN is set, validate token on /api/* routes
+  // Legacy /api -> /api/v1 redirect hook
+  app.addHook('onRequest', async (request, reply) => {
+    const url = request.url;
+    if (url === '/api' || (url.startsWith('/api/') && !url.startsWith('/api/v1/'))) {
+      const remainder = url === '/api' ? '' : url.slice(5);
+      return reply.redirect(`/api/v1/${remainder}`, 302);
+    }
+  });
+
+  // Auth hook — if REQUIRE_TOKEN is set, validate token on /api/v1/* routes
   if (config.requireToken) {
     app.addHook('onRequest', async (request, reply) => {
       const path = request.url;
-      // Only protect /api/* routes (not /docs, / frontend, etc.)
+      // Only protect /api/v1/* routes (not /docs, / frontend, etc.)
       if (
-        !path.startsWith('/api/') ||
-        path.startsWith('/api/health') ||
-        path.startsWith('/api/types')
+        !path.startsWith('/api/v1/') ||
+        path.startsWith('/api/v1/health') ||
+        path.startsWith('/api/v1/types')
       ) {
         return;
       }
@@ -116,16 +131,22 @@ async function main() {
     theme: { title: 'Universal Lookup API Docs' },
   });
 
-  // Serve frontend static files
+  // Serve frontend static files — prefer React build, fallback to legacy
+  const reactBuildDir = join(__dirname, '..', 'frontend', 'dist');
+  const legacyFrontendDir = join(__dirname, 'frontend');
+  const { existsSync } = await import('node:fs');
+  const frontendRoot = existsSync(reactBuildDir) ? reactBuildDir : legacyFrontendDir;
+
   await app.register(fastifyStatic, {
-    root: join(__dirname, 'frontend'),
+    root: frontendRoot,
     prefix: '/',
-    decorateReply: false,
+    decorateReply: true,
+    wildcard: false,
   });
 
   // System endpoints
   app.get(
-    '/api/health',
+    '/api/v1/health',
     {
       schema: {
         tags: ['System'],
@@ -149,7 +170,7 @@ async function main() {
   );
 
   app.get(
-    '/api/types',
+    '/api/v1/types',
     {
       schema: {
         tags: ['System'],
@@ -216,7 +237,8 @@ async function main() {
         {
           id: 'apk',
           name: 'APK Packages',
-          description: 'Google Play metadata and APK download links from Aptoide, APKMirror, APKPure',
+          description:
+            'Google Play metadata and APK download links from Aptoide, APKMirror, APKPure',
           example: 'com.google.android.apps.authenticator2',
         },
       ],
@@ -226,10 +248,14 @@ async function main() {
   // Register routes
   await registerApiRoutes(app);
   await registerShortcutRoutes(app);
+  await registerDocsRoutes(app);
 
-  // Serve frontend for root path
-  app.get('/', { schema: { hide: true } }, async (_request, reply) => {
-    return reply.redirect('/index.html');
+  // SPA fallback — serve index.html for any unmatched GET that isn't /api or /docs
+  app.setNotFoundHandler(async (request, reply) => {
+    if (request.method === 'GET' && !request.url.startsWith('/api/') && !request.url.startsWith('/docs')) {
+      return reply.sendFile('index.html');
+    }
+    return reply.code(404).send({ error: 'Not found' });
   });
 
   // Graceful shutdown

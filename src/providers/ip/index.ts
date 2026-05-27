@@ -1,6 +1,10 @@
 import { config } from '../../config.js';
-import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
-import type { LookupType, Provider, } from '../../types/common.js';
+import {
+  type DualPromiseResult,
+  executeProvidersBackground,
+  filterAndSortProviders,
+} from '../../lib/providers.js';
+import type { LookupType, Provider } from '../../types/common.js';
 import { dnsProvider } from '../domain/dns.js';
 import { subdomainProvider } from '../domain/subdomain.js';
 import { whois } from '../domain/whois.js';
@@ -36,7 +40,8 @@ const ALL_PROVIDERS: Provider[] = [
  */
 export function lookupIp(
   query: string,
-  type?: LookupType, originalQuery?: string,
+  type?: LookupType,
+  originalQuery?: string,
 ): DualPromiseResult {
   const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersIp);
 

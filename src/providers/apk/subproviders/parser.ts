@@ -1,13 +1,13 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 // @ts-expect-error
 import AppInfoParser from 'app-info-parser';
 
 export interface ApkMetadata {
-  [key: string]: any;
+  [key: string]: unknown;
   checksums?: {
     md5: string;
     sha1: string;

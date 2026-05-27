@@ -12,7 +12,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && node -e \"const fs = require('fs'); if (fs.existsSync('dist/frontend')) fs.rmSync('dist/frontend', {recursive: true}); fs.cpSync('src/frontend', 'dist/frontend', {recursive: true})\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:frontend && tsc && node -e \"const fs = require('fs'); if (fs.existsSync('dist/frontend')) fs.rmSync('dist/frontend', {recursive: true}); fs.cpSync('src/frontend', 'dist/frontend', {recursive: true})\"",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",

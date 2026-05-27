@@ -92,13 +92,17 @@ export function executeProvidersBackground(
       Promise.race([
         p,
         new Promise<ProviderResult>((resolve) =>
-          setTimeout(() => resolve({
-            provider: providers[index].name,
-            success: false,
-            data: {},
-            error: 'Timeout (Background processing)',
-            duration: config.clientTimeout,
-          }), config.clientTimeout),
+          setTimeout(
+            () =>
+              resolve({
+                provider: providers[index].name,
+                success: false,
+                data: {},
+                error: 'Timeout (Background processing)',
+                duration: config.clientTimeout,
+              }),
+            config.clientTimeout,
+          ),
         ),
       ]),
     ),
@@ -109,4 +113,3 @@ export function executeProvidersBackground(
 
   return { clientPromise, serverPromise };
 }
-

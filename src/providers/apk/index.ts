@@ -1,20 +1,24 @@
 import { getCacheTtl } from '../../config.js';
 import { getCached, setCache } from '../../db/cache.js';
-import { executeProvidersBackground, filterAndSortProviders, type DualPromiseResult } from '../../lib/providers.js';
-import type { LookupType, Provider, ProviderResult } from '../../types/common.js';
-import { getGooglePlayMetadata } from './subproviders/googleplay.js';
-import { getAptoideDownload } from './subproviders/aptoide.js';
+import {
+  type DualPromiseResult,
+  executeProvidersBackground,
+  filterAndSortProviders,
+} from '../../lib/providers.js';
+import type { LookupType, Provider, ProviderResult, ApkData } from '../../types/common.js';
 import { getApkmirrorDownload } from './subproviders/apkmirror.js';
 import { getApkpureDownload } from './subproviders/apkpure.js';
-import {
-  getEvoziDownload,
-  getApkComboDownload,
-  getApkPremierDownload,
-  getApkDlDownload,
-  getApkSupportDownload,
-} from './subproviders/other.js';
 import type { ApkDownloadInfo } from './subproviders/aptoide.js';
-import { parseApkFromUrl, } from './subproviders/parser.js';
+import { getAptoideDownload } from './subproviders/aptoide.js';
+import { getGooglePlayMetadata } from './subproviders/googleplay.js';
+import {
+  getApkComboDownload,
+  getApkDlDownload,
+  getApkPremierDownload,
+  getApkSupportDownload,
+  getEvoziDownload,
+} from './subproviders/other.js';
+import { parseApkFromUrl } from './subproviders/parser.js';
 
 const PROVIDER_NAME = 'apk';
 
@@ -44,7 +48,7 @@ export const apkProvider: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult> {
+  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ApkData>> {
     const start = Date.now();
     const pkg = extractPackageName(query);
 
@@ -87,10 +91,10 @@ export const apkProvider: Provider = {
             const timeoutId = setTimeout(() => controller.abort(), 5000);
             const res = await fetch(dl.url, { method: 'HEAD', signal: controller.signal });
             clearTimeout(timeoutId);
-            
+
             dl.status = res.status;
             dl.is_alive = res.ok;
-            
+
             if (!dl.size) {
               const contentLength = res.headers.get('content-length');
               if (contentLength) {
@@ -101,18 +105,20 @@ export const apkProvider: Provider = {
             dl.status = 0;
             dl.is_alive = false;
           }
-        })
+        }),
       );
 
       // Filter out invalid downloads and remove `is_alive`
       const validDownloads = downloads
-        .filter(dl => dl.status && dl.status >= 200 && dl.status < 400)
-        .map(dl => {
+        .filter((dl) => dl.status && dl.status >= 200 && dl.status < 400)
+        .map((dl) => {
           const { is_alive, ...rest } = dl;
           return rest;
         });
 
-      const validDownload = validDownloads.find(dl => dl.status === 200 && dl.size && dl.size > 0);
+      const validDownload = validDownloads.find(
+        (dl) => dl.status === 200 && dl.size && dl.size > 0,
+      );
       if (validDownload) {
         // Run parsing entirely in the background so we don't block the provider response
         Promise.resolve().then(async () => {
@@ -142,7 +148,7 @@ export const apkProvider: Provider = {
         });
       }
 
-      const data: Record<string, unknown> = {
+      const data: ApkData = {
         package_name: pkg,
         title: metadata.title,
         version: metadata.version,
@@ -169,7 +175,7 @@ export const apkProvider: Provider = {
         },
         duration: Date.now() - start,
       };
-    } catch (error: any) {
+    } catch (error) {
       return {
         provider: PROVIDER_NAME,
         success: false,

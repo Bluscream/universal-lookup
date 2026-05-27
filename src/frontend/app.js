@@ -19,6 +19,7 @@
 
   const optRaw = document.getElementById('opt-raw');
   const optFresh = document.getElementById('opt-fresh');
+  const optWait = document.getElementById('opt-wait');
 
   const PLACEHOLDERS = {
     auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
@@ -55,8 +56,9 @@
     const params = new URLSearchParams();
     if (optRaw.checked) params.set('raw', 'true');
     if (optFresh.checked) params.set('fresh', 'true');
+    if (optWait.checked) params.set('wait', 'true');
 
-    const url = `/api/${type}/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ''}`;
+    const url = `/api/v1/${type}/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ''}`;
 
     try {
       const resp = await fetch(url);
@@ -141,29 +143,74 @@
     const isSteam = reqType === 'steam' || 'steam_id_64' in response;
     const isUrl = reqType === 'url' || 'landing_url' in response;
     const isApk = reqType === 'apk' || 'package_name' in response;
+    const isParcel = reqType === 'parcel' || 'tracking_number' in response;
 
     let excludedKeys = [];
 
     if (isSteam) {
       const profileCard = createSteamProfileCard(response);
       if (profileCard) resultCards.appendChild(profileCard);
-      
+
       const invCard = createSteamInventoriesCard(response);
       if (invCard) resultCards.appendChild(invCard);
 
       excludedKeys = [
-        'steam_links', 'inventories', 'total_inventory_items', 'has_public_inventories',
-        'username', 'profile_url', 'avatar_url', 'persona_state', 'community_visibility_state',
-        'last_logoff', 'real_name', 'primary_clan_id', 'created_at', 'country_code', 'state_code',
-        'city_id', 'game_extrainfo', 'game_id', 'community_banned', 'vac_banned', 'vac_bans_count',
-        'days_since_last_ban', 'game_bans_count', 'economy_ban_state', 'steam_id_64',
-        'steam_id_2', 'steam_id_3', 'backpack_value_tf2', 'trust_positive', 'trust_negative',
-        'backpack_tf_banned', 'backpack_tf_premium', 'csfloat_registered', 'csfloat_username',
-        'csfloat_avatar', 'csfloat_total_sales', 'csfloat_total_purchases', 'csfloat_median_delivery_seconds',
-        'price_today', 'price_lowest', 'games_owned', 'hours_played', 'game_count', 'total_playtime_hours',
+        'steam_links',
+        'inventories',
+        'total_inventory_items',
+        'has_public_inventories',
+        'username',
+        'profile_url',
+        'avatar_url',
+        'persona_state',
+        'community_visibility_state',
+        'last_logoff',
+        'real_name',
+        'primary_clan_id',
+        'created_at',
+        'country_code',
+        'state_code',
+        'city_id',
+        'game_extrainfo',
+        'game_id',
+        'community_banned',
+        'vac_banned',
+        'vac_bans_count',
+        'days_since_last_ban',
+        'game_bans_count',
+        'economy_ban_state',
+        'steam_id_64',
+        'steam_id_2',
+        'steam_id_3',
+        'backpack_value_tf2',
+        'trust_positive',
+        'trust_negative',
+        'backpack_tf_banned',
+        'backpack_tf_premium',
+        'csfloat_registered',
+        'csfloat_username',
+        'csfloat_avatar',
+        'csfloat_total_sales',
+        'csfloat_total_purchases',
+        'csfloat_median_delivery_seconds',
+        'price_today',
+        'price_lowest',
+        'games_owned',
+        'hours_played',
+        'game_count',
+        'total_playtime_hours',
         'most_played_game',
-        'avatar_icon', 'avatar_medium', 'avatar_full', 'privacy_state', 'custom_url', 'member_since',
-        'headline', 'summary', 'state_message', 'trade_ban_state', 'is_limited_account'
+        'avatar_icon',
+        'avatar_medium',
+        'avatar_full',
+        'privacy_state',
+        'custom_url',
+        'member_since',
+        'headline',
+        'summary',
+        'state_message',
+        'trade_ban_state',
+        'is_limited_account',
       ];
     } else if (isUrl) {
       const metaCard = createUrlMetadataCard(response);
@@ -179,18 +226,75 @@
       if (headersCard) resultCards.appendChild(headersCard);
 
       excludedKeys = [
-        'query', 'landing_url', 'http_status', 'content_type', 'content_length', 'server',
-        'powered_by', 'redirect_chain', 'is_redirected', 'security_headers', 'ssl', 'meta'
+        'query',
+        'landing_url',
+        'http_status',
+        'content_type',
+        'content_length',
+        'server',
+        'powered_by',
+        'redirect_chain',
+        'is_redirected',
+        'security_headers',
+        'ssl',
+        'meta',
       ];
     } else if (isApk) {
       const apkCard = createApkCard(response);
       if (apkCard) resultCards.appendChild(apkCard);
 
       excludedKeys = [
-        'package_name', 'package', 'title', 'version', 'versionName', 'developer', 'developer_email',
-        'score', 'installs', 'genre', 'price', 'is_free', 'free_provider', 'updated', 'url', 'icon',
-        'downloads', 'application', 'manifest', 'usesPermissions', 'permissions', 'checksums', 'filelist'
+        'package_name',
+        'package',
+        'title',
+        'version',
+        'versionName',
+        'developer',
+        'developer_email',
+        'score',
+        'installs',
+        'genre',
+        'price',
+        'is_free',
+        'free_provider',
+        'updated',
+        'url',
+        'icon',
+        'downloads',
+        'application',
+        'manifest',
+        'usesPermissions',
+        'permissions',
+        'checksums',
+        'filelist',
       ];
+    } else if (isParcel) {
+      const parcelCard = createParcelCard(response);
+      if (parcelCard) resultCards.appendChild(parcelCard);
+
+      excludedKeys = [
+        'tracking_number',
+        'carrier',
+        'status',
+        'status_code',
+        'status_description',
+        'delivered',
+        'origin',
+        'destination',
+        'weight',
+        'estimated_delivery',
+        'days_in_transit',
+        'events',
+        'couriers',
+      ];
+    }
+
+    // Exclude coordinates for physical geolocations to render on Map card
+    const hasLatLong = (typeof response.latitude === 'number' && typeof response.longitude === 'number') ||
+                       (typeof response.lat === 'number' && typeof response.lon === 'number') ||
+                       (typeof response.lat === 'number' && typeof response.lng === 'number');
+    if (hasLatLong && !isParcel) {
+      excludedKeys.push('latitude', 'longitude', 'lat', 'lon', 'lng');
     }
 
     const CARD_KEYS = [
@@ -247,6 +351,14 @@
       ) {
         resultCards.appendChild(createCard(key, response[key]));
       }
+    }
+
+    // Append physical location Map Card if hasLatLong is true
+    if (hasLatLong && !isParcel) {
+      const lat = typeof response.latitude === 'number' ? response.latitude : response.lat;
+      const lng = typeof response.longitude === 'number' ? response.longitude : (response.longitude || response.lon || response.lng);
+      const label = response.formatted_address || response.display_name || response.city || response.ip || 'Location Pin';
+      resultCards.appendChild(createLocationMapCard(lat, lng, label));
     }
 
     if (Array.isArray(response.emails)) {
@@ -361,17 +473,17 @@
       3: { label: 'Away', class: 'away' },
       4: { label: 'Snooze', class: 'snooze' },
       5: { label: 'Looking to Trade', class: 'trade' },
-      6: { label: 'Looking to Play', class: 'play' }
+      6: { label: 'Looking to Play', class: 'play' },
     };
-    
+
     let stateLabel = 'Offline';
     let stateClass = 'offline';
-    
+
     if (res.persona_state !== undefined && states[res.persona_state]) {
       stateLabel = states[res.persona_state].label;
       stateClass = states[res.persona_state].class;
     }
-    
+
     if (res.game_extrainfo) {
       stateLabel = `In-Game: ${res.game_extrainfo}`;
       stateClass = 'ingame';
@@ -383,7 +495,7 @@
     const isVacBanned = !!res.vac_banned;
     const isCommBanned = !!res.community_banned;
     const isEconBanned = res.economy_ban_state && res.economy_ban_state !== 'none';
-    
+
     let bansHtml = '';
     if (isVacBanned) {
       bansHtml += `<span class="badge badge-danger blink">VAC Banned (${res.vac_bans_count || 1} ban${(res.vac_bans_count || 1) > 1 ? 's' : ''})</span>`;
@@ -398,13 +510,23 @@
       bansHtml += `<span class="badge badge-success">No Bans (Clean)</span>`;
     }
 
-    const avatarUrl = res.avatar_url || 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
+    const avatarUrl =
+      res.avatar_url ||
+      'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
     const username = res.username || 'Steam User';
-    const realName = res.real_name ? `<span class="steam-realname">(${esc(res.real_name)})</span>` : '';
+    const realName = res.real_name
+      ? `<span class="steam-realname">(${esc(res.real_name)})</span>`
+      : '';
     const steamId = res.steam_id_64 || '';
-    const createdAt = res.created_at ? new Date(res.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown';
+    const createdAt = res.created_at
+      ? new Date(res.created_at).toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : 'Unknown';
     const lastLogoff = res.last_logoff ? new Date(res.last_logoff).toLocaleString() : 'Unknown';
-    
+
     let location = '';
     if (res.country_code) {
       location = res.country_code;
@@ -416,19 +538,31 @@
     const steamId3 = res.steam_id_3 || 'Unknown';
 
     // Games Library Statistics
-    const gameCount = res.game_count !== null && res.game_count !== undefined ? res.game_count : res.games_owned;
+    const gameCount =
+      res.game_count !== null && res.game_count !== undefined ? res.game_count : res.games_owned;
     const isGameCountAvailable = gameCount !== null && gameCount !== undefined;
-    const gameCountSource = res.game_count !== null && res.game_count !== undefined ? 'API' : 'SteamDB';
+    const gameCountSource =
+      res.game_count !== null && res.game_count !== undefined ? 'API' : 'SteamDB';
 
-    const totalPlaytime = res.total_playtime_hours !== null && res.total_playtime_hours !== undefined ? res.total_playtime_hours : res.hours_played;
+    const totalPlaytime =
+      res.total_playtime_hours !== null && res.total_playtime_hours !== undefined
+        ? res.total_playtime_hours
+        : res.hours_played;
     const isPlaytimeAvailable = totalPlaytime !== null && totalPlaytime !== undefined;
-    const playtimeSource = res.total_playtime_hours !== null && res.total_playtime_hours !== undefined ? 'API' : 'SteamDB';
+    const playtimeSource =
+      res.total_playtime_hours !== null && res.total_playtime_hours !== undefined
+        ? 'API'
+        : 'SteamDB';
 
     let libraryHtml = '';
     if (isGameCountAvailable || isPlaytimeAvailable || res.most_played_game) {
-      const gamesText = isGameCountAvailable ? `${gameCount.toLocaleString()} games <span class="stats-source">(${gameCountSource})</span>` : 'Private / Unknown';
-      const hoursText = isPlaytimeAvailable ? `${totalPlaytime.toLocaleString()} hrs <span class="stats-source">(${playtimeSource})</span>` : 'Private / Unknown';
-      
+      const gamesText = isGameCountAvailable
+        ? `${gameCount.toLocaleString()} games <span class="stats-source">(${gameCountSource})</span>`
+        : 'Private / Unknown';
+      const hoursText = isPlaytimeAvailable
+        ? `${totalPlaytime.toLocaleString()} hrs <span class="stats-source">(${playtimeSource})</span>`
+        : 'Private / Unknown';
+
       let mostPlayedHtml = 'N/A / Private';
       if (res.most_played_game) {
         const mp = res.most_played_game;
@@ -470,9 +604,10 @@
     // Backpack.tf valuation
     if (res.backpack_value_tf2 !== undefined || res.trust_positive !== undefined) {
       hasThirdParty = true;
-      const bpVal = res.backpack_value_tf2 !== null && res.backpack_value_tf2 !== undefined 
-        ? `$${res.backpack_value_tf2.toFixed(2)}` 
-        : 'N/A';
+      const bpVal =
+        res.backpack_value_tf2 !== null && res.backpack_value_tf2 !== undefined
+          ? `$${res.backpack_value_tf2.toFixed(2)}`
+          : 'N/A';
       const posTrust = res.trust_positive || 0;
       const negTrust = res.trust_negative || 0;
       const isBpBanned = !!res.backpack_tf_banned;
@@ -508,13 +643,13 @@
     if (res.csfloat_registered !== undefined) {
       hasThirdParty = true;
       const isReg = !!res.csfloat_registered;
-      
+
       if (isReg) {
         const usernameFloat = res.csfloat_username || 'Registered';
         const sales = res.csfloat_total_sales || 0;
         const purchases = res.csfloat_total_purchases || 0;
-        const delivery = res.csfloat_median_delivery_seconds 
-          ? `${Math.round(res.csfloat_median_delivery_seconds / 60)} mins` 
+        const delivery = res.csfloat_median_delivery_seconds
+          ? `${Math.round(res.csfloat_median_delivery_seconds / 60)} mins`
           : 'N/A';
 
         csfloatHtml = `
@@ -596,15 +731,24 @@
 
     const links = res.steam_links || {};
     let linksHtml = '';
-    if (links.steam_community) linksHtml += `<a href="${esc(links.steam_community)}" target="_blank" rel="noopener" class="steam-btn steam-community-btn">Steam Community</a>`;
-    if (links.steam_db) linksHtml += `<a href="${esc(links.steam_db)}" target="_blank" rel="noopener" class="steam-btn steamdb-btn">SteamDB</a>`;
-    if (links.steam_rep) linksHtml += `<a href="${esc(links.steam_rep)}" target="_blank" rel="noopener" class="steam-btn steamrep-btn">SteamRep</a>`;
-    if (links.backpack_tf) linksHtml += `<a href="${esc(links.backpack_tf)}" target="_blank" rel="noopener" class="steam-btn backpack-btn">backpack.tf</a>`;
-    if (links.csfloat) linksHtml += `<a href="${esc(links.csfloat)}" target="_blank" rel="noopener" class="steam-btn csfloat-btn">CSFloat</a>`;
-    if (links.steamid_finder) linksHtml += `<a href="${esc(links.steamid_finder)}" target="_blank" rel="noopener" class="steam-btn finder-btn">SteamID Finder</a>`;
-    if (links.steamhistory) linksHtml += `<a href="${esc(links.steamhistory)}" target="_blank" rel="noopener" class="steam-btn history-btn">Steam History</a>`;
-    if (links.bansearch) linksHtml += `<a href="${esc(links.bansearch)}" target="_blank" rel="noopener" class="steam-btn bansearch-btn">BanSearch</a>`;
-    if (links.vaclist) linksHtml += `<a href="${esc(links.vaclist)}" target="_blank" rel="noopener" class="steam-btn vaclist-btn">VacList</a>`;
+    if (links.steam_community)
+      linksHtml += `<a href="${esc(links.steam_community)}" target="_blank" rel="noopener" class="steam-btn steam-community-btn">Steam Community</a>`;
+    if (links.steam_db)
+      linksHtml += `<a href="${esc(links.steam_db)}" target="_blank" rel="noopener" class="steam-btn steamdb-btn">SteamDB</a>`;
+    if (links.steam_rep)
+      linksHtml += `<a href="${esc(links.steam_rep)}" target="_blank" rel="noopener" class="steam-btn steamrep-btn">SteamRep</a>`;
+    if (links.backpack_tf)
+      linksHtml += `<a href="${esc(links.backpack_tf)}" target="_blank" rel="noopener" class="steam-btn backpack-btn">backpack.tf</a>`;
+    if (links.csfloat)
+      linksHtml += `<a href="${esc(links.csfloat)}" target="_blank" rel="noopener" class="steam-btn csfloat-btn">CSFloat</a>`;
+    if (links.steamid_finder)
+      linksHtml += `<a href="${esc(links.steamid_finder)}" target="_blank" rel="noopener" class="steam-btn finder-btn">SteamID Finder</a>`;
+    if (links.steamhistory)
+      linksHtml += `<a href="${esc(links.steamhistory)}" target="_blank" rel="noopener" class="steam-btn history-btn">Steam History</a>`;
+    if (links.bansearch)
+      linksHtml += `<a href="${esc(links.bansearch)}" target="_blank" rel="noopener" class="steam-btn bansearch-btn">BanSearch</a>`;
+    if (links.vaclist)
+      linksHtml += `<a href="${esc(links.vaclist)}" target="_blank" rel="noopener" class="steam-btn vaclist-btn">VacList</a>`;
 
     card.innerHTML = `
       <div class="steam-profile-header">
@@ -655,11 +799,15 @@
           <span class="detail-label">Last Logoff</span>
           <span class="detail-value">${esc(lastLogoff)}</span>
         </div>
-        ${location ? `
+        ${
+          location
+            ? `
         <div class="detail-item">
           <span class="detail-label">Location</span>
           <span class="detail-value">${esc(location)}</span>
-        </div>` : ''}
+        </div>`
+            : ''
+        }
       </div>
 
       ${libraryHtml}
@@ -675,7 +823,7 @@
     `;
 
     // Modern multi-copy events
-    card.querySelectorAll('.copy-btn').forEach(btn => {
+    card.querySelectorAll('.copy-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const textToCopy = btn.getAttribute('data-copy');
         navigator.clipboard.writeText(textToCopy);
@@ -694,36 +842,36 @@
 
   function createSteamInventoriesCard(res) {
     if (!res.inventories || res.inventories.length === 0) return null;
-    
+
     const card = document.createElement('div');
     card.className = 'steam-inventory-card';
     card.style.gridColumn = '1 / -1';
-    
+
     let html = `
       <div class="card-label">Game Inventories</div>
       <div class="steam-inventories-grid">
     `;
-    
+
     for (const inv of res.inventories) {
       const isPublic = inv.status === 'Public';
-      const statusBadge = isPublic 
-        ? `<span class="badge badge-success">🔓 Public</span>` 
+      const statusBadge = isPublic
+        ? `<span class="badge badge-success">🔓 Public</span>`
         : `<span class="badge badge-danger">🔒 ${esc(inv.status)}</span>`;
-      
+
       let samplesHtml = '';
       if (inv.sample_items && inv.sample_items.length > 0) {
         samplesHtml = `
           <div class="inventory-samples">
             <span class="samples-title">Item Preview:</span>
             <ul class="samples-list">
-              ${inv.sample_items.map(item => `<li>${esc(item)}</li>`).join('')}
+              ${inv.sample_items.map((item) => `<li>${esc(item)}</li>`).join('')}
             </ul>
           </div>
         `;
       } else if (isPublic && inv.item_count === 0) {
         samplesHtml = `<div class="inventory-empty">No items found (Empty inventory).</div>`;
       }
-      
+
       html += `
         <div class="inventory-item-card">
           <div class="inventory-item-header">
@@ -737,7 +885,7 @@
         </div>
       `;
     }
-    
+
     html += `</div>`;
     card.innerHTML = html;
     return card;
@@ -747,22 +895,27 @@
     const card = document.createElement('div');
     card.className = 'url-metadata-card';
     card.style.gridColumn = '1 / -1';
-    
+
     const meta = res.meta || {};
     const title = meta.title || res.query || 'Scanned URL';
     const description = meta.description || 'No description available for this page.';
-    const faviconUrl = meta.favicon || `https://www.google.com/s2/favicons?domain=${new URL(res.landing_url || res.query).hostname}&sz=32`;
+    const faviconUrl =
+      meta.favicon ||
+      `https://www.google.com/s2/favicons?domain=${new URL(res.landing_url || res.query).hostname}&sz=32`;
     const httpStatus = res.http_status || 200;
-    
+
     let statusClass = 'success';
     if (httpStatus >= 300 && httpStatus < 400) statusClass = 'warning';
     if (httpStatus >= 400) statusClass = 'danger';
-    
+
     let techHtml = '';
     if (res.server) techHtml += `<span class="badge tech-badge">Server: ${esc(res.server)}</span>`;
-    if (res.powered_by) techHtml += `<span class="badge tech-badge">Powered by: ${esc(res.powered_by)}</span>`;
-    if (res.content_type) techHtml += `<span class="badge tech-badge">Type: ${esc(res.content_type)}</span>`;
-    if (res.content_length) techHtml += `<span class="badge tech-badge">Size: ${(res.content_length / 1024).toFixed(2)} KB</span>`;
+    if (res.powered_by)
+      techHtml += `<span class="badge tech-badge">Powered by: ${esc(res.powered_by)}</span>`;
+    if (res.content_type)
+      techHtml += `<span class="badge tech-badge">Type: ${esc(res.content_type)}</span>`;
+    if (res.content_length)
+      techHtml += `<span class="badge tech-badge">Size: ${(res.content_length / 1024).toFixed(2)} KB</span>`;
 
     let ogCardHtml = '';
     const og = meta.open_graph || {};
@@ -771,22 +924,26 @@
     const ogDesc = og.description || twitter.description;
     const ogImg = og.image || twitter.image;
     const siteName = og.site_name || siteNameFromUrl(res.landing_url);
-    
+
     if (ogTitle || ogDesc || ogImg) {
       ogCardHtml = `
         <div class="og-embed-preview">
           <div class="og-embed-site">${esc(siteName)}</div>
           ${ogTitle ? `<div class="og-embed-title"><a href="${esc(res.landing_url)}" target="_blank" rel="noopener">${esc(ogTitle)}</a></div>` : ''}
           ${ogDesc ? `<div class="og-embed-description">${esc(ogDesc)}</div>` : ''}
-          ${ogImg ? `
+          ${
+            ogImg
+              ? `
             <div class="og-embed-image-wrapper">
               <img src="${esc(ogImg)}" alt="Open Graph Preview" class="og-embed-image" onerror="this.style.display='none'">
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
     }
-    
+
     card.innerHTML = `
       <div class="url-meta-header">
         <div class="url-favicon-wrapper">
@@ -809,10 +966,10 @@
       
       ${ogCardHtml}
     `;
-    
+
     return card;
   }
-  
+
   function siteNameFromUrl(urlStr) {
     try {
       return new URL(urlStr).hostname;
@@ -823,20 +980,20 @@
 
   function createUrlRedirectChainCard(res) {
     if (!res.redirect_chain || res.redirect_chain.length === 0) return null;
-    
+
     const card = document.createElement('div');
     card.className = 'url-redirect-card';
     card.style.gridColumn = '1 / -1';
-    
+
     let html = `
       <div class="card-label">Redirect Flow (${res.redirect_chain.length} redirect${res.redirect_chain.length > 1 ? 's' : ''})</div>
       <div class="redirect-flow-container">
     `;
-    
+
     res.redirect_chain.forEach((step, index) => {
       const stepUrl = step.url;
       const status = step.status;
-      
+
       html += `
         <div class="redirect-step">
           <div class="redirect-node">
@@ -850,7 +1007,7 @@
         </div>
       `;
     });
-    
+
     html += `
       <div class="redirect-step final-step">
         <div class="redirect-node">
@@ -862,7 +1019,7 @@
         </div>
       </div>
     `;
-    
+
     html += `</div>`;
     card.innerHTML = html;
     return card;
@@ -870,15 +1027,15 @@
 
   function createUrlSslCard(res) {
     if (!res.ssl) return null;
-    
+
     const card = document.createElement('div');
     card.className = 'url-ssl-card';
     card.style.gridColumn = '1 / -1';
-    
+
     const ssl = res.ssl;
     const isExpired = !!ssl.is_expired;
     const days = ssl.days_remaining;
-    
+
     let daysClass = 'badge-success';
     let daysText = `${days} days remaining`;
     if (days < 30) daysClass = 'badge-warning';
@@ -886,7 +1043,7 @@
       daysClass = 'badge-danger blink';
       daysText = 'Expired!';
     }
-    
+
     card.innerHTML = `
       <div class="ssl-header-row">
         <div class="ssl-title">
@@ -900,20 +1057,28 @@
           <span class="ssl-label">Subject CN:</span>
           <span class="ssl-value font-bold">${esc(ssl.subject)}</span>
         </div>
-        ${ssl.subject_org ? `
+        ${
+          ssl.subject_org
+            ? `
         <div class="ssl-detail-item">
           <span class="ssl-label">Organization:</span>
           <span class="ssl-value">${esc(ssl.subject_org)}</span>
-        </div>` : ''}
+        </div>`
+            : ''
+        }
         <div class="ssl-detail-item">
           <span class="ssl-label">Issuer:</span>
           <span class="ssl-value">${esc(ssl.issuer)}</span>
         </div>
-        ${ssl.issuer_org ? `
+        ${
+          ssl.issuer_org
+            ? `
         <div class="ssl-detail-item">
           <span class="ssl-label">Issuer Org:</span>
           <span class="ssl-value">${esc(ssl.issuer_org)}</span>
-        </div>` : ''}
+        </div>`
+            : ''
+        }
         <div class="ssl-detail-item">
           <span class="ssl-label">Validity Period:</span>
           <span class="ssl-value">${new Date(ssl.valid_from).toLocaleDateString()} to ${new Date(ssl.valid_to).toLocaleDateString()}</span>
@@ -928,17 +1093,17 @@
         </div>
       </div>
     `;
-    
+
     return card;
   }
 
   function createUrlSecurityHeadersCard(res) {
     if (!res.security_headers) return null;
-    
+
     const card = document.createElement('div');
     card.className = 'url-headers-card';
     card.style.gridColumn = '1 / -1';
-    
+
     const headers = res.security_headers;
     const headerKeys = {
       content_security_policy: 'Content-Security-Policy',
@@ -946,17 +1111,17 @@
       x_frame_options: 'X-Frame-Options',
       x_content_type_options: 'X-Content-Type-Options',
       x_xss_protection: 'X-XSS-Protection',
-      referrer_policy: 'Referrer-Policy'
+      referrer_policy: 'Referrer-Policy',
     };
-    
+
     let checklistHtml = '';
     let secureCount = 0;
-    
+
     for (const [key, label] of Object.entries(headerKeys)) {
       const val = headers[key];
       const isSecured = val !== null && val !== undefined;
       if (isSecured) secureCount++;
-      
+
       checklistHtml += `
         <div class="header-check-item ${isSecured ? 'secured' : 'missing'}">
           <div class="header-check-info">
@@ -969,12 +1134,12 @@
         </div>
       `;
     }
-    
+
     const scorePct = Math.round((secureCount / 6) * 100);
     let scoreClass = 'badge-danger';
     if (scorePct >= 50) scoreClass = 'badge-warning';
     if (scorePct >= 80) scoreClass = 'badge-success';
-    
+
     card.innerHTML = `
       <div class="headers-header-row">
         <div>
@@ -987,35 +1152,39 @@
         ${checklistHtml}
       </div>
     `;
-    
+
     return card;
   }
 
   function createApkCard(res) {
     if (!res.package_name && !res.package) return null;
-    
+
     const card = document.createElement('div');
     card.className = 'apk-card';
     card.style.gridColumn = '1 / -1';
-    
+
     const icon = res.icon || 'https://via.placeholder.com/128';
     const title = res.title || res.package_name || res.package || 'Unknown App';
     const developer = res.developer || 'Unknown Developer';
-    const devEmail = res.developer_email ? `<a href="mailto:${esc(res.developer_email)}" class="detail-link">${esc(res.developer_email)}</a>` : '';
+    const devEmail = res.developer_email
+      ? `<a href="mailto:${esc(res.developer_email)}" class="detail-link">${esc(res.developer_email)}</a>`
+      : '';
     const version = res.version || res.versionName || 'N/A';
     const price = res.price || (res.is_free ? 'Free' : 'N/A');
     const score = res.score ? parseFloat(res.score).toFixed(1) : 'N/A';
     const installs = res.installs || 'N/A';
     const genre = res.genre || 'N/A';
     const updated = res.updated ? new Date(res.updated).toLocaleDateString() : 'N/A';
-    
+
     let downloadsHtml = '';
     if (res.downloads && res.downloads.length > 0) {
       downloadsHtml = `
         <div class="apk-downloads-section">
           <h4 class="section-title">📥 Downloads</h4>
           <div class="apk-downloads-list">
-            ${res.downloads.map(dl => `
+            ${res.downloads
+              .map(
+                (dl) => `
               <div class="apk-download-item">
                 <a href="${esc(dl.url)}" target="_blank" rel="noopener" class="detail-link">
                   <span class="dl-source font-bold">${esc(dl.source)}</span>
@@ -1025,12 +1194,14 @@
                   <span class="badge ${dl.status === 200 ? 'badge-success' : 'badge-danger'}">HTTP ${dl.status || 'Unknown'}</span>
                 </div>
               </div>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
         </div>
       `;
     }
-    
+
     card.innerHTML = `
       <div class="url-meta-header apk-header">
         <div class="url-favicon-wrapper apk-icon-wrapper">
@@ -1061,7 +1232,7 @@
       </div>
       ${downloadsHtml}
     `;
-    
+
     return card;
   }
 
@@ -1070,5 +1241,172 @@
     const d = document.createElement('div');
     d.textContent = String(str);
     return d.innerHTML;
+  }
+
+  // Dynamic Leaflet and Map Integration Helpers
+  function loadLeaflet(callback) {
+    if (window.L && window.L.Icon && window.L.Icon.Default) {
+      delete window.L.Icon.Default.prototype._getIconUrl;
+      window.L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      });
+    }
+    callback();
+  }
+
+  function createLocationMapCard(lat, lng, label) {
+    const card = document.createElement('div');
+    card.className = 'result-card map-card';
+    card.style.gridColumn = '1 / -1';
+    
+    const mapId = `map-${Math.random().toString(36).substring(2, 9)}`;
+
+    card.innerHTML = `
+      <div class="card-label">📍 Physical Location Map</div>
+      <div id="${mapId}" style="height: 350px; border-radius: 10px; margin-top: 8px;"></div>
+    `;
+
+    setTimeout(() => {
+      loadLeaflet(() => {
+        const map = window.L.map(mapId).setView([lat, lng], 12);
+        window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(map);
+
+        window.L.marker([lat, lng])
+          .addTo(map)
+          .bindPopup(`<strong>${esc(label || 'Physical Location')}</strong><br>Latitude: ${lat}<br>Longitude: ${lng}`)
+          .openPopup();
+
+        // Run staggered invalidateSize checks to guarantee recalculating dimensions during any layout transitions
+        [100, 300, 600, 1000, 1800].forEach(delay => {
+          setTimeout(() => {
+            map.invalidateSize();
+          }, delay);
+        });
+      });
+    }, 50);
+
+    return card;
+  }
+
+  function createParcelCard(res) {
+    const card = document.createElement('div');
+    card.className = 'parcel-dual-pane';
+    card.style.gridColumn = '1 / -1';
+
+    const trackingNumber = res.tracking_number || 'Unknown';
+    const status = res.status || 'Pending';
+    const carrier = res.couriers ? res.couriers.join(', ') : 'Unknown';
+    const delivered = res.delivered ? '✓ Yes' : '✗ No';
+    const origin = res.origin || 'N/A';
+    const destination = res.destination || 'N/A';
+    const estDelivery = res.estimated_delivery || 'N/A';
+
+    let timelineHtml = `
+      <div style="margin-bottom:1rem;">
+        <h3 style="font-size:1.1rem;margin-bottom:0.25rem;color:var(--text-primary);">📦 Tracking Timeline</h3>
+        <div style="font-size:0.8rem;color:var(--text-secondary);">Carrier: <strong>${esc(carrier)}</strong> &bull; Delivered: <strong>${esc(delivered)}</strong></div>
+      </div>
+      <div class="timeline-container">
+    `;
+
+    const events = res.events || [];
+    // Sort events newest first for timeline display
+    const sortedEvents = [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    if (sortedEvents.length === 0) {
+      timelineHtml += `
+        <div style="color:var(--text-muted);font-size:0.875rem;padding:1rem 0;">
+          No tracking history events recorded yet.
+        </div>
+      `;
+    } else {
+      sortedEvents.forEach((evt, idx) => {
+        const timeStr = evt.date ? new Date(evt.date).toLocaleString() : 'N/A';
+        const isLatest = idx === 0;
+        const sourceHtml = evt.source ? `<span class="timeline-source">${esc(evt.source)}</span>` : '';
+        const locHtml = evt.location ? `
+          <div class="timeline-loc">
+            <span>📍 ${esc(evt.location)}</span>
+          </div>
+        ` : '';
+
+        timelineHtml += `
+          <div class="timeline-event ${isLatest ? 'latest' : ''}">
+            <div class="timeline-dot"></div>
+            <div class="timeline-time">${esc(timeStr)}</div>
+            <div class="timeline-desc">${esc(evt.status || evt.description || '')}</div>
+            ${locHtml}
+            ${sourceHtml}
+          </div>
+        `;
+      });
+    }
+    timelineHtml += '</div>';
+
+    const mapId = `map-${Math.random().toString(36).substring(2, 9)}`;
+
+    card.innerHTML = `
+      <div class="parcel-timeline-pane">${timelineHtml}</div>
+      <div class="parcel-map-pane">
+        <div id="${mapId}" style="height: 450px; width: 100%; border-radius: var(--radius-md);"></div>
+      </div>
+    `;
+
+    // Extract coordinate locations from parcel response or individual timeline events
+    let coordinates = [];
+    if (typeof res.latitude === 'number' && typeof res.longitude === 'number') {
+      coordinates.push({ lat: res.latitude, lng: res.longitude, label: 'Current Position' });
+    }
+
+    events.forEach(evt => {
+      if (typeof evt.latitude === 'number' && typeof evt.longitude === 'number') {
+        coordinates.push({ lat: evt.latitude, lng: evt.longitude, label: evt.status || 'Transit checkpoint' });
+      }
+    });
+
+    setTimeout(() => {
+      loadLeaflet(() => {
+        const map = window.L.map(mapId);
+        window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(map);
+
+        if (coordinates.length > 0) {
+          const latLngs = coordinates.map(c => [c.lat, c.lng]);
+          coordinates.forEach(c => {
+            window.L.marker([c.lat, c.lng])
+              .addTo(map)
+              .bindPopup(`<strong>${esc(c.label)}</strong>`);
+          });
+
+          if (coordinates.length === 1) {
+            map.setView([coordinates[0].lat, coordinates[0].lng], 10);
+          } else {
+            const polyline = window.L.polyline(latLngs, { color: 'var(--accent-secondary)', weight: 3, dashArray: '5, 10' }).addTo(map);
+            map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+          }
+        } else {
+          // Fallback to center view if no coordinate data exists
+          map.setView([51.1657, 10.4515], 5);
+          window.L.popup()
+            .setLatLng([51.1657, 10.4515])
+            .setContent('<strong>Geographic routing not provided</strong><br>Check chronological logs on the left.')
+            .openOn(map);
+        }
+
+        // Run staggered invalidateSize checks to guarantee recalculating dimensions during any layout transitions
+        [100, 300, 600, 1000, 1800].forEach(delay => {
+          setTimeout(() => {
+            map.invalidateSize();
+          }, delay);
+        });
+      });
+    }, 50);
+
+    return card;
   }
 })();
