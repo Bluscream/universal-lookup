@@ -2,6 +2,8 @@ import 'dotenv/config';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
+export const API_PREFIX = '/api/v1';
+
 function env(key: string, fallback: string = ''): string {
   return process.env[key] ?? fallback;
 }
@@ -21,7 +23,7 @@ function envBool(key: string, fallback: boolean): boolean {
 
 export const config = {
   // Server
-  port: envInt('PORT', 24010),
+  port: envInt('PORT', 24011),
   host: env('HOST', '0.0.0.0'),
   logLevel: env('LOG_LEVEL', 'info'),
 

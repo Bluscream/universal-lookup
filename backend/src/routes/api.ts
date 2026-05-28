@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { config, getCacheTtl } from '../config.js';
+import { config, getCacheTtl, API_PREFIX } from '../config.js';
 import { getCached, setCache } from '../db/cache.js';
 import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/merger.js';
 import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.js';
@@ -52,160 +52,167 @@ const responseSchema = {
 };
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
-  // GET: /api/:type/:query
-  app.get<{
-    Params: { type: string; query: string };
-    Querystring: { raw?: string; fresh?: string; wait?: string };
-  }>(
-    '/api/v1/:type/:query',
-    {
-      schema: {
-        tags: ['Lookup'],
-        summary: 'Perform a lookup (GET)',
-        description: 'Perform a lookup of the specified type for the given query.',
-        params: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', enum: [...VALID_TYPES], description: 'Lookup type' },
-            query: { type: 'string', description: 'The query to look up' },
-          },
-          required: ['type', 'query'],
-        },
-        querystring: {
-          type: 'object',
-          properties: {
-            raw: { type: 'string', enum: ['true', 'false', '1', '0'] },
-            fresh: { type: 'string', enum: ['true', 'false', '1', '0'] },
-            wait: { type: 'string', enum: ['true', 'false', '1', '0'] },
-          },
-        },
-        response: responseSchema,
-      },
-    },
-    async (request) => {
-      return handleLookup(request.params.type, request.params.query, request.query, request.ip);
-    },
-  );
+  const prefixes = [API_PREFIX, '/api', ''];
 
-  // POST: /api/:type (Home Assistant / rest_command support)
-  app.post<{
-    Params: { type: string };
-    Body: {
-      query?: string;
-      raw?: boolean | string;
-      fresh?: boolean | string;
-      wait?: boolean | string;
-    };
-  }>(
-    '/api/v1/:type',
-    {
-      schema: {
-        tags: ['Lookup'],
-        summary: 'Perform a lookup (POST)',
-        description: 'Support for Home Assistant rest_command. Send query in JSON body.',
-        params: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', enum: [...VALID_TYPES] },
+  for (const prefix of prefixes) {
+    // GET: /:type/:query
+    app.get<{
+      Params: { type: string; query: string };
+      Querystring: { raw?: string; fresh?: string; wait?: string };
+    }>(
+      `${prefix}/:type/:query`,
+      {
+        schema: {
+          tags: ['Lookup'],
+          summary: `Perform a lookup (GET - ${prefix || 'root'})`,
+          description: 'Perform a lookup of the specified type for the given query.',
+          params: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', enum: [...VALID_TYPES], description: 'Lookup type' },
+              query: { type: 'string', description: 'The query to look up' },
+            },
+            required: ['type', 'query'],
           },
-          required: ['type'],
-        },
-        body: {
-          type: 'object',
-          properties: {
-            query: { type: 'string' },
-            raw: { type: ['boolean', 'string'] },
-            fresh: { type: ['boolean', 'string'] },
-            wait: { type: ['boolean', 'string'] },
+          querystring: {
+            type: 'object',
+            properties: {
+              raw: { type: 'string', enum: ['true', 'false', '1', '0'] },
+              fresh: { type: 'string', enum: ['true', 'false', '1', '0'] },
+              wait: { type: 'string', enum: ['true', 'false', '1', '0'] },
+            },
           },
-          required: ['query'],
+          response: responseSchema,
         },
-        response: responseSchema,
       },
-    },
-    async (request) => {
-      const { query, raw, fresh, wait } = request.body;
-      const queryParams = {
-        raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
-        fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
-        wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
+      async (request) => {
+        return handleLookup(request.params.type, request.params.query, request.query, request.ip);
+      },
+    );
+
+    // POST: /:type (Home Assistant / rest_command support)
+    app.post<{
+      Params: { type: string };
+      Body: {
+        query?: string;
+        raw?: boolean | string;
+        fresh?: boolean | string;
+        wait?: boolean | string;
       };
-      return handleLookup(request.params.type, query || '', queryParams, request.ip);
-    },
-  );
-
-  // POST: /api/lookup (Generic)
-  app.post<{
-    Body: {
-      type: string;
-      query: string;
-      raw?: boolean | string;
-      fresh?: boolean | string;
-      wait?: boolean | string;
-    };
-  }>(
-    '/api/v1/lookup',
-    {
-      schema: {
-        tags: ['Lookup'],
-        summary: 'Perform a lookup (Generic POST)',
-        body: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', enum: [...VALID_TYPES] },
-            query: { type: 'string' },
-            raw: { type: ['boolean', 'string'] },
-            fresh: { type: ['boolean', 'string'] },
-            wait: { type: ['boolean', 'string'] },
+    }>(
+      `${prefix}/:type`,
+      {
+        schema: {
+          tags: ['Lookup'],
+          summary: `Perform a lookup (POST - ${prefix || 'root'})`,
+          description: 'Support for Home Assistant rest_command. Send query in JSON body.',
+          params: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', enum: [...VALID_TYPES] },
+            },
+            required: ['type'],
           },
-          required: ['type', 'query'],
+          body: {
+            type: 'object',
+            properties: {
+              query: { type: 'string' },
+              raw: { type: ['boolean', 'string'] },
+              fresh: { type: ['boolean', 'string'] },
+              wait: { type: ['boolean', 'string'] },
+            },
+            required: ['query'],
+          },
+          response: responseSchema,
         },
-        response: responseSchema,
       },
-    },
-    async (request) => {
-      const { type, query, raw, fresh, wait } = request.body;
-      const queryParams = {
-        raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
-        fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
-        wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
-      };
-      return handleLookup(type, query, queryParams, request.ip);
-    },
-  );
+      async (request) => {
+        const { query, raw, fresh, wait } = request.body;
+        const queryParams = {
+          raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
+          fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
+          wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
+        };
+        return handleLookup(request.params.type, query || '', queryParams, request.ip);
+      },
+    );
 
-  // Wildcard for multi-segment queries
-  app.get<{
-    Params: { type: string; '*': string };
-    Querystring: { raw?: string; fresh?: string; wait?: string };
-  }>('/api/v1/:type/*', { schema: { hide: true } }, async (request) => {
-    const query = (request.params as Record<string, string>)['*'];
-    return handleLookup(request.params.type, query, request.query, request.ip);
-  });
+    // POST: /lookup (Generic)
+    app.post<{
+      Body: {
+        type: string;
+        query: string;
+        raw?: boolean | string;
+        fresh?: boolean | string;
+        wait?: boolean | string;
+      };
+    }>(
+      `${prefix}/lookup`,
+      {
+        schema: {
+          tags: ['Lookup'],
+          summary: `Perform a lookup (Generic POST - ${prefix || 'root'})`,
+          body: {
+            type: 'object',
+            properties: {
+              type: { type: 'string', enum: [...VALID_TYPES] },
+              query: { type: 'string' },
+              raw: { type: ['boolean', 'string'] },
+              fresh: { type: ['boolean', 'string'] },
+              wait: { type: ['boolean', 'string'] },
+            },
+            required: ['type', 'query'],
+          },
+          response: responseSchema,
+        },
+      },
+      async (request) => {
+        const { type, query, raw, fresh, wait } = request.body;
+        const queryParams = {
+          raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
+          fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
+          wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
+        };
+        return handleLookup(type, query, queryParams, request.ip);
+      },
+    );
+
+    // Wildcard for multi-segment queries
+    app.get<{
+      Params: { type: string; '*': string };
+      Querystring: { raw?: string; fresh?: string; wait?: string };
+    }>(`${prefix}/:type/*`, { schema: { hide: true } }, async (request) => {
+      const query = (request.params as Record<string, string>)['*'];
+      return handleLookup(request.params.type, query, request.query, request.ip);
+    });
+  }
 }
 
 export async function registerShortcutRoutes(app: FastifyInstance): Promise<void> {
   // SPA-style routes: /:type/:query serves the frontend, which auto-triggers lookup via /api/
   const { readFile } = await import('node:fs/promises');
-  const { join, dirname } = await import('node:path');
-  const { fileURLToPath } = await import('node:url');
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const indexPath = join(__dirname, '..', 'frontend', 'index.html');
+  const { join } = await import('node:path');
+  const { existsSync } = await import('node:fs');
+  const reactBuildDir = join(process.cwd(), 'frontend', 'dist');
+  const legacyFrontendDir = join(process.cwd(), 'src', 'frontend');
+  const frontendRoot = existsSync(reactBuildDir) ? reactBuildDir : legacyFrontendDir;
+  const indexPath = join(frontendRoot, 'index.html');
 
   const serveIndex = async (_request: FastifyRequest, reply: FastifyReply) => {
     const html = await readFile(indexPath, 'utf-8');
     return reply.type('text/html').send(html);
   };
 
+  const typePattern = 'tel|ip|domain|email|location|parcel|web|steam|url|apk|auto';
+
   app.get<{
     Params: { type: string; query: string };
   }>(
-    '/:type/:query',
+    `/:type(${typePattern})/:query`,
     {
       schema: { hide: true },
     },
     async (request, reply) => {
-      if (!VALID_TYPES.has(request.params.type)) return; // Let other handlers deal with it
       return serveIndex(request, reply);
     },
   );
@@ -214,13 +221,11 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
   app.get<{
     Params: { type: string; '*': string };
   }>(
-    '/:type/*',
+    `/:type(${typePattern})/*`,
     {
       schema: { hide: true },
     },
     async (request, reply) => {
-      const type = request.params.type;
-      if (!VALID_TYPES.has(type)) return; // Let static/frontend handle it
       return serveIndex(request, reply);
     },
   );

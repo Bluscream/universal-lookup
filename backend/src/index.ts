@@ -3,16 +3,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyCors from '@fastify/cors';
 import fastifyRateLimit from '@fastify/rate-limit';
-import fastifyStatic from '@fastify/static';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
-import { config } from './config.js';
+import { config, API_PREFIX } from './config.js';
 import { cleanExpiredCache, getCacheStats } from './db/cache.js';
 import { closeDatabase, initDatabase } from './db/migrations.js';
 import { ensureMaxmindDbs } from './lib/maxmind-downloader.js';
 import { resolvePuppeteerExecutablePath } from './lib/puppeteer.js';
-import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
+import { registerApiRoutes } from './routes/api.js';
 import { registerDocsRoutes } from './routes/docs.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -62,14 +61,6 @@ async function main() {
     allowList: ['127.0.0.1', '::1'],
   });
 
-  // Legacy /api -> /api/v1 redirect hook
-  app.addHook('onRequest', async (request, reply) => {
-    const url = request.url;
-    if (url === '/api' || (url.startsWith('/api/') && !url.startsWith('/api/v1/'))) {
-      const remainder = url === '/api' ? '' : url.slice(5);
-      return reply.redirect(`/api/v1/${remainder}`, 302);
-    }
-  });
 
   // Auth hook — if REQUIRE_TOKEN is set, validate token on /api/v1/* routes
   if (config.requireToken) {
@@ -77,9 +68,9 @@ async function main() {
       const path = request.url;
       // Only protect /api/v1/* routes (not /docs, / frontend, etc.)
       if (
-        !path.startsWith('/api/v1/') ||
-        path.startsWith('/api/v1/health') ||
-        path.startsWith('/api/v1/types')
+        !path.startsWith(`${API_PREFIX}/`) ||
+        path.startsWith(`${API_PREFIX}/health`) ||
+        path.startsWith(`${API_PREFIX}/types`)
       ) {
         return;
       }
@@ -131,132 +122,9 @@ async function main() {
     theme: { title: 'Universal Lookup API Docs' },
   });
 
-  // Serve frontend static files — prefer React build, fallback to legacy
-  const reactBuildDir = join(__dirname, '..', 'frontend', 'dist');
-  const legacyFrontendDir = join(__dirname, 'frontend');
-  const { existsSync } = await import('node:fs');
-  const frontendRoot = existsSync(reactBuildDir) ? reactBuildDir : legacyFrontendDir;
-
-  await app.register(fastifyStatic, {
-    root: frontendRoot,
-    prefix: '/',
-    decorateReply: true,
-    wildcard: false,
-  });
-
-  // System endpoints
-  app.get(
-    '/api/v1/health',
-    {
-      schema: {
-        tags: ['System'],
-        summary: 'Health check',
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              uptime: { type: 'number' },
-              cache: { type: 'object' },
-            },
-          },
-        },
-      },
-    },
-    async () => {
-      const stats = getCacheStats();
-      return { status: 'ok', uptime: process.uptime(), cache: stats };
-    },
-  );
-
-  app.get(
-    '/api/v1/types',
-    {
-      schema: {
-        tags: ['System'],
-        summary: 'List available lookup types',
-        response: {
-          200: {
-            type: 'object',
-            properties: { types: { type: 'array', items: { type: 'object' } } },
-          },
-        },
-      },
-    },
-    async () => ({
-      types: [
-        {
-          id: 'tel',
-          name: 'Phone Number',
-          description: 'Reverse phone lookup',
-          example: '+493012345678',
-        },
-        {
-          id: 'ip',
-          name: 'IP Address',
-          description: 'IP geolocation, security analysis, reverse DNS',
-          example: '8.8.8.8',
-        },
-        {
-          id: 'domain',
-          name: 'Domain Name',
-          description: 'WHOIS, DNS records, subdomain enumeration',
-          example: 'google.com',
-        },
-        {
-          id: 'email',
-          name: 'Email',
-          description: 'Email validation, risk scoring',
-          example: 'user@example.com',
-        },
-        {
-          id: 'location',
-          name: 'Location',
-          description: 'Geocoding and reverse geocoding',
-          example: 'Berlin, Germany',
-        },
-        {
-          id: 'parcel',
-          name: 'Parcel',
-          description: 'Package tracking',
-          example: '00340434515310596216',
-        },
-        {
-          id: 'steam',
-          name: 'Steam Profile',
-          description: 'SteamID conversions, player reputation, profile summary, inventory stats',
-          example: '76561198083838183',
-        },
-        {
-          id: 'url',
-          name: 'URL Scanning & Info',
-          description:
-            'SSL certificates, redirect chains, HTML metadata, threat analysis, DNS/IP lookup',
-          example: 'https://github.com',
-        },
-        {
-          id: 'apk',
-          name: 'APK Packages',
-          description:
-            'Google Play metadata and APK download links from Aptoide, APKMirror, APKPure',
-          example: 'com.google.android.apps.authenticator2',
-        },
-      ],
-    }),
-  );
-
   // Register routes
   await registerApiRoutes(app);
-  await registerShortcutRoutes(app);
   await registerDocsRoutes(app);
-
-  // SPA fallback — serve index.html for any unmatched GET that isn't /api or /docs
-  app.setNotFoundHandler(async (request, reply) => {
-    if (request.method === 'GET' && !request.url.startsWith('/api/') && !request.url.startsWith('/docs')) {
-      return reply.sendFile('index.html');
-    }
-    return reply.code(404).send({ error: 'Not found' });
-  });
 
   // Graceful shutdown
   const shutdown = async () => {

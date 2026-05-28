@@ -18,8 +18,9 @@
   <Requires/>
 
   <!-- Ports & Paths -->
-  <Config Name="Web Port" Target="24010" Default="24010" Mode="tcp" Description="Port for the web interface and API" Type="Port" Display="always" Required="true" Mask="false">24010</Config>
-  <Config Name="Data Path" Target="/app/data" Default="/mnt/user/appdata/universal-lookup" Mode="rw" Description="Persistent data (cache DB, MaxMind databases)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/universal-lookup</Config>
+  <Config Name="Web Port" Target="24010" Default="24010" Mode="tcp" Description="Port for the web interface (Vite)" Type="Port" Display="always" Required="true" Mask="false">24010</Config>
+  <Config Name="API Port" Target="24011" Default="24011" Mode="tcp" Description="Port for the Fastify API backend" Type="Port" Display="always" Required="true" Mask="false">24011</Config>
+  <Config Name="Data Path" Target="/app/backend/data" Default="/mnt/user/appdata/universal-lookup" Mode="rw" Description="Persistent data (cache DB, MaxMind databases)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/universal-lookup</Config>
 
   <!-- API Keys (alphabetical) -->
   <Config Name="Backpack.tf API Key" Target="BACKPACK_TF_API_KEY" Default="" Mode="" Description="backpack.tf API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
@@ -30,6 +31,7 @@
   <Config Name="ip-api.io Key" Target="IP_API_IO_KEY" Default="" Mode="" Description="API key for ip-api.io advanced features" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="MaxMind License Key" Target="MAXMIND_LICENSE_KEY" Default="" Mode="" Description="MaxMind GeoLite2 license key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="ParcelsApp API Key" Target="PARCELSAPP_API_KEY" Default="" Mode="" Description="ParcelsApp tracking API key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+  <Config Name="17track API Key" Target="SEVENTEEN_TRACK_API_KEY" Default="" Mode="" Description="17track.net API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="Steam API Key" Target="STEAM_API_KEY" Default="" Mode="" Description="Steam Web API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="Tellows API Key" Target="TELLOWS_API_KEY" Default="" Mode="" Description="Tellows partner API key (optional, falls back to scraping)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="URLScan API Key" Target="URLSCAN_API_KEY" Default="" Mode="" Description="urlscan.io API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
@@ -60,7 +62,7 @@
   <Config Name="Providers Email" Target="PROVIDERS_EMAIL" Default="dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo" Mode="" Description="Email lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo</Config>
   <Config Name="Providers IP" Target="PROVIDERS_IP" Default="ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo" Mode="" Description="IP lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo</Config>
   <Config Name="Providers Location" Target="PROVIDERS_LOCATION" Default="nominatim,google-maps,google,bing,duckduckgo,yahoo" Mode="" Description="Location lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">nominatim,google-maps,google,bing,duckduckgo,yahoo</Config>
-  <Config Name="Providers Parcel" Target="PROVIDERS_PARCEL" Default="dhl-web,dhl,parcelsapp,pkge,google,bing,duckduckgo,yahoo" Mode="" Description="Parcel tracking providers" Type="Variable" Display="advanced" Required="false" Mask="false">dhl-web,dhl,parcelsapp,pkge,google,bing,duckduckgo,yahoo</Config>
+  <Config Name="Providers Parcel" Target="PROVIDERS_PARCEL" Default="dhl-web,dhl,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo" Mode="" Description="Parcel tracking providers" Type="Variable" Display="advanced" Required="false" Mask="false">dhl-web,dhl,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo</Config>
   <Config Name="Providers Steam" Target="PROVIDERS_STEAM" Default="playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat" Mode="" Description="Steam lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat</Config>
   <Config Name="Providers Telephone" Target="PROVIDERS_TEL" Default="emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo" Mode="" Description="Telephone lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo</Config>
   <Config Name="Providers URL" Target="PROVIDERS_URL" Default="dns-lookup,ip-info,metadata,urlscan,virustotal" Mode="" Description="URL lookup providers" Type="Variable" Display="advanced" Required="false" Mask="false">dns-lookup,ip-info,metadata,urlscan,virustotal</Config>

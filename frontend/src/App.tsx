@@ -62,7 +62,9 @@ function App() {
     if (options.fresh) params.set('fresh', 'true');
     if (options.wait) params.set('wait', 'true');
 
-    const apiUrl = `/api/v1/${type}/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ''}`;
+    const backendPort = import.meta.env.VITE_BACKEND_PORT || '24011';
+    const backendUrl = `${location.protocol}//${location.hostname}:${backendPort}`;
+    const apiUrl = `${backendUrl}/api/v1/${type}/${encodeURIComponent(query)}${params.toString() ? `?${params}` : ''}`;
 
     try {
       const resp = await fetch(apiUrl);

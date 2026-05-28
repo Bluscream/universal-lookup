@@ -1,15 +1,14 @@
 services:
-  universal-lookup:
+  backend:
     build:
       context: ..
-      dockerfile: Dockerfile
-    # image: ghcr.io/bluscream/universal-lookup:latest
-    container_name: universal-lookup
+      dockerfile: backend/Dockerfile
+    container_name: universal-lookup-backend
     restart: unless-stopped
     ports:
-      - "24010:24010"
+      - "24011:24011"
     volumes:
-      - lookup-data:/app/data
+      - lookup-data:/app/backend/data
     environment:
       # API Keys (uncomment and fill in as needed)
       # - BACKPACK_TF_API_KEY=
@@ -35,11 +34,6 @@ services:
       - CACHE_TTL=86400
       - CACHE_TTL_PARCEL=3600
 
-      # FritzBox
-      # - FRITZBOX_HOST=fritz.box
-      # - FRITZBOX_PASS=
-      # - FRITZBOX_USER=
-
       # Phone Settings
       - PHONE_COUNTRY_PREFIX=0049
       - PHONE_LOCAL_PREFIX=6131
@@ -62,13 +56,29 @@ services:
 
       # Server Settings
       - LOG_LEVEL=info
-      - PORT=24010
+      - PORT=24011
+      - HOST=0.0.0.0
       - UNIVERSAL_RESULTS_LIMIT=3
 
       # Timeouts
       - CLIENT_TIMEOUT=5000
       - PUPPETEER_TIMEOUT=10000
       - SERVER_TIMEOUT=30000
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    container_name: universal-lookup-frontend
+    restart: unless-stopped
+    ports:
+      - "24010:24010"
+    environment:
+      - PORT=24010
+      - HOST=0.0.0.0
+      - VITE_BACKEND_URL=http://backend:24011
+    depends_on:
+      - backend
 
 volumes:
   lookup-data:

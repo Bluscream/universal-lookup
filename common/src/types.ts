@@ -153,6 +153,14 @@ export interface LocationData {
   [key: string]: any;
 }
 
+export interface ParcelEvent {
+  date: string;
+  status: string;
+  location?: string;
+  courier?: string;
+  source?: string | null;
+}
+
 export interface ParcelData {
   tracking_number?: string | null;
   couriers?: string[] | null;
@@ -165,13 +173,7 @@ export interface ParcelData {
   weight?: string | null;
   estimated_delivery?: string | null;
   days_in_transit?: string | null;
-  events?: Array<{
-    date: string;
-    status: string;
-    location?: string;
-    courier?: string;
-    source?: string | null;
-  }> | null;
+  events?: ParcelEvent[] | null;
   [key: string]: any;
 }
 
@@ -267,6 +269,13 @@ export interface ApkData {
   [key: string]: any;
 }
 
+export interface WebResult {
+  title: string;
+  url: string;
+  description?: string;
+  provider: string;
+}
+
 export interface WebData {
   web?: SearchResult[] | null;
   [key: string]: any;
@@ -274,60 +283,39 @@ export interface WebData {
 
 /** Result from a single provider */
 export interface ProviderResult<T = Record<string, unknown>> {
-  /** Provider identifier (e.g. "ip-api.com", "tellows") */
   provider: string;
-  /** Whether this provider succeeded */
   success: boolean;
-  /** Normalized/mapped data fields */
   data: T;
-  /** Raw API response (included if ?raw=true) */
   raw?: unknown;
-  /** Error message if failed */
   error?: string;
-  /** Time taken for this provider in milliseconds */
   duration: number;
 }
 
 /** The unified lookup response returned to clients */
 export interface LookupResponse {
-  /** Time the lookup took (human readable, e.g. "234ms") */
   lookup_time: string;
-  /** Whether the overall lookup was successful (at least one provider succeeded) */
   success: boolean;
-  /** Merged response data from all providers */
   response: Record<string, unknown>;
-  /** Errors from failed providers: { provider_name: "error message" } */
   errors: Record<string, string>;
-  /** Raw responses per provider (only if ?raw=true) */
   raw: Record<string, unknown>;
-  /** Request metadata */
   request: {
-    /** UTC time of the request */
     time: string;
-    /** Parsed client IP */
     ip: string;
-    /** Lookup type */
     type: LookupType;
-    /** Final normalized query */
     query: string;
   };
 }
 
-/** Provider function interface — every provider module exports this */
+/** Provider function interface */
 export interface Provider {
-  /** Unique provider name */
   name: string;
-  /** Execute the lookup */
   lookup(query: string, type?: LookupType, originalQuery?: string): Promise<ProviderResult<any>>;
-  /** Whether this provider is available (has required config/API keys) */
   isAvailable(): boolean;
 }
 
 /** Query parameters for lookup endpoints */
 export interface LookupQueryParams {
-  /** Include raw responses from each provider */
   raw?: boolean;
-  /** Force fresh lookup, bypass cache */
   fresh?: boolean;
 }
 
@@ -335,7 +323,7 @@ export interface LookupQueryParams {
 export interface CacheEntry {
   type: string;
   query: string;
-  response: string; // JSON-serialized LookupResponse
-  created_at: number; // Unix timestamp
-  ttl: number; // TTL in seconds
+  response: string;
+  created_at: number;
+  ttl: number;
 }

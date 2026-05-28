@@ -1,15 +1,16 @@
 {
-  "name": "frontend",
+  "name": "@universal-lookup/frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.7.7",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 24010 --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview --port 24010 --host 0.0.0.0"
   },
   "dependencies": {
+    "@universal-lookup/common": "*",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.16.0",
     "react": "^19.2.6",
