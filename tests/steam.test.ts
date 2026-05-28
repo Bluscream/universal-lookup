@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { playerDbProvider } from '../src/providers/steam/playerdb.js';
-import { steamXmlProvider } from '../src/providers/steam/steam-xml.js';
+import { playerDbProvider } from '../backend/src/providers/steam/playerdb.js';
+import { steamXmlProvider } from '../backend/src/providers/steam/steam-xml.js';
 
 describe('PlayerDB Steam Provider', () => {
   it('fetches profile details for gabelogannewell', async () => {
@@ -9,7 +9,7 @@ describe('PlayerDB Steam Provider', () => {
     expect(result.success).toBe(true);
     expect(result.data.steam_id_64).toBe('76561197960287930');
     expect(result.data.username).toBeDefined();
-  });
+  }, 20000);
 });
 
 describe('Steam XML Provider', () => {
@@ -19,5 +19,5 @@ describe('Steam XML Provider', () => {
     expect(result.data.steam_id_64).toBe('76561197960287930');
     expect(result.data.username).toBeDefined();
     expect(result.data.privacy_state).toBeDefined();
-  });
+  }, 20000);
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { collectErrors, collectRaw, mergeResponses } from '../src/lib/merger.js';
-import type { ProviderResult } from '../src/types/common.js';
+import { collectErrors, collectRaw, mergeResponses } from '../backend/src/lib/merger.js';
+import type { ProviderResult } from '../backend/src/types/common.js';
 
 describe('mergeResponses', () => {
   it('merges data from multiple providers', () => {

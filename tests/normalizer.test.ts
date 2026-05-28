@@ -7,7 +7,7 @@ import {
   normalizeSteam,
   normalizeTel,
   normalizeUrl,
-} from '../src/lib/normalizer.js';
+} from '../backend/src/lib/normalizer.js';
 
 describe('normalizeTel', () => {
   it('strips whitespace and dashes', () => {
