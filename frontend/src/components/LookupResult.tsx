@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import type { LookupResponse, LookupType, WebResult } from '../types/api';
+import { ApkCard } from './ApkCard';
 import { MapCard } from './MapCard';
 import { ParcelTimeline } from './ParcelTimeline';
 import { SteamProfileCard } from './SteamProfileCard';
 import { UrlMetadataCard } from './UrlMetadataCard';
-import { ApkCard } from './ApkCard';
-import type { LookupResponse, LookupType, WebResult } from '../types/api';
 
 interface LookupResultProps {
   data: LookupResponse;
@@ -12,14 +12,47 @@ interface LookupResultProps {
 
 // Priority display order
 const CARD_KEYS = [
-  'ip', 'country', 'country_code', 'city', 'region', 'postal_code',
-  'latitude', 'longitude', 'timezone', 'isp', 'org', 'asn', 'asn_org',
-  'reverse_dns', 'proxy', 'vpn', 'tor', 'datacenter', 'hosting',
-  'risk_score', 'risk_level', 'name', 'phone', 'street', 'address',
-  'caller_type', 'tellows_score', 'email', 'valid_syntax', 'disposable',
-  'free_provider', 'mx_records', 'reachable', 'display_name',
-  'formatted_address', 'tracking_number', 'carrier', 'status',
-  'status_description', 'ping_alive', 'ping_latency_ms',
+  'ip',
+  'country',
+  'country_code',
+  'city',
+  'region',
+  'postal_code',
+  'latitude',
+  'longitude',
+  'timezone',
+  'isp',
+  'org',
+  'asn',
+  'asn_org',
+  'reverse_dns',
+  'proxy',
+  'vpn',
+  'tor',
+  'datacenter',
+  'hosting',
+  'risk_score',
+  'risk_level',
+  'name',
+  'phone',
+  'street',
+  'address',
+  'caller_type',
+  'tellows_score',
+  'email',
+  'valid_syntax',
+  'disposable',
+  'free_provider',
+  'mx_records',
+  'reachable',
+  'display_name',
+  'formatted_address',
+  'tracking_number',
+  'carrier',
+  'status',
+  'status_description',
+  'ping_alive',
+  'ping_latency_ms',
 ];
 
 function formatLabel(k: string) {
@@ -100,38 +133,119 @@ export function LookupResult({ data }: LookupResultProps) {
   let excludedKeys: string[] = [];
   if (isSteam) {
     excludedKeys = [
-      'steam_links', 'inventories', 'total_inventory_items', 'has_public_inventories',
-      'username', 'profile_url', 'avatar_url', 'persona_state', 'community_visibility_state',
-      'last_logoff', 'real_name', 'primary_clan_id', 'created_at', 'country_code',
-      'state_code', 'city_id', 'game_extrainfo', 'game_id', 'community_banned',
-      'vac_banned', 'vac_bans_count', 'days_since_last_ban', 'game_bans_count',
-      'economy_ban_state', 'steam_id_64', 'steam_id_2', 'steam_id_3',
-      'backpack_value_tf2', 'trust_positive', 'trust_negative', 'backpack_tf_banned',
-      'backpack_tf_premium', 'csfloat_registered', 'csfloat_username', 'csfloat_avatar',
-      'csfloat_total_sales', 'csfloat_total_purchases', 'csfloat_median_delivery_seconds',
-      'price_today', 'price_lowest', 'games_owned', 'hours_played', 'game_count',
-      'total_playtime_hours', 'most_played_game', 'avatar_icon', 'avatar_medium',
-      'avatar_full', 'privacy_state', 'custom_url', 'member_since', 'headline',
-      'summary', 'state_message', 'trade_ban_state', 'is_limited_account',
+      'steam_links',
+      'inventories',
+      'total_inventory_items',
+      'has_public_inventories',
+      'username',
+      'profile_url',
+      'avatar_url',
+      'persona_state',
+      'community_visibility_state',
+      'last_logoff',
+      'real_name',
+      'primary_clan_id',
+      'created_at',
+      'country_code',
+      'state_code',
+      'city_id',
+      'game_extrainfo',
+      'game_id',
+      'community_banned',
+      'vac_banned',
+      'vac_bans_count',
+      'days_since_last_ban',
+      'game_bans_count',
+      'economy_ban_state',
+      'steam_id_64',
+      'steam_id_2',
+      'steam_id_3',
+      'backpack_value_tf2',
+      'trust_positive',
+      'trust_negative',
+      'backpack_tf_banned',
+      'backpack_tf_premium',
+      'csfloat_registered',
+      'csfloat_username',
+      'csfloat_avatar',
+      'csfloat_total_sales',
+      'csfloat_total_purchases',
+      'csfloat_median_delivery_seconds',
+      'price_today',
+      'price_lowest',
+      'games_owned',
+      'hours_played',
+      'game_count',
+      'total_playtime_hours',
+      'most_played_game',
+      'avatar_icon',
+      'avatar_medium',
+      'avatar_full',
+      'privacy_state',
+      'custom_url',
+      'member_since',
+      'headline',
+      'summary',
+      'state_message',
+      'trade_ban_state',
+      'is_limited_account',
     ];
   } else if (isUrl) {
     excludedKeys = [
-      'query', 'landing_url', 'http_status', 'content_type', 'content_length',
-      'server', 'powered_by', 'redirect_chain', 'is_redirected', 'security_headers',
-      'ssl', 'meta',
+      'query',
+      'landing_url',
+      'http_status',
+      'content_type',
+      'content_length',
+      'server',
+      'powered_by',
+      'redirect_chain',
+      'is_redirected',
+      'security_headers',
+      'ssl',
+      'meta',
     ];
   } else if (isApk) {
     excludedKeys = [
-      'package_name', 'package', 'title', 'version', 'versionName', 'developer',
-      'developer_email', 'score', 'installs', 'genre', 'price', 'is_free',
-      'free_provider', 'updated', 'url', 'icon', 'downloads', 'application',
-      'manifest', 'usesPermissions', 'permissions', 'checksums', 'filelist',
+      'package_name',
+      'package',
+      'title',
+      'version',
+      'versionName',
+      'developer',
+      'developer_email',
+      'score',
+      'installs',
+      'genre',
+      'price',
+      'is_free',
+      'free_provider',
+      'updated',
+      'url',
+      'icon',
+      'downloads',
+      'application',
+      'manifest',
+      'usesPermissions',
+      'permissions',
+      'checksums',
+      'filelist',
     ];
   } else if (isParcel) {
     excludedKeys = [
-      'tracking_number', 'carrier', 'status', 'status_code', 'status_description',
-      'delivered', 'origin', 'destination', 'weight', 'estimated_delivery',
-      'days_in_transit', 'events', 'couriers',
+      'tracking_number',
+      'carrier',
+      'status',
+      'status_code',
+      'status_description',
+      'delivered',
+      'origin',
+      'destination',
+      'weight',
+      'estimated_delivery',
+      'days_in_transit',
+      'events',
+      'couriers',
     ];
   }
 
@@ -148,10 +262,12 @@ export function LookupResult({ data }: LookupResultProps) {
   // Build geo coordinates for map
   const geoCoordinates: { lat: number; lng: number; label: string }[] = [];
   if (hasLatLong && !isParcel) {
-    const lat = (typeof response.latitude === 'number' ? response.latitude : response.lat) as number;
-    const lng = (typeof response.longitude === 'number'
-      ? response.longitude
-      : response.lon ?? response.lng) as number;
+    const lat = (
+      typeof response.latitude === 'number' ? response.latitude : response.lat
+    ) as number;
+    const lng = (
+      typeof response.longitude === 'number' ? response.longitude : (response.lon ?? response.lng)
+    ) as number;
     const label =
       (response.formatted_address as string) ||
       (response.display_name as string) ||
@@ -250,13 +366,15 @@ export function LookupResult({ data }: LookupResultProps) {
           ))}
 
         {/* Web results at bottom */}
-        {Array.isArray(response.web) && (
-          <WebResultsCard results={response.web as WebResult[]} />
-        )}
+        {Array.isArray(response.web) && <WebResultsCard results={response.web as WebResult[]} />}
       </div>
 
       {/* JSON viewer */}
-      <details className="json-details" open={jsonOpen} onToggle={(e) => setJsonOpen((e.target as HTMLDetailsElement).open)}>
+      <details
+        className="json-details"
+        open={jsonOpen}
+        onToggle={(e) => setJsonOpen((e.target as HTMLDetailsElement).open)}
+      >
         <summary className="json-summary">Full JSON Response</summary>
         <pre
           className="json-viewer"

@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback, type FormEvent } from 'react';
-import { Search, Loader2 } from 'lucide-react';
-import { LOOKUP_OPTIONS, PLACEHOLDERS, type LookupType } from '../types/api';
+import { Loader2, Search } from 'lucide-react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { LOOKUP_OPTIONS, type LookupType, PLACEHOLDERS } from '../types/api';
 
 interface SearchBarProps {
-  onSearch: (type: LookupType, query: string, options: { raw: boolean; fresh: boolean; wait: boolean }) => void;
+  onSearch: (
+    type: LookupType,
+    query: string,
+    options: { raw: boolean; fresh: boolean; wait: boolean },
+  ) => void;
   isLoading: boolean;
   initialType?: LookupType;
   initialQuery?: string;
@@ -95,11 +99,7 @@ export function SearchBar({
               aria-label="Search"
               disabled={isLoading}
             >
-              {isLoading ? (
-                <Loader2 className="spinner-icon" size={18} />
-              ) : (
-                <Search size={18} />
-              )}
+              {isLoading ? <Loader2 className="spinner-icon" size={18} /> : <Search size={18} />}
               <span className="btn-text">{isLoading ? 'Searching...' : 'Search'}</span>
             </button>
           </div>

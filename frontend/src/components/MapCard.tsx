@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useEffect, useRef } from 'react';
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
 // Fix default marker icons (webpack/vite strips the default paths)
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -38,15 +38,17 @@ function InvalidateSizeOnMount() {
     if (ran.current) return;
     ran.current = true;
     const delays = [100, 300, 600, 1000, 1800];
-    const timers = delays.map((d) =>
-      setTimeout(() => map.invalidateSize(), d),
-    );
+    const timers = delays.map((d) => setTimeout(() => map.invalidateSize(), d));
     return () => timers.forEach(clearTimeout);
   }, [map]);
   return null;
 }
 
-export function MapCard({ coordinates, title = '📍 Physical Location Map', height = 350 }: MapCardProps) {
+export function MapCard({
+  coordinates,
+  title = '📍 Physical Location Map',
+  height = 350,
+}: MapCardProps) {
   if (coordinates.length === 0) return null;
 
   const center: [number, number] =

@@ -3,22 +3,26 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyCors from '@fastify/cors';
 import fastifyRateLimit from '@fastify/rate-limit';
+import fastifyStatic from '@fastify/static';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
-import { config, API_PREFIX } from './config.js';
-import { cleanExpiredCache, getCacheStats } from './db/cache.js';
+import { API_PREFIX, config } from './config.js';
+import { cleanExpiredCache } from './db/cache.js';
 import { closeDatabase, initDatabase } from './db/migrations.js';
 import { ensureMaxmindDbs } from './lib/maxmind-downloader.js';
 import { resolvePuppeteerExecutablePath } from './lib/puppeteer.js';
-import { registerApiRoutes } from './routes/api.js';
+import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
 import { registerDocsRoutes } from './routes/docs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 async function main() {
+  console.log('🔧 Starting Universal Lookup backend...');
+
   // Initialize database
+  console.log('📀 Initializing database...');
   await initDatabase();
   console.log('✅ Database initialized');
 
@@ -27,7 +31,9 @@ async function main() {
   if (cleaned > 0) console.log(`🧹 Cleaned ${cleaned} expired cache entries`);
 
   // Auto-download MaxMind DBs if missing
+  console.log('🌍 Checking MaxMind databases...');
   await ensureMaxmindDbs();
+  console.log('✅ MaxMind check complete');
 
   const chromiumPath = resolvePuppeteerExecutablePath();
   if (chromiumPath) {
@@ -60,7 +66,6 @@ async function main() {
     timeWindow: config.rateLimitWindow,
     allowList: ['127.0.0.1', '::1'],
   });
-
 
   // Auth hook — if REQUIRE_TOKEN is set, validate token on /api/v1/* routes
   if (config.requireToken) {
@@ -122,9 +127,35 @@ async function main() {
     theme: { title: 'Universal Lookup API Docs' },
   });
 
+  // Serve frontend static files
+  const reactBuildDir = join(process.cwd(), 'frontend', 'dist');
+  const legacyFrontendDir = join(process.cwd(), 'src', 'frontend');
+  const { existsSync } = await import('node:fs');
+  const frontendRoot = existsSync(reactBuildDir) ? reactBuildDir : legacyFrontendDir;
+
+  await app.register(fastifyStatic, {
+    root: frontendRoot,
+    prefix: '/',
+    decorateReply: true,
+    wildcard: false,
+  });
+
   // Register routes
   await registerApiRoutes(app);
+  await registerShortcutRoutes(app);
   await registerDocsRoutes(app);
+
+  // SPA fallback — serve index.html for any unmatched GET that isn't /api or /docs
+  app.setNotFoundHandler(async (request, reply) => {
+    if (
+      request.method === 'GET' &&
+      !request.url.startsWith('/api/') &&
+      !request.url.startsWith('/docs')
+    ) {
+      return reply.sendFile('index.html');
+    }
+    return reply.code(404).send({ error: 'Not found' });
+  });
 
   // Graceful shutdown
   const shutdown = async () => {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
 import { decrementRateLimit, isRateLimited, updateRateLimit } from '../../lib/rate-limiter.js';
-import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
+import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'ip-api.io/risk';
 

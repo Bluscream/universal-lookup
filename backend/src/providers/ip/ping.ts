@@ -2,7 +2,7 @@ import { exec } from 'node:child_process';
 import { platform } from 'node:os';
 import { promisify } from 'node:util';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
+import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const execAsync = promisify(exec);
 const PROVIDER_NAME = 'ping';

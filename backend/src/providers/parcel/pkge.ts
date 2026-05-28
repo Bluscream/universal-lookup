@@ -1,5 +1,5 @@
 import { PkgeClient } from 'pkge-client';
-import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
+import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'pkge';
 

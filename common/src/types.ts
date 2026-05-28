@@ -46,7 +46,7 @@ export interface TelData {
   provider?: string | null;
   comments?: Array<{ text: string; date?: string; score?: number; author?: string }> | null;
   street?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface IpData {
@@ -91,7 +91,7 @@ export interface IpData {
   whois_country?: string | null;
   whois_netname?: string | null;
   whois_org?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface DomainData {
@@ -117,7 +117,7 @@ export interface DomainData {
   whois_updated?: string | null;
   whois_expires?: string | null;
   whois_org?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface EmailData {
@@ -136,7 +136,7 @@ export interface EmailData {
   dmarc?: boolean | null;
   dmarc_record?: string | null;
   risk_score?: number | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface LocationData {
@@ -150,7 +150,7 @@ export interface LocationData {
   postal_code?: string | null;
   bounding_box?: string[] | null;
   display_name?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ParcelEvent {
@@ -174,7 +174,7 @@ export interface ParcelData {
   estimated_delivery?: string | null;
   days_in_transit?: string | null;
   events?: ParcelEvent[] | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface SteamData {
@@ -224,7 +224,7 @@ export interface SteamData {
   total_inventory_items?: number | null;
   trade_ban_state?: string | null;
   csfloat_registered?: boolean | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface UrlData {
@@ -237,11 +237,11 @@ export interface UrlData {
   ssl_subject?: string | null;
   ssl_issuer?: string | null;
   ssl_valid_to?: string | null;
-  redirect_chain?: any[] | null;
+  redirect_chain?: unknown[] | null;
   status_code?: number | null;
   risk_score?: number | null;
   threats?: string[] | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ApkData {
@@ -266,7 +266,7 @@ export interface ApkData {
     md5?: string;
     status?: number;
   }> | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface WebResult {
@@ -278,7 +278,7 @@ export interface WebResult {
 
 export interface WebData {
   web?: SearchResult[] | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /** Result from a single provider */
@@ -309,7 +309,7 @@ export interface LookupResponse {
 /** Provider function interface */
 export interface Provider {
   name: string;
-  lookup(query: string, type?: LookupType, originalQuery?: string): Promise<ProviderResult<any>>;
+  lookup(query: string, type?: LookupType, originalQuery?: string): Promise<ProviderResult<unknown>>;
   isAvailable(): boolean;
 }
 

@@ -5,7 +5,7 @@ import {
   executeProvidersBackground,
   filterAndSortProviders,
 } from '../../lib/providers.js';
-import type { LookupType, Provider, ProviderResult, ApkData } from '../../types/common.js';
+import type { ApkData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 import { getApkmirrorDownload } from './subproviders/apkmirror.js';
 import { getApkpureDownload } from './subproviders/apkpure.js';
 import type { ApkDownloadInfo } from './subproviders/aptoide.js';

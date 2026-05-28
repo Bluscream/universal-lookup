@@ -1,5 +1,5 @@
 import dns from 'node:dns/promises';
-import type { LookupType, Provider, ProviderResult, EmailData } from '../../types/common.js';
+import type { EmailData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns-email';
 

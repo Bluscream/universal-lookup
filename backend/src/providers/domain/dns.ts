@@ -1,6 +1,6 @@
 import { promises as dns } from 'node:dns';
 import { isIP } from 'node:net';
-import type { LookupType, Provider, ProviderResult, DomainData } from '../../types/common.js';
+import type { DomainData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns';
 

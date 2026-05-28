@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { config, getCacheTtl, API_PREFIX } from '../config.js';
+import { API_PREFIX, config, getCacheTtl } from '../config.js';
 import { getCached, setCache } from '../db/cache.js';
 import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/merger.js';
 import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.js';

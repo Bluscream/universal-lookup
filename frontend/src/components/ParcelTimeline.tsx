@@ -1,5 +1,5 @@
-import { MapCard } from './MapCard';
 import type { ParcelEvent } from '../types/api';
+import { MapCard } from './MapCard';
 
 interface ParcelTimelineProps {
   trackingNumber: string;
@@ -53,14 +53,10 @@ export function ParcelTimeline({
         </div>
         <div className="timeline-container">
           {sortedEvents.length === 0 ? (
-            <div className="timeline-empty">
-              No tracking history events recorded yet.
-            </div>
+            <div className="timeline-empty">No tracking history events recorded yet.</div>
           ) : (
             sortedEvents.map((evt, idx) => {
-              const timeStr = evt.date
-                ? new Date(evt.date).toLocaleString()
-                : 'N/A';
+              const timeStr = evt.date ? new Date(evt.date).toLocaleString() : 'N/A';
               const isLatest = idx === 0;
               return (
                 <div
@@ -69,15 +65,9 @@ export function ParcelTimeline({
                 >
                   <div className="timeline-dot" />
                   <div className="timeline-time">{timeStr}</div>
-                  <div className="timeline-desc">
-                    {evt.status || evt.description || ''}
-                  </div>
-                  {evt.location && (
-                    <div className="timeline-loc">📍 {evt.location}</div>
-                  )}
-                  {evt.source && (
-                    <span className="timeline-source">{evt.source}</span>
-                  )}
+                  <div className="timeline-desc">{evt.status || evt.description || ''}</div>
+                  {evt.location && <div className="timeline-loc">📍 {evt.location}</div>}
+                  {evt.source && <span className="timeline-source">{evt.source}</span>}
                 </div>
               );
             })
@@ -86,11 +76,7 @@ export function ParcelTimeline({
       </div>
       <div className="parcel-map-pane">
         {coordinates.length > 0 ? (
-          <MapCard
-            coordinates={coordinates}
-            title="📦 Route Map"
-            height={450}
-          />
+          <MapCard coordinates={coordinates} title="📦 Route Map" height={450} />
         ) : (
           <MapCard
             coordinates={[{ lat: 51.1657, lng: 10.4515, label: 'Geographic routing not provided' }]}

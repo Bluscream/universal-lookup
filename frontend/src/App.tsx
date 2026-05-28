@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { SearchBar } from './components/SearchBar';
+import { useEffect, useState } from 'react';
 import { LookupResult } from './components/LookupResult';
-import type { LookupType, LookupResponse } from './types/api';
+import { SearchBar } from './components/SearchBar';
+import type { LookupResponse, LookupType } from './types/api';
 import './index.css';
 
 function App() {
@@ -117,8 +117,12 @@ function App() {
           <span className="nav-title">Universal Lookup</span>
         </div>
         <div className="nav-links">
-          <a href="/" className="nav-link active">Home</a>
-          <a href="/docs" className="nav-link">API Docs</a>
+          <a href="/" className="nav-link active">
+            Home
+          </a>
+          <a href="/docs" className="nav-link">
+            API Docs
+          </a>
           <a
             href="https://github.com/Bluscream/universal-lookup"
             className="nav-link"
@@ -155,7 +159,11 @@ function App() {
         <span className="footer-sep">·</span>
         <a href="/docs">API Docs</a>
         <span className="footer-sep">·</span>
-        <a href="https://github.com/Bluscream/universal-lookup" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://github.com/Bluscream/universal-lookup"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           GitHub
         </a>
       </footer>

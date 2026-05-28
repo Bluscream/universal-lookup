@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
+import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dhl-web';
 

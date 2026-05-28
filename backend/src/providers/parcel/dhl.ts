@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
+import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dhl';
 
@@ -64,17 +64,19 @@ export const dhl: Provider = {
         weight: shipment.details?.weight
           ? `${shipment.details.weight.value} ${shipment.details.weight.unitText}`
           : undefined,
-        // biome-ignore lint/suspicious/noExplicitAny: External API response
-        events: (shipment.events || [])
-          .map((e: any) => ({
-            date: e.timestamp,
-            status: e.status,
-            status_code: e.statusCode,
-            description: e.description,
-            location: e.location?.address?.addressLocality,
-            source: PROVIDER_NAME,
-          }))
-          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+        events: (shipment.events as Array<Record<string, unknown>> || [])
+          .map((e) => {
+            const address = (e.location as Record<string, unknown>)?.address as Record<string, unknown> | undefined;
+            return {
+              date: e.timestamp as string,
+              status: e.status as string,
+              status_code: e.statusCode as string | undefined,
+              description: e.description as string | undefined,
+              location: address?.addressLocality as string | undefined,
+              source: PROVIDER_NAME,
+            };
+          })
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
       };
 
       return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };

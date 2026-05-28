@@ -7,7 +7,13 @@ import {
   filterAndSortProviders,
 } from '../../lib/providers.js';
 import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
-import type { LookupType, Provider, ProviderResult, WebData, SearchResult } from '../../types/common.js';
+import type {
+  LookupType,
+  Provider,
+  ProviderResult,
+  SearchResult,
+  WebData,
+} from '../../types/common.js';
 
 function cleanUrl(url: string): string {
   if (!url) return '';

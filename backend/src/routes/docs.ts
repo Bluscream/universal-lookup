@@ -436,7 +436,11 @@ export async function registerDocsRoutes(app: FastifyInstance): Promise<void> {
         data: categorySchema,
         error: { type: ['string', 'null'] },
         duration: { type: 'integer', description: 'Query duration in milliseconds' },
-        raw: { type: 'object', additionalProperties: true, description: 'Raw subprovider payload if requested' },
+        raw: {
+          type: 'object',
+          additionalProperties: true,
+          description: 'Raw subprovider payload if requested',
+        },
       },
       required: ['provider', 'success', 'data', 'duration'],
     };

@@ -6,7 +6,11 @@ export function ApkCard({ response: res }: ApkCardProps) {
   if (!res.package_name && !res.package) return null;
 
   const icon = (res.icon as string) || '';
-  const title = (res.title as string) || (res.package_name as string) || (res.package as string) || 'Unknown App';
+  const title =
+    (res.title as string) ||
+    (res.package_name as string) ||
+    (res.package as string) ||
+    'Unknown App';
   const developer = (res.developer as string) || 'Unknown Developer';
   const devEmail = res.developer_email as string;
   const version = (res.version as string) || (res.versionName as string) || 'N/A';
@@ -40,7 +44,11 @@ export function ApkCard({ response: res }: ApkCardProps) {
             {devEmail && (
               <>
                 {' '}
-                (<a href={`mailto:${devEmail}`} className="detail-link">{devEmail}</a>)
+                (
+                <a href={`mailto:${devEmail}`} className="detail-link">
+                  {devEmail}
+                </a>
+                )
               </>
             )}
           </div>
@@ -56,7 +64,9 @@ export function ApkCard({ response: res }: ApkCardProps) {
       <div className="ssl-details-grid apk-meta-details">
         <div className="ssl-detail-item">
           <span className="ssl-label">Package Name</span>
-          <span className="ssl-value mono">{(res.package_name as string) || (res.package as string)}</span>
+          <span className="ssl-value mono">
+            {(res.package_name as string) || (res.package as string)}
+          </span>
         </div>
         <div className="ssl-detail-item">
           <span className="ssl-label">Last Updated</span>

@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
+import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'maxmind';
 

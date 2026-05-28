@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { config } from '../../config.js';
 import { normalizeLocation } from '../../lib/normalizer.js';
-import type { LookupType, Provider, ProviderResult, LocationData } from '../../types/common.js';
+import type { LocationData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'nominatim';
 

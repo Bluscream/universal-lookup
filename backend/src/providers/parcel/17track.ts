@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, ParcelData } from '../../types/common.js';
+import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = '17track';
 
@@ -150,7 +150,7 @@ export const seventeenTrack: Provider = {
 
       const track = info.track ?? {};
       const lastEvent = track.z0?.z ?? track.z1?.z ?? track.z2?.z;
-      const latestCheckpoint = lastEvent?.[0];
+      const _latestCheckpoint = lastEvent?.[0];
 
       // Map 17TRACK status codes to human-readable strings
       const statusMap: Record<number, string> = {
@@ -163,7 +163,8 @@ export const seventeenTrack: Provider = {
         50: 'Alert',
       };
 
-      const allEvents: Array<{ date: string; status: string; location?: string; source: string }> = [];
+      const allEvents: Array<{ date: string; status: string; location?: string; source: string }> =
+        [];
 
       // Collect events from all tracking stages (z0 = origin, z1 = intl, z2 = destination)
       for (const stage of [track.z0, track.z1, track.z2]) {

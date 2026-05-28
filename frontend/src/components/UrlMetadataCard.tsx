@@ -13,8 +13,7 @@ function siteNameFromUrl(urlStr: string) {
 export function UrlMetadataCard({ response: res }: UrlMetadataCardProps) {
   const meta = (res.meta || {}) as Record<string, unknown>;
   const title = (meta.title as string) || (res.query as string) || 'Scanned URL';
-  const description =
-    (meta.description as string) || 'No description available for this page.';
+  const description = (meta.description as string) || 'No description available for this page.';
   const landingUrl = (res.landing_url as string) || (res.query as string) || '';
   const httpStatus = (res.http_status as number) || 200;
 
@@ -79,7 +78,12 @@ export function UrlMetadataCard({ response: res }: UrlMetadataCardProps) {
           )}
           <div className="url-title-wrapper">
             <h3 className="url-page-title">{title}</h3>
-            <a href={landingUrl} target="_blank" rel="noopener noreferrer" className="url-landing-link">
+            <a
+              href={landingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="url-landing-link"
+            >
               {landingUrl}
             </a>
           </div>
@@ -159,12 +163,13 @@ export function UrlMetadataCard({ response: res }: UrlMetadataCardProps) {
               <strong>SSL Certificate Details</strong>
             </div>
             <span
-              className={`badge ${(ssl.days_remaining as number) <= 0 || ssl.is_expired
+              className={`badge ${
+                (ssl.days_remaining as number) <= 0 || ssl.is_expired
                   ? 'badge-danger blink'
                   : (ssl.days_remaining as number) < 30
                     ? 'badge-warning'
                     : 'badge-success'
-                }`}
+              }`}
             >
               {Number(ssl.days_remaining) <= 0 || ssl.is_expired
                 ? 'Expired!'
@@ -245,9 +250,7 @@ export function UrlMetadataCard({ response: res }: UrlMetadataCardProps) {
                       className={`header-check-item ${item.isSecured ? 'secured' : 'missing'}`}
                     >
                       <div className="header-check-info">
-                        <span className="header-check-bullet">
-                          {item.isSecured ? '✓' : '✗'}
-                        </span>
+                        <span className="header-check-bullet">{item.isSecured ? '✓' : '✗'}</span>
                         <strong className="header-name">{item.label}</strong>
                       </div>
                       <div className="header-value-box">

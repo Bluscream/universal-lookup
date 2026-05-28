@@ -9,7 +9,7 @@ function CopyButton({ text }: { text: string }) {
     navigator.clipboard.writeText(text);
   }, [text]);
   return (
-    <button className="copy-btn" onClick={handleCopy} title="Copy">
+    <button type="button" className="copy-btn" onClick={handleCopy} title="Copy">
       📋
     </button>
   );
@@ -186,7 +186,9 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
               <div className="stat-badge-card">
                 <span className="stat-badge-label">Total Playtime</span>
                 <span className="stat-badge-value">
-                  {totalPlaytime != null ? `${totalPlaytime.toLocaleString()} hrs` : 'Private / Unknown'}
+                  {totalPlaytime != null
+                    ? `${totalPlaytime.toLocaleString()} hrs`
+                    : 'Private / Unknown'}
                 </span>
               </div>
               {mostPlayed && (
@@ -194,7 +196,9 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
                   <span className="stat-badge-label">Most Played Game</span>
                   <span className="stat-badge-value">
                     <span className="mp-name">{mostPlayed.name}</span>
-                    <span className="badge badge-info">{mostPlayed.playtime_hours.toLocaleString()} hrs</span>
+                    <span className="badge badge-info">
+                      {mostPlayed.playtime_hours.toLocaleString()} hrs
+                    </span>
                   </span>
                 </div>
               )}
@@ -212,8 +216,12 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
                   <div className="tp-card-header">
                     <span className="tp-provider">backpack.tf</span>
                     <div className="tp-badges">
-                      {!!res.backpack_tf_premium && <span className="badge badge-gold">Premium</span>}
-                      {!!res.backpack_tf_banned && <span className="badge badge-danger">Banned</span>}
+                      {!!res.backpack_tf_premium && (
+                        <span className="badge badge-gold">Premium</span>
+                      )}
+                      {!!res.backpack_tf_banned && (
+                        <span className="badge badge-danger">Banned</span>
+                      )}
                     </div>
                   </div>
                   <div className="tp-details">
@@ -228,18 +236,26 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
                     <div className="tp-row">
                       <span className="tp-label">Trust Rating:</span>
                       <div className="trust-pills">
-                        <span className="trust-pill trust-positive">+{(res.trust_positive as number) || 0}</span>
-                        <span className="trust-pill trust-negative">-{(res.trust_negative as number) || 0}</span>
+                        <span className="trust-pill trust-positive">
+                          +{(res.trust_positive as number) || 0}
+                        </span>
+                        <span className="trust-pill trust-negative">
+                          -{(res.trust_negative as number) || 0}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
               {hasCsf && (
-                <div className={`third-party-card csfloat-card${!res.csfloat_registered ? ' disabled' : ''}`}>
+                <div
+                  className={`third-party-card csfloat-card${!res.csfloat_registered ? ' disabled' : ''}`}
+                >
                   <div className="tp-card-header">
                     <span className="tp-provider">CSFloat Market</span>
-                    <span className={`badge ${res.csfloat_registered ? 'badge-success' : 'badge-muted'}`}>
+                    <span
+                      className={`badge ${res.csfloat_registered ? 'badge-success' : 'badge-muted'}`}
+                    >
                       {res.csfloat_registered ? 'Registered' : 'Not Registered'}
                     </span>
                   </div>
@@ -247,12 +263,15 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
                     <div className="tp-details">
                       <div className="tp-row">
                         <span className="tp-label">Market Username:</span>
-                        <span className="tp-value font-bold">{(res.csfloat_username as string) || 'Registered'}</span>
+                        <span className="tp-value font-bold">
+                          {(res.csfloat_username as string) || 'Registered'}
+                        </span>
                       </div>
                       <div className="tp-row">
                         <span className="tp-label">Market Stats:</span>
                         <span className="tp-value">
-                          {(res.csfloat_total_sales as number) || 0} sales / {(res.csfloat_total_purchases as number) || 0} buys
+                          {(res.csfloat_total_sales as number) || 0} sales /{' '}
+                          {(res.csfloat_total_purchases as number) || 0} buys
                         </span>
                       </div>
                     </div>
@@ -274,11 +293,15 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
                   <div className="tp-details">
                     <div className="tp-row">
                       <span className="tp-label">Estimated Worth (Today):</span>
-                      <span className="tp-value highlight-green">{(res.price_today as string) || 'N/A'}</span>
+                      <span className="tp-value highlight-green">
+                        {(res.price_today as string) || 'N/A'}
+                      </span>
                     </div>
                     <div className="tp-row">
                       <span className="tp-label">All-time Sales Lowest:</span>
-                      <span className="tp-value highlight-blue">{(res.price_lowest as string) || 'N/A'}</span>
+                      <span className="tp-value highlight-blue">
+                        {(res.price_lowest as string) || 'N/A'}
+                      </span>
                     </div>
                   </div>
                 </div>

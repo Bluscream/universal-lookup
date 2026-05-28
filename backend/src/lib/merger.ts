@@ -180,7 +180,13 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
     const dedupedEvents = [];
     for (const event of merged.events) {
       if (event && typeof event === 'object') {
-        const ev = event as { date?: string; status?: string; location?: string; courier?: string; source?: string | null };
+        const ev = event as {
+          date?: string;
+          status?: string;
+          location?: string;
+          courier?: string;
+          source?: string | null;
+        };
         const key = `${ev.date || ''}|${ev.status || ''}|${ev.location || ''}`;
         if (!seen.has(key)) {
           seen.add(key);

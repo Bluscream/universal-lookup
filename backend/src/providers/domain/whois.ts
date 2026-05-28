@@ -4,7 +4,7 @@ const require = createRequire(import.meta.url);
 const whoisLib = require('whois');
 
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, DomainData } from '../../types/common.js';
+import type { DomainData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'whois';
 

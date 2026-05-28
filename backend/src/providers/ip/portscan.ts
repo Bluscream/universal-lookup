@@ -1,7 +1,7 @@
 import { resolve4 } from 'node:dns/promises';
 import { isIP, Socket } from 'node:net';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, IpData } from '../../types/common.js';
+import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'portscan';
 
