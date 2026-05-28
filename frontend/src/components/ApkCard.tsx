@@ -78,8 +78,8 @@ export function ApkCard({ response: res }: ApkCardProps) {
         <div className="apk-downloads-section">
           <h4 className="section-title">📥 Downloads</h4>
           <div className="apk-downloads-list">
-            {downloads.map((dl, i) => (
-              <div className="apk-download-item" key={i}>
+            {downloads.map((dl) => (
+              <div className="apk-download-item" key={`${dl.source}-${dl.url}`}>
                 <a href={dl.url} target="_blank" rel="noopener noreferrer" className="detail-link">
                   <span className="dl-source font-bold">{dl.source}</span>
                 </a>

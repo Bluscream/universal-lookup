@@ -130,7 +130,7 @@ export function UrlMetadataCard({ response: res }: UrlMetadataCardProps) {
           </div>
           <div className="redirect-flow-container">
             {redirectChain.map((step, idx) => (
-              <div className="redirect-step" key={idx}>
+              <div className="redirect-step" key={`${step.url}-${step.status}`}>
                 <div className="redirect-node">
                   <span className="redirect-index">{idx + 1}</span>
                   <div className="redirect-url-info">

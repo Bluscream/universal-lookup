@@ -74,7 +74,7 @@ const PROVIDER_CATEGORIES: Record<string, string> = {
 };
 
 // JSON Schemas for each CategoryData model
-const CATEGORY_SCHEMAS: Record<string, Record<string, any>> = {
+const CATEGORY_SCHEMAS: Record<string, Record<string, unknown>> = {
   tel: {
     type: 'object',
     properties: {

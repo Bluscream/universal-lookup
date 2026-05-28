@@ -309,7 +309,7 @@ export interface LookupResponse {
 /** Provider function interface */
 export interface Provider {
   name: string;
-  lookup(query: string, type?: LookupType, originalQuery?: string): Promise<ProviderResult<unknown>>;
+  lookup(query: string, type?: LookupType, originalQuery?: string): Promise<ProviderResult>;
   isAvailable(): boolean;
 }
 

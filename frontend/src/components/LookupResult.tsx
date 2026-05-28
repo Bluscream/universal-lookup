@@ -95,8 +95,8 @@ function WebResultsCard({ results }: { results: WebResult[] }) {
     <div className="result-card web-results-card full-width">
       <div className="card-label">Web Results</div>
       <div className="web-results-list">
-        {results.map((res, i) => (
-          <div className="web-result-item" key={i}>
+        {results.map((res) => (
+          <div className="web-result-item" key={`${res.url}-${res.provider}`}>
             <a href={res.url} target="_blank" rel="noopener noreferrer" className="web-result-link">
               <span className="web-result-title">{res.title}</span>
               <span className="web-result-url">{res.url}</span>
@@ -340,8 +340,8 @@ export function LookupResult({ data }: LookupResultProps) {
 
         {/* Email array */}
         {Array.isArray(response.emails) &&
-          (response.emails as string[]).map((email, i) => (
-            <GenericCard key={`email-${i}`} label="email" value={email} isMono={false} />
+          (response.emails as string[]).map((email) => (
+            <GenericCard key={email} label="email" value={email} isMono={false} />
           ))}
 
         {/* Remaining non-priority keys */}
@@ -378,6 +378,7 @@ export function LookupResult({ data }: LookupResultProps) {
         <summary className="json-summary">Full JSON Response</summary>
         <pre
           className="json-viewer"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: Trusted JSON syntax highlighting generated locally
           dangerouslySetInnerHTML={{
             __html: syntaxHighlight(JSON.stringify(data, null, 2)),
           }}

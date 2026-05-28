@@ -75,6 +75,7 @@ export interface SteamLinks {
 }
 
 export interface SteamInventory {
+  app_id?: number;
   game: string;
   item_count: number;
   status: string;

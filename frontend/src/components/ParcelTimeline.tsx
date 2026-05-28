@@ -61,7 +61,7 @@ export function ParcelTimeline({
               return (
                 <div
                   className={`timeline-event${isLatest ? ' latest' : ''}`}
-                  key={`${evt.date}-${idx}`}
+                  key={`${evt.date}-${evt.status}-${evt.source}`}
                 >
                   <div className="timeline-dot" />
                   <div className="timeline-time">{timeStr}</div>

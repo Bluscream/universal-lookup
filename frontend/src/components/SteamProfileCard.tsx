@@ -94,6 +94,7 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
 
   // Inventories
   const inventories = (res.inventories || []) as Array<{
+    app_id?: number;
     game: string;
     item_count: number;
     status: string;
@@ -336,10 +337,10 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
         <div className="steam-inventory-card full-width">
           <div className="card-label">Game Inventories</div>
           <div className="steam-inventories-grid">
-            {inventories.map((inv, i) => {
+            {inventories.map((inv) => {
               const isPublic = inv.status === 'Public';
               return (
-                <div className="inventory-item-card" key={i}>
+                <div className="inventory-item-card" key={`${inv.app_id}-${inv.game}`}>
                   <div className="inventory-item-header">
                     <span className="inventory-game-name">{inv.game}</span>
                     <span className="inventory-item-count badge">{inv.item_count} items</span>
@@ -353,8 +354,8 @@ export function SteamProfileCard({ response: res }: SteamProfileCardProps) {
                     <div className="inventory-samples">
                       <span className="samples-title">Item Preview:</span>
                       <ul className="samples-list">
-                        {inv.sample_items.map((item, j) => (
-                          <li key={j}>{item}</li>
+                        {inv.sample_items.map((item) => (
+                          <li key={item}>{item}</li>
                         ))}
                       </ul>
                     </div>

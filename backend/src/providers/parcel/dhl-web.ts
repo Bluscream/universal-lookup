@@ -92,15 +92,14 @@ export const dhlWeb: Provider = {
       // Events
       const events = verlauf.events;
       if (Array.isArray(events) && events.length > 0) {
-        // biome-ignore lint/suspicious/noExplicitAny: External API response
-        data.events = events
-          .map((e: any) => ({
-            date: e.datum,
-            status: e.status,
-            is_return: e.ruecksendung || false,
+        data.events = (events as Array<Record<string, unknown>>)
+          .map((e) => ({
+            date: e.datum as string,
+            status: e.status as string,
+            is_return: (e.ruecksendung as boolean) || false,
             source: PROVIDER_NAME,
           }))
-          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       }
 
       return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };

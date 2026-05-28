@@ -80,8 +80,8 @@ export function MapCard({
         boundsOptions={{ padding: [40, 40] }}
       >
         <TileLayer url={DARK_TILE_URL} attribution={ATTRIBUTION} />
-        {coordinates.map((c, i) => (
-          <Marker key={`${c.lat}-${c.lng}-${i}`} position={[c.lat, c.lng]}>
+        {coordinates.map((c) => (
+          <Marker key={`${c.lat}-${c.lng}-${c.label}`} position={[c.lat, c.lng]}>
             <Popup>
               <strong>{c.label}</strong>
               <br />

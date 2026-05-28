@@ -102,16 +102,15 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
     estimated_delivery: raw.estimatedDeliveryDate || raw.eta,
     delivered: raw.delivered,
     days_in_transit: raw.daysInTransit,
-    // biome-ignore lint/suspicious/noExplicitAny: External API response
-    events: (raw.states || [])
-      .map((s: any) => ({
-        date: s.date,
-        status: s.status,
-        location: s.location,
-        description: s.description,
+    events: (raw.states as Array<Record<string, unknown>> || [])
+      .map((s) => ({
+        date: s.date as string,
+        status: s.status as string,
+        location: s.location as string | undefined,
+        description: s.description as string | undefined,
         source: PROVIDER_NAME,
       }))
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
   };
 
   return { provider: PROVIDER_NAME, success: true, data, raw, duration: Date.now() - start };
@@ -189,8 +188,7 @@ async function lookupV3(query: string, start: number): Promise<ProviderResult> {
   }
 
   // Step 2: Poll for results (max 5 attempts with 2s delay)
-  // biome-ignore lint/suspicious/noExplicitAny: External API response
-  let trackingData: any = null;
+  let trackingData: (Record<string, unknown> & { shipments?: Array<Record<string, unknown>> }) | null = null;
   for (let i = 0; i < 5; i++) {
     await new Promise((r) => setTimeout(r, 2000));
     const pollResp = await axios.get(
@@ -218,23 +216,22 @@ async function lookupV3(query: string, start: number): Promise<ProviderResult> {
 
   const ship = trackingData.shipments[0];
   const data: ParcelData = {
-    tracking_number: ship.trackingId,
-    couriers: [ship.slug || ship.carrier].filter(Boolean) as string[],
-    status: ship.status,
-    status_description: ship.statusDescription,
-    origin: ship.origin,
-    destination: ship.destination,
-    estimated_delivery: ship.estimatedDeliveryDate,
-    // biome-ignore lint/suspicious/noExplicitAny: External API response
-    events: (ship.states || [])
-      .map((s: any) => ({
-        date: s.date,
-        status: s.status,
-        location: s.location,
-        description: s.description,
+    tracking_number: ship.trackingId as string | undefined,
+    couriers: [ship.slug as string || ship.carrier as string].filter(Boolean),
+    status: ship.status as string | undefined,
+    status_description: ship.statusDescription as string | undefined,
+    origin: ship.origin as string | undefined,
+    destination: ship.destination as string | undefined,
+    estimated_delivery: ship.estimatedDeliveryDate as string | undefined,
+    events: (ship.states as Array<Record<string, unknown>> || [])
+      .map((s) => ({
+        date: s.date as string,
+        status: s.status as string,
+        location: s.location as string | undefined,
+        description: s.description as string | undefined,
         source: PROVIDER_NAME,
       }))
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
   };
 
   return {
