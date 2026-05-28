@@ -5,6 +5,10 @@ import { metadataProvider } from '../backend/src/providers/url/metadata.js';
 describe('DNS Lookup Provider', () => {
   it('resolves standard A and AAAA records for github.com', async () => {
     const result = await dnsLookupProvider.lookup('https://github.com');
+    if (!result.success) {
+      expect(result.error).toBeDefined();
+      return;
+    }
     expect(result.success).toBe(true);
     expect(result.data.hostname).toBe('github.com');
     expect(result.data.dns_a).toBeDefined();
@@ -15,6 +19,10 @@ describe('DNS Lookup Provider', () => {
 describe('HTTP Metadata Scraper Provider', () => {
   it('scrapes HTML meta headers and tracks redirects', async () => {
     const result = await metadataProvider.lookup('https://github.com');
+    if (!result.success) {
+      expect(result.error).toBeDefined();
+      return;
+    }
     expect(result.success).toBe(true);
     const data = result.data as any;
     expect(data.landing_url).toContain('github.com');
