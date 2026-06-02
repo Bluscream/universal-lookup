@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY common/package*.json ./common/
 COPY frontend/package*.json ./frontend/
-RUN npm install -g npm@latest && npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 COPY tsconfig.json ./
 COPY common/ ./common/
 COPY frontend/ ./frontend/
@@ -16,7 +16,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY common/package*.json ./common/
 COPY frontend/package*.json ./frontend/
-RUN npm install -g npm@latest && npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 COPY --from=builder /app/common/dist ./common/dist
 COPY --from=builder /app/frontend/dist ./frontend/dist
 COPY frontend/vite.config.ts ./frontend/

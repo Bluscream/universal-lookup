@@ -149,6 +149,8 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
       // If key doesn't exist yet, set it
       if (!(key in merged) || isEmpty(merged[key])) {
         merged[key] = value;
+      } else if (key === 'delivered' || key === 'is_return') {
+        merged[key] = !!merged[key] || !!value;
       }
       // If both values are arrays, concatenate them
       else if (Array.isArray(merged[key]) && Array.isArray(value)) {
@@ -180,13 +182,24 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
     const dedupedEvents = [];
     for (const event of merged.events) {
       if (event && typeof event === 'object') {
-        const ev = event as {
+        const ev = { ...event } as {
           date?: string;
           status?: string;
           location?: string;
           courier?: string;
           source?: string | null;
         };
+        
+        // Normalize date to standard UTC ISO string if valid
+        if (ev.date) {
+          try {
+            const parsed = new Date(ev.date);
+            if (!Number.isNaN(parsed.getTime())) {
+              ev.date = parsed.toISOString();
+            }
+          } catch (_) {}
+        }
+
         const key = `${ev.date || ''}|${ev.status || ''}|${ev.location || ''}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -197,6 +210,14 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
     // Sort oldest-to-newest
     dedupedEvents.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
     merged.events = dedupedEvents;
+  }
+
+  // 2. Overwrite status_description if it conflicts with delivered flag
+  if (merged.delivered === true) {
+    const desc = String(merged.status_description || '').toLowerCase();
+    if (desc === 'in transit' || desc === 'in_transit' || !merged.status_description) {
+      merged.status_description = 'Delivered';
+    }
   }
 
   // 2. Deduplicate couriers while preserving order (last item is most up-to-date)

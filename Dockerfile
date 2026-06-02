@@ -5,7 +5,7 @@ COPY package*.json ./
 COPY common/package*.json ./common/
 COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
-RUN npm install -g npm@latest && npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 COPY tsconfig.json ./
 COPY common/ ./common/
 COPY backend/ ./backend/
@@ -36,7 +36,7 @@ COPY package*.json ./
 COPY common/package*.json ./common/
 COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
-RUN npm install -g npm@latest && npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 
 COPY --from=builder /app/common/dist ./common/dist
 COPY --from=builder /app/backend/dist ./backend/dist

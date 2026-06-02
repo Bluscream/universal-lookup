@@ -7,63 +7,21 @@ services:
     restart: unless-stopped
     ports:
       - "24011:24011"
+    env_file:
+      - ../.env
     volumes:
       - lookup-data:/app/backend/data
     environment:
-      # API Keys (uncomment and fill in as needed)
-      # - BACKPACK_TF_API_KEY=
-      # - DHL_API_KEY=
-      # - GOOGLE_API_KEY=
-      # - GOOGLE_SEARCH_CX=
-      # - IP_API_COM_KEY=
-      # - IP_API_IO_KEY=
-      # - MAXMIND_LICENSE_KEY=
-      # - PARCELSAPP_API_KEY=
-      - STEAM_API_KEY
-      # - TELLOWS_API_KEY=
-      - URLSCAN_API_KEY
-      - VIRUSTOTAL_API_KEY
-
-      # Auth & Feature Flags
-      # - DISABLE_FRESH=false
-      # - DISABLE_RAW=false
-      # - DISABLE_WAIT=false
-      # - REQUIRE_TOKEN=my-secret-token
-
-      # Cache Settings
-      - CACHE_TTL=86400
-      - CACHE_TTL_PARCEL=3600
-
-      # Phone Settings
-      - PHONE_COUNTRY_PREFIX=0049
-      - PHONE_LOCAL_PREFIX=6131
-
-      # Provider Lists
-      - PROVIDERS_APK=googleplay,aptoide,apkpure,apkmirror,evozi,apkcombo,apkpremier,apkdl,apksupport
-      - PROVIDERS_DOMAIN=whois,dns,subdomain,google,bing,duckduckgo,yahoo
-      - PROVIDERS_EMAIL=dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo
-      - PROVIDERS_IP=ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo
-      - PROVIDERS_LOCATION=nominatim,google-maps,google,bing,duckduckgo,yahoo
-      - PROVIDERS_PARCEL=dhl-web,dhl,parcelsapp,pkge,google,bing,duckduckgo,yahoo
-      - PROVIDERS_STEAM=playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat
-      - PROVIDERS_TEL=emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo
-      - PROVIDERS_URL=dns-lookup,ip-info,metadata,urlscan,virustotal
-      - PROVIDERS_WEB=google,bing,duckduckgo,yahoo
-
-      # Rate Limiting
-      # - RATE_LIMIT_MAX=100
-      # - RATE_LIMIT_WINDOW=1 minute
-
-      # Server Settings
-      - LOG_LEVEL=info
+      # Container-specific overrides
+      - DB_PATH=/app/backend/data/cache.db
+      - MAXMIND_DB_PATH=/app/backend/data/maxmind
       - PORT=24011
       - HOST=0.0.0.0
-      - UNIVERSAL_RESULTS_LIMIT=3
-
-      # Timeouts
-      - CLIENT_TIMEOUT=5000
-      - PUPPETEER_TIMEOUT=10000
-      - SERVER_TIMEOUT=30000
+      - PUPPETEER_SKIP_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+      
+      # Additional default settings (if not in .env)
+      - PROVIDERS_APK=googleplay,aptoide,apkpure,apkmirror,evozi,apkcombo,apkpremier,apkdl,apksupport
 
   frontend:
     build:

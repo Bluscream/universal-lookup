@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY common/package*.json ./common/
 COPY backend/package*.json ./backend/
-RUN npm install -g npm@latest && npm ci --ignore-scripts
+RUN npm install --ignore-scripts
 COPY tsconfig.json ./
 COPY common/ ./common/
 COPY backend/ ./backend/
@@ -33,7 +33,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY common/package*.json ./common/
 COPY backend/package*.json ./backend/
-RUN npm install -g npm@latest && npm ci --omit=dev --ignore-scripts
+RUN npm install --omit=dev --ignore-scripts
 
 COPY --from=builder /app/common/dist ./common/dist
 COPY --from=builder /app/backend/dist ./backend/dist
