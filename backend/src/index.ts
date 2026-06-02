@@ -127,10 +127,13 @@ async function main() {
     theme: { title: 'Universal Lookup API Docs' },
   });
 
-  // Serve frontend static files
-  const reactBuildDir = join(process.cwd(), 'frontend', 'dist');
-  const legacyFrontendDir = join(process.cwd(), 'src', 'frontend');
   const { existsSync } = await import('node:fs');
+  const reactBuildDir = existsSync(join(process.cwd(), 'frontend', 'dist'))
+    ? join(process.cwd(), 'frontend', 'dist')
+    : join(process.cwd(), '..', 'frontend', 'dist');
+  const legacyFrontendDir = existsSync(join(process.cwd(), 'src', 'frontend'))
+    ? join(process.cwd(), 'src', 'frontend')
+    : join(process.cwd(), '..', 'backend', 'src', 'frontend');
   const frontendRoot = existsSync(reactBuildDir) ? reactBuildDir : legacyFrontendDir;
 
   await app.register(fastifyStatic, {
