@@ -6,10 +6,12 @@ export type LookupType =
   | 'email'
   | 'location'
   | 'parcel'
+  | 'shipment'
   | 'web'
   | 'steam'
   | 'url'
   | 'apk'
+  | 'order'
   | 'auto';
 
 export interface SearchResult {
@@ -177,6 +179,8 @@ export interface ParcelData {
   [key: string]: unknown;
 }
 
+export type ShipmentData = ParcelData;
+
 export interface SteamData {
   steam_id_64?: string | null;
   username?: string | null;
@@ -274,6 +278,25 @@ export interface WebResult {
   url: string;
   description?: string;
   provider: string;
+}
+export interface OrderShipment {
+  tracking_url?: string;
+  tracking_id?: string;
+  item_id?: string;
+  package_index?: string;
+  [key: string]: unknown;
+}
+
+export interface OrderData {
+  order_id?: string | null;
+  status?: string | null;
+  status_description?: string | null;
+  total_price?: string | null;
+  shipping_address?: string | null;
+  items?: Array<{ name: string; url?: string }> | null;
+  tracking_numbers?: string[] | null;
+  shipments?: OrderShipment[] | null;
+  [key: string]: unknown;
 }
 
 export interface WebData {

@@ -12,7 +12,7 @@ function App() {
   // Parse initial state from URL synchronously on initial load
   const getInitialState = () => {
     const pathMatch = location.pathname.match(
-      /^\/(?:api\/)?(?:v\d+\/)?(auto|tel|ip|domain|email|location|parcel|web|steam|url|apk)\/(.+)$/,
+      /^\/(?:api\/)?(?:v\d+\/)?(auto|tel|ip|domain|email|location|parcel|shipment|web|steam|url|apk)\/(.+)$/,
     );
     const searchParams = new URLSearchParams(location.search);
     const raw = searchParams.get('raw') === 'true' || searchParams.get('raw') === '1';

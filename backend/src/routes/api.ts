@@ -9,10 +9,12 @@ import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
 import { lookupLocation } from '../providers/location/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
+import { lookupShipment } from '../providers/shipment/index.js';
 import { lookupSteam } from '../providers/steam/index.js';
 import { lookupTel } from '../providers/tel/index.js';
 import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
+import { lookupOrder } from '../providers/order/index.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
 const VALID_TYPES = new Set<string>([
@@ -22,10 +24,12 @@ const VALID_TYPES = new Set<string>([
   'email',
   'location',
   'parcel',
+  'shipment',
   'web',
   'steam',
   'url',
   'apk',
+  'order',
   'auto',
 ]);
 
@@ -203,7 +207,7 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
     return reply.type('text/html').send(html);
   };
 
-  const typePattern = 'tel|ip|domain|email|location|parcel|web|steam|url|apk|auto';
+  const typePattern = 'tel|ip|domain|email|location|parcel|shipment|web|steam|url|apk|auto';
 
   app.get<{
     Params: { type: string; query: string };
@@ -426,6 +430,8 @@ function getLookupFunction(type: LookupType) {
       return lookupLocation;
     case 'parcel':
       return lookupParcel;
+    case 'shipment':
+      return lookupShipment;
     case 'web':
       return lookupWeb;
     case 'steam':
@@ -434,6 +440,8 @@ function getLookupFunction(type: LookupType) {
       return lookupUrl;
     case 'apk':
       return lookupApk;
+    case 'order':
+      return lookupOrder;
     default:
       return lookupWeb;
   }

@@ -5,6 +5,7 @@ import { MapCard } from './MapCard';
 import { ParcelTimeline } from './ParcelTimeline';
 import { SteamProfileCard } from './SteamProfileCard';
 import { UrlMetadataCard } from './UrlMetadataCard';
+import { OrderCard } from './OrderCard';
 
 interface LookupResultProps {
   data: LookupResponse;
@@ -127,7 +128,8 @@ export function LookupResult({ data }: LookupResultProps) {
   const isSteam = reqType === 'steam' || 'steam_id_64' in response;
   const isUrl = reqType === 'url' || 'landing_url' in response;
   const isApk = reqType === 'apk' || 'package_name' in response;
-  const isParcel = reqType === 'parcel' || 'tracking_number' in response;
+  const isParcel = reqType === 'parcel' || reqType === 'shipment' || 'tracking_number' in response;
+  const isOrder = reqType === 'order' || 'order_id' in response;
 
   // Determine excluded keys based on card type
   let excludedKeys: string[] = [];
@@ -247,6 +249,12 @@ export function LookupResult({ data }: LookupResultProps) {
       'events',
       'couriers',
     ];
+  } else if (isOrder) {
+    excludedKeys = [
+      'order_id',
+      'items',
+      'tracking_ids',
+    ];
   }
 
   // Check for geographic coordinates
@@ -318,6 +326,7 @@ export function LookupResult({ data }: LookupResultProps) {
             longitude={response.longitude as number}
           />
         )}
+        {isOrder && <OrderCard response={response} />}
 
         {/* Priority key cards */}
         {CARD_KEYS.filter(

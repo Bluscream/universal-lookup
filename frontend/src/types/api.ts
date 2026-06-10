@@ -1,17 +1,19 @@
 // Universal Lookup API Response Types
 
 export type LookupType =
-  | 'auto'
   | 'ip'
   | 'domain'
   | 'tel'
   | 'email'
   | 'location'
   | 'parcel'
+  | 'shipment'
+  | 'web'
   | 'steam'
   | 'url'
   | 'apk'
-  | 'web';
+  | 'order'
+  | 'auto';
 
 export interface LookupRequest {
   type: LookupType;
@@ -132,29 +134,33 @@ export interface ApkDownload {
 }
 
 export const PLACEHOLDERS: Record<LookupType, string> = {
-  auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
   ip: 'e.g. 8.8.8.8',
   domain: 'e.g. google.com',
   tel: 'e.g. +493012345678',
   email: 'e.g. user@example.com',
   location: 'e.g. Berlin, Germany or 52.52,13.40',
   parcel: 'e.g. 00340434515310596216',
+  shipment: 'e.g. Amazon progress tracker / ship-track URL',
+  web: 'e.g. what is my ip, tellows 01756350071',
   steam: 'e.g. 76561197960287930 or steamcommunity.com/id/gabelogannewell',
   url: 'e.g. https://github.com or google.com',
   apk: 'e.g. com.google.android.youtube or Play Store URL',
-  web: 'e.g. what is my ip, tellows 01756350071',
+  order: 'e.g. 305-1827771-7197161',
+  auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
 };
 
 export const LOOKUP_OPTIONS: { value: LookupType; label: string; icon: string }[] = [
-  { value: 'auto', label: 'Auto Detect', icon: '✨' },
   { value: 'ip', label: 'IP Address', icon: '🌍' },
   { value: 'domain', label: 'Domain Name', icon: '📡' },
   { value: 'tel', label: 'Phone Number', icon: '📞' },
   { value: 'email', label: 'Email', icon: '📧' },
   { value: 'location', label: 'Location', icon: '📍' },
   { value: 'parcel', label: 'Parcel', icon: '📦' },
-  { value: 'steam', label: 'Steam Profile', icon: '🎮' },
-  { value: 'url', label: 'URL Scan & Info', icon: '🔗' },
-  { value: 'apk', label: 'APK Packages', icon: '📦' },
+  { value: 'shipment', label: 'Shipment', icon: '🚚' },
   { value: 'web', label: 'Web Search', icon: '🔍' },
+  { value: 'steam', label: 'Steam', icon: '🎮' },
+  { value: 'url', label: 'URL / Domain', icon: '🌐' },
+  { value: 'apk', label: 'App Package', icon: '📱' },
+  { value: 'order', label: 'Order', icon: '📦' },
+  { value: 'auto', label: 'Auto Detect', icon: '✨' },
 ];

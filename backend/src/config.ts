@@ -1,6 +1,10 @@
-import 'dotenv/config';
+import * as dotenv from 'dotenv';
 import { existsSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: resolve(__dirname, '../../.env') });
 
 export const API_PREFIX = '/api/v1';
 
@@ -52,6 +56,9 @@ export const config = {
   urlscanApiKey: env('URLSCAN_API_KEY'),
   backpackTfApiKey: env('BACKPACK_TF_API_KEY'),
   seventeenTrackApiKey: env('SEVENTEEN_TRACK_API_KEY'),
+  amazonUsername: env('AMAZON_USERNAME'),
+  amazonPassword: env('AMAZON_PASSWORD'),
+  amazonTotpKey: env('AMAZON_TOTP_KEY'),
 
   // FritzBox
   fritzboxHost: env('FRITZBOX_HOST', 'fritz.box'),
@@ -88,7 +95,11 @@ export const config = {
   ),
   providersParcel: env(
     'PROVIDERS_PARCEL',
-    'dhl-web,dhl,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo',
+    'dhl-web,dhl,amazon,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo',
+  ),
+  providersShipment: env(
+    'PROVIDERS_SHIPMENT',
+    'amazon,google,bing,duckduckgo,yahoo',
   ),
   providersWeb: env('PROVIDERS_WEB', 'google,bing,duckduckgo,yahoo'),
   providersSteam: env(
@@ -96,6 +107,7 @@ export const config = {
     'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat',
   ),
   providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,urlscan,virustotal'),
+  providersOrder: env('PROVIDERS_ORDER', 'amazon'),
 
   // Universal Search
   universalResultsLimit: envInt('UNIVERSAL_RESULTS_LIMIT', 3),
@@ -113,7 +125,7 @@ export const config = {
 
 /** Get the cache TTL for a given lookup type */
 export function getCacheTtl(type: string): number {
-  if (type === 'parcel') return config.cacheTtlParcel;
+  if (type === 'parcel' || type === 'shipment') return config.cacheTtlParcel;
   return config.cacheTtl;
 }
 

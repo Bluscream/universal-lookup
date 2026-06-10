@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ---- Lookup type enum ----
-export const LookupTypeSchema = z.enum(['tel', 'ip', 'email', 'location', 'parcel']);
+export const LookupTypeSchema = z.enum(['tel', 'ip', 'email', 'location', 'parcel', 'order']);
 
 // ---- Route params ----
 export const LookupParamsSchema = z.object({
