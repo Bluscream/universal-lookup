@@ -267,7 +267,7 @@ export const amazon: Provider = {
         const emailInput = await page.$('input[name="email"]');
         if (emailInput) {
             await page.type('input[name="email"]', emailVal, { delay: 50 });
-            await page.click('input#continue');
+            await page.click('#continue');
             await new Promise((r) => setTimeout(r, 1500));
         }
 
