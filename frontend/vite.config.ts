@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     port: 24010,
     host: '0.0.0.0',
+    allowedHosts: true,
     proxy: {
       // Proxy API requests to the Fastify backend
       '/api': {
@@ -24,6 +25,7 @@ export default defineConfig({
   preview: {
     port: 24010,
     host: '0.0.0.0',
+    allowedHosts: true,
     proxy: {
       // Proxy API requests to the Fastify backend in preview mode
       '/api': {
