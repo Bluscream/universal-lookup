@@ -32,8 +32,12 @@ const ALL_PROVIDERS: Provider[] = [
   yahooProvider,
 ];
 
-export function lookupParcel(query: string, type?: LookupType): DualPromiseResult {
+export function lookupParcel(
+  query: string,
+  type?: LookupType,
+  options?: { postalCode?: string },
+): DualPromiseResult {
   const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersParcel);
 
-  return executeProvidersBackground(providers, query, type);
+  return executeProvidersBackground(providers, query, type, undefined, options);
 }

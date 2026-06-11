@@ -64,12 +64,13 @@ export function executeProvidersBackground(
   query: string,
   type?: LookupType,
   originalQuery?: string,
+  options?: { postalCode?: string },
 ): DualPromiseResult {
   // Wrap each provider execution in a promise that respects the SERVER_TIMEOUT
   const providerPromises = providers.map(async (provider) => {
     try {
       const result = await Promise.race([
-        provider.lookup(query, type, originalQuery),
+        provider.lookup(query, type, originalQuery, options),
         new Promise<ProviderResult>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), config.serverTimeout),
         ),

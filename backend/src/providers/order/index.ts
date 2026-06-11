@@ -13,8 +13,12 @@ const ALL_PROVIDERS: Provider[] = [
   aliexpress,
 ];
 
-export function lookupOrder(query: string, type?: LookupType): DualPromiseResult {
+export function lookupOrder(
+  query: string,
+  type?: LookupType,
+  options?: { postalCode?: string },
+): DualPromiseResult {
   const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersOrder);
 
-  return executeProvidersBackground(providers, query, type);
+  return executeProvidersBackground(providers, query, type, undefined, options);
 }

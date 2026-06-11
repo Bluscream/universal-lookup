@@ -16,13 +16,18 @@ export const parcelsapp: Provider = {
     return true;
   },
 
-  async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ParcelData>> {
+  async lookup(
+    query: string,
+    _type?: LookupType,
+    _originalQuery?: string,
+    options?: { postalCode?: string },
+  ): Promise<ProviderResult<ParcelData>> {
     const start = Date.now();
     try {
       if (config.parcelsAppApiKey) {
-        return await lookupV3(query, start);
+        return await lookupV3(query, start, options);
       }
-      return await lookupV1(query, start);
+      return await lookupV1(query, start, options);
     } catch (error) {
       return {
         provider: PROVIDER_NAME,
@@ -36,8 +41,9 @@ export const parcelsapp: Provider = {
 };
 
 /** Free v1 mobile API (no key required) */
-async function lookupV1(query: string, start: number): Promise<ProviderResult> {
-  const url = `https://parcelsapp.com/api/v1/parcels/${encodeURIComponent(query)}/Auto%20Detect/en/Germany/Default/android`;
+async function lookupV1(query: string, start: number, options?: { postalCode?: string }): Promise<ProviderResult> {
+  const postcodeParam = options?.postalCode || 'Default';
+  const url = `https://parcelsapp.com/api/v1/parcels/${encodeURIComponent(query)}/Auto%20Detect/en/Germany/${encodeURIComponent(postcodeParam)}/android`;
 
   // Synthesize settings array matching official Android app logic
   const settings: unknown[] = [
@@ -62,12 +68,22 @@ async function lookupV1(query: string, start: number): Promise<ProviderResult> {
   const hash = hash_32_gc(jsonStr, 978);
   settings.push(hash);
 
-  const payload = [
+  const payload: any[] = [
     {
       slug: 'ahkref',
       data: settings,
     },
   ];
+
+  if (options?.postalCode) {
+    payload.push({
+      slug: 'extra',
+      data: {
+        defaultPostalCode: options.postalCode,
+        zipcode: options.postalCode,
+      },
+    });
+  }
 
   const resp = await axios.post(url, payload, {
     timeout: config.serverTimeout,
@@ -164,12 +180,22 @@ function hash_32_gc(text: string, seed: number): number {
 }
 
 /** Authenticated v3 API (requires key) */
-async function lookupV3(query: string, start: number): Promise<ProviderResult> {
+async function lookupV3(query: string, start: number, options?: { postalCode?: string }): Promise<ProviderResult> {
   // Step 1: Initiate tracking
   const initResp = await axios.post(
     'https://parcelsapp.com/api/v3/shipments/tracking',
     {
-      shipments: [{ trackingId: query, language: 'en', country: 'Germany' }],
+      shipments: [
+        {
+          trackingId: query,
+          language: 'en',
+          country: 'Germany',
+          postalCode: options?.postalCode,
+          zipcode: options?.postalCode,
+          zip: options?.postalCode,
+          postcode: options?.postalCode,
+        },
+      ],
       apiKey: config.parcelsAppApiKey,
     },
     { timeout: config.serverTimeout },

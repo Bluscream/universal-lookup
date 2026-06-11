@@ -332,7 +332,12 @@ export interface LookupResponse {
 /** Provider function interface */
 export interface Provider {
   name: string;
-  lookup(query: string, type?: LookupType, originalQuery?: string): Promise<ProviderResult>;
+  lookup(
+    query: string,
+    type?: LookupType,
+    originalQuery?: string,
+    options?: { postalCode?: string },
+  ): Promise<ProviderResult>;
   isAvailable(): boolean;
 }
 

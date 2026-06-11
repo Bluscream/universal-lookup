@@ -62,7 +62,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     // GET: /:type/:query
     app.get<{
       Params: { type: string; query: string };
-      Querystring: { raw?: string; fresh?: string; wait?: string };
+      Querystring: { raw?: string; fresh?: string; wait?: string; zip?: string; postal_code?: string; postcode?: string };
     }>(
       `${prefix}/:type/:query`,
       {
@@ -84,6 +84,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
               raw: { type: 'string', enum: ['true', 'false', '1', '0'] },
               fresh: { type: 'string', enum: ['true', 'false', '1', '0'] },
               wait: { type: 'string', enum: ['true', 'false', '1', '0'] },
+              zip: { type: 'string' },
+              postal_code: { type: 'string' },
+              postcode: { type: 'string' },
             },
           },
           response: responseSchema,
@@ -102,6 +105,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         raw?: boolean | string;
         fresh?: boolean | string;
         wait?: boolean | string;
+        zip?: string;
+        postal_code?: string;
+        postcode?: string;
       };
     }>(
       `${prefix}/:type`,
@@ -124,6 +130,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
               raw: { type: ['boolean', 'string'] },
               fresh: { type: ['boolean', 'string'] },
               wait: { type: ['boolean', 'string'] },
+              zip: { type: 'string' },
+              postal_code: { type: 'string' },
+              postcode: { type: 'string' },
             },
             required: ['query'],
           },
@@ -131,11 +140,14 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         },
       },
       async (request) => {
-        const { query, raw, fresh, wait } = request.body;
+        const { query, raw, fresh, wait, zip, postal_code, postcode } = request.body;
         const queryParams = {
           raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
           fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
           wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
+          zip,
+          postal_code,
+          postcode,
         };
         return handleLookup(request.params.type, query || '', queryParams, request.ip);
       },
@@ -149,6 +161,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         raw?: boolean | string;
         fresh?: boolean | string;
         wait?: boolean | string;
+        zip?: string;
+        postal_code?: string;
+        postcode?: string;
       };
     }>(
       `${prefix}/lookup`,
@@ -164,6 +179,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
               raw: { type: ['boolean', 'string'] },
               fresh: { type: ['boolean', 'string'] },
               wait: { type: ['boolean', 'string'] },
+              zip: { type: 'string' },
+              postal_code: { type: 'string' },
+              postcode: { type: 'string' },
             },
             required: ['type', 'query'],
           },
@@ -171,11 +189,14 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         },
       },
       async (request) => {
-        const { type, query, raw, fresh, wait } = request.body;
+        const { type, query, raw, fresh, wait, zip, postal_code, postcode } = request.body;
         const queryParams = {
           raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
           fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
           wait: typeof wait === 'boolean' ? (wait ? 'true' : 'false') : wait,
+          zip,
+          postal_code,
+          postcode,
         };
         return handleLookup(type, query, queryParams, request.ip);
       },
@@ -238,7 +259,7 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
 async function handleLookup(
   type: string,
   query: string,
-  queryParams: { raw?: string; fresh?: string; wait?: string },
+  queryParams: { raw?: string; fresh?: string; wait?: string; zip?: string; postal_code?: string; postcode?: string },
   clientIp: string,
 ): Promise<LookupResponse> {
   const startTime = Date.now();
@@ -247,6 +268,9 @@ async function handleLookup(
     !config.disableFresh && (queryParams.fresh === 'true' || queryParams.fresh === '1');
   const waitForFull =
     !config.disableWait && (queryParams.wait === 'true' || queryParams.wait === '1');
+
+  const postalCode = queryParams.postal_code || queryParams.postcode || queryParams.zip;
+  const options = postalCode ? { postalCode } : undefined;
 
   if (!VALID_TYPES.has(type)) {
     return {
@@ -298,7 +322,7 @@ async function handleLookup(
 
   if (type === 'auto' && (resolvedType === 'ip' || resolvedType === 'domain')) {
     // Dual lookup logic
-    const firstDual = getLookupFunction(resolvedType)(normalizedQuery, resolvedType);
+    const firstDual = (getLookupFunction(resolvedType) as any)(normalizedQuery, resolvedType, undefined, options);
     const firstResults = await (waitForFull ? firstDual.serverPromise : firstDual.clientPromise);
     clientResults = [...firstResults];
 
@@ -307,14 +331,14 @@ async function handleLookup(
     // Attempt to find the "other" query
     if (resolvedType === 'ip') {
       // IP -> Domain
-      const dnsResult = firstResults.find((r) => r.provider === 'dns' && r.success);
+      const dnsResult = firstResults.find((r: any) => r.provider === 'dns' && r.success);
       const domain = (dnsResult?.data?.reverse_dns as string[])?.[0];
       if (domain) {
         secondDual = lookupDomain(domain, 'domain');
       }
     } else {
       // Domain -> IP
-      const dnsResult = firstResults.find((r) => r.provider === 'dns' && r.success);
+      const dnsResult = firstResults.find((r: any) => r.provider === 'dns' && r.success);
       const ip =
         (dnsResult?.data?.dns_a as string[])?.[0] || (dnsResult?.data?.dns_aaaa as string[])?.[0];
       if (ip) {
@@ -338,7 +362,7 @@ async function handleLookup(
   } else {
     // Normal single lookup
     const lookupFn = getLookupFunction(resolvedType);
-    const dual = lookupFn(normalizedQuery, resolvedType);
+    const dual = (lookupFn as any)(normalizedQuery, resolvedType, undefined, options);
     clientResults = await (waitForFull ? dual.serverPromise : dual.clientPromise);
     if (!waitForFull) {
       serverPromise = dual.serverPromise;
