@@ -200,7 +200,7 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
           try {
             const parsed = new Date(ev.date);
             if (!Number.isNaN(parsed.getTime())) {
-              ev.date = parsed.toISOString();
+              ev.date = parsed.toISOString().replace(/\.\d+Z$/, 'Z');
             }
           } catch (_) {}
         }
