@@ -59,6 +59,10 @@ export const config = {
   amazonUsername: env('AMAZON_USERNAME'),
   amazonPassword: env('AMAZON_PASSWORD'),
   amazonTotpKey: env('AMAZON_TOTP_KEY'),
+  upsAccessKey: env('UPS_ACCESS_KEY'),
+  uspsUsername: env('USPS_USERNAME'),
+  fedexApiKey: env('FEDEX_API_KEY'),
+  fedexSecretKey: env('FEDEX_SECRET_KEY'),
   aliexpressUsername: env('ALIEXPRESS_USERNAME'),
   aliexpressPassword: env('ALIEXPRESS_PASSWORD'),
   aliexpressSessionDir: env('ALIEXPRESS_SESSION_DIR'),
@@ -99,7 +103,7 @@ export const config = {
   ),
   providersParcel: env(
     'PROVIDERS_PARCEL',
-    'dhl-web,dhl,amazon,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo',
+    'dhl-web,dhl,amazon-tba,ups,usps,fedex,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo',
   ),
   providersShipment: env(
     'PROVIDERS_SHIPMENT',

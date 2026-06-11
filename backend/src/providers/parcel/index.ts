@@ -11,10 +11,18 @@ import { dhlWeb } from './dhl-web.js';
 import { parcelsapp } from './parcelsapp.js';
 import { pkge } from './pkge.js';
 import { seventeenTrack } from './17track.js';
+import { usps } from './usps.js';
+import { ups } from './ups.js';
+import { fedex } from './fedex.js';
+import { amazonTba } from './amazon-tba.js';
 
 const ALL_PROVIDERS: Provider[] = [
+  amazonTba,
   dhlWeb,
   dhl,
+  usps,
+  ups,
+  fedex,
   parcelsapp,
   pkge,
   seventeenTrack,
