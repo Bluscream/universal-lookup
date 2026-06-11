@@ -1,6 +1,6 @@
 {
   "name": "@universal-lookup/backend",
-  "version": "1.7.7",
+  "version": "1.7.9",
   "description": "Backend API server for Universal Lookup",
   "type": "module",
   "main": "dist/index.js",

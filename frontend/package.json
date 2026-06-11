@@ -1,7 +1,7 @@
 {
   "name": "@universal-lookup/frontend",
   "private": true,
-  "version": "1.7.7",
+  "version": "1.7.9",
   "type": "module",
   "scripts": {
     "dev": "vite --port 24010 --host 0.0.0.0",

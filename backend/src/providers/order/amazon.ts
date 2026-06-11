@@ -8,6 +8,43 @@ import fs from 'node:fs';
 
 const PROVIDER_NAME = 'amazon';
 
+function cookiesFilePath(): string {
+  return config.amazonCookiesFile || path.resolve(path.dirname(config.dbPath), 'amazon-cookies.json');
+}
+
+function loadCookies(): any[] | null {
+  const p = cookiesFilePath();
+  if (!fs.existsSync(p)) return null;
+  try {
+    const raw: any[] = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    return raw.map(c => ({
+      name: String(c.name),
+      value: String(c.value),
+      domain: String(c.domain || '.amazon.de'),
+      path: String(c.path || '/'),
+      expires: typeof c.expires === 'number' && c.expires > 0 ? c.expires : undefined,
+      httpOnly: Boolean(c.httpOnly),
+      secure: Boolean(c.secure),
+      sameSite: c.sameSite || undefined,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function saveCookies(cookies: any[]): void {
+  const p = cookiesFilePath();
+  try {
+    const dir = path.dirname(p);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(p, JSON.stringify(cookies, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('[Amazon] Failed to save cookies:', e);
+  }
+}
+
 
 function base32Decode(base32: string): Buffer {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -146,7 +183,7 @@ export function parseGermanDate(dateStr: string): Date {
 export const amazon: Provider = {
   name: PROVIDER_NAME,
   isAvailable() {
-    return true;
+    return fs.existsSync(cookiesFilePath()) || !!(config.amazonUsername && config.amazonPassword);
   },
 
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult<OrderData>> {
@@ -179,7 +216,7 @@ export const amazon: Provider = {
 
     try {
       const userDataDir = path.resolve(
-        process.env.AMAZON_SESSION_DIR || path.join(process.cwd(), '.scratch', 'amazon-session'),
+        process.env.AMAZON_SESSION_DIR || path.join(path.dirname(config.dbPath), 'amazon-session'),
       );
       
       if (!fs.existsSync(userDataDir)) {
@@ -219,6 +256,12 @@ export const amazon: Provider = {
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"Linux"',
       });
+
+      const cookies = loadCookies();
+      const hasCookies = cookies !== null && cookies.length > 0;
+      if (hasCookies) {
+        await page.setCookie(...cookies!);
+      }
 
       const ensureEnglishUrl = (urlStr: string): string => {
         if (!urlStr) return urlStr;
@@ -323,6 +366,11 @@ export const amazon: Provider = {
         }
 
         await page.goto(targetUrl, { waitUntil: 'load', timeout: 60000 });
+        
+        if (!page.url().includes('/ap/signin')) {
+          const newCookies = await page.cookies();
+          saveCookies(newCookies);
+        }
       }
 
       if (page.url().includes('/ap/signin')) {

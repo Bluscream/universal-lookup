@@ -1,9 +1,55 @@
 import puppeteer, { type Browser, type Page, type CookieParam } from 'puppeteer';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { config } from '../../config.js';
 import { resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
 import type { LookupType, OrderData, Provider, ProviderResult } from '../../types/common.js';
+
+function base32Decode(base32: string): Buffer {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const clean = base32.toUpperCase().replace(/=+$/, '');
+  const length = clean.length;
+  let bits = 0;
+  let value = 0;
+  let index = 0;
+  const buffer = Buffer.alloc(Math.floor((length * 5) / 8));
+
+  for (let i = 0; i < length; i++) {
+    const val = alphabet.indexOf(clean[i]);
+    if (val === -1) throw new Error('Invalid Base32 character');
+    value = (value << 5) | val;
+    bits += 5;
+    if (bits >= 8) {
+      buffer[index++] = (value >>> (bits - 8)) & 255;
+      bits -= 8;
+    }
+  }
+  return buffer;
+}
+
+export function generateTOTP(secret: string): string {
+  const key = base32Decode(secret.replace(/\s+/g, ''));
+  const epoch = Math.floor(Date.now() / 1000);
+  const counter = Math.floor(epoch / 30);
+
+  const counterBuffer = Buffer.alloc(8);
+  counterBuffer.writeUInt32BE(counter, 4);
+
+  const hmac = crypto.createHmac('sha1', key);
+  hmac.update(counterBuffer);
+  const hash = hmac.digest();
+
+  const offset = hash[hash.length - 1] & 0xf;
+  const code =
+    ((hash[offset] & 0x7f) << 24) |
+    ((hash[offset + 1] & 0xff) << 16) |
+    ((hash[offset + 2] & 0xff) << 8) |
+    (hash[offset + 3] & 0xff);
+
+  const otp = code % 1000000;
+  return otp.toString().padStart(6, '0');
+}
 
 const PROVIDER_NAME = 'aliexpress';
 
@@ -17,7 +63,7 @@ const ORDER_ID_RE = /^\d{16}$/;
  * Priority: ALIEXPRESS_COOKIES_FILE env → ./data/aliexpress-cookies.json
  */
 function cookiesFilePath(): string {
-  return config.aliexpressCookiesFile || path.resolve('data', 'aliexpress-cookies.json');
+  return config.aliexpressCookiesFile || path.resolve(path.dirname(config.dbPath), 'aliexpress-cookies.json');
 }
 
 /** Load cookies from the JSON file and convert to Puppeteer format */
@@ -105,6 +151,25 @@ async function doLogin(page: Page, username: string, password: string): Promise<
 
   await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 25000 }).catch(() => {});
   await new Promise(r => setTimeout(r, 2000));
+
+  // Check for 2FA/verification code screen
+  const otpSelector = 'input[name="code"], input[id*="code"], input[id*="otp"], input.verification-code, input#code';
+  const hasOtpInput = await page.evaluate((sel) => !!document.querySelector(sel), otpSelector);
+  
+  if (hasOtpInput) {
+    if (config.aliexpressTotpKey) {
+      const otpCode = generateTOTP(config.aliexpressTotpKey);
+      const otpInput = await page.$(otpSelector);
+      if (otpInput) {
+        await otpInput.type(otpCode, { delay: 60 });
+        await page.keyboard.press('Enter');
+        await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 25000 }).catch(() => {});
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    } else {
+      console.warn('[AliExpress] 2FA screen encountered but ALIEXPRESS_TOTP_KEY is missing');
+    }
+  }
 }
 
 // ─── Page scrapers ────────────────────────────────────────────────────────────
@@ -268,7 +333,7 @@ export const aliexpress: Provider = {
       // ── Launch: use session dir when falling back to login so cookies persist
       const sessionDir = hasCookies
         ? undefined
-        : path.resolve(config.aliexpressSessionDir || path.join('data', 'aliexpress-session'));
+        : path.resolve(path.dirname(config.dbPath), 'aliexpress-session');
 
       if (!hasCookies && sessionDir && !fs.existsSync(sessionDir)) {
         fs.mkdirSync(sessionDir, { recursive: true });

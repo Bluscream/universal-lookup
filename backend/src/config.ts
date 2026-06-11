@@ -59,14 +59,15 @@ export const config = {
   amazonUsername: env('AMAZON_USERNAME'),
   amazonPassword: env('AMAZON_PASSWORD'),
   amazonTotpKey: env('AMAZON_TOTP_KEY'),
+  amazonCookiesFile: env('AMAZON_COOKIES_FILE'),
   upsAccessKey: env('UPS_ACCESS_KEY'),
   uspsUsername: env('USPS_USERNAME'),
   fedexApiKey: env('FEDEX_API_KEY'),
   fedexSecretKey: env('FEDEX_SECRET_KEY'),
   aliexpressUsername: env('ALIEXPRESS_USERNAME'),
   aliexpressPassword: env('ALIEXPRESS_PASSWORD'),
-  aliexpressSessionDir: env('ALIEXPRESS_SESSION_DIR'),
   aliexpressCookiesFile: env('ALIEXPRESS_COOKIES_FILE'),
+  aliexpressTotpKey: env('ALIEXPRESS_TOTP_KEY'),
 
   // FritzBox
   fritzboxHost: env('FRITZBOX_HOST', 'fritz.box'),

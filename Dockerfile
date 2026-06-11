@@ -51,6 +51,9 @@ ENV HOST=0.0.0.0
 ENV VITE_BACKEND_URL=http://localhost:24011
 ENV DB_PATH=/app/backend/data/cache.db
 ENV MAXMIND_DB_PATH=/app/backend/data/maxmind
+ENV AMAZON_COOKIES_FILE=/app/backend/data/amazon-cookies.json
+ENV AMAZON_SESSION_DIR=/app/backend/data/amazon-session
+ENV ALIEXPRESS_COOKIES_FILE=/app/backend/data/aliexpress-cookies.json
 ENV LOG_LEVEL=info
 
 EXPOSE 24010 24011
