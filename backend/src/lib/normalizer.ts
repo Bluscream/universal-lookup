@@ -182,6 +182,31 @@ export function normalizeSteam(input: string): string {
   return trimmed;
 }
 
+export function isLikelyLocation(text: string): boolean {
+  if (!text) return false;
+  if (text.length > 50) return false; // Too long for a location name
+
+  const lower = text.toLowerCase();
+  const statusWords = [
+    'package', 'parcel', 'may', 'not', 'have', 'been', 'sent', 'yet', 'pending',
+    'information', 'status', 'delivery', 'carrier', 'your', 'order', 'arrived',
+    'departed', 'transit', 'facility', 'sorted', 'processed', 'shipping', 'shipped',
+    'delivered', 'handling', 'hub', 'courier', 'updates',
+  ];
+
+  let statusWordCount = 0;
+  for (const word of statusWords) {
+    if (lower.includes(word)) {
+      statusWordCount++;
+    }
+  }
+
+  // If it contains multiple status words or resembles a warning statement, it is a status text
+  if (statusWordCount >= 2) return false;
+
+  return true;
+}
+
 /**
  * Normalize a URL.
  */

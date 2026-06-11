@@ -14,7 +14,10 @@
     "declarationMap": true,
     "sourceMap": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@universal-lookup/common": ["../common/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*"]
 }

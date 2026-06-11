@@ -54,6 +54,8 @@ export const dhl: Provider = {
         status_description: shipment.status?.description,
         status_timestamp: shipment.status?.timestamp,
         status_location: shipment.status?.location?.address?.addressLocality,
+        delivered: shipment.status?.statusCode?.toLowerCase() === 'delivered',
+        is_return: shipment.status?.statusCode?.toLowerCase() === 'returned',
         origin_country: shipment.origin?.address?.countryCode,
         origin_city: shipment.origin?.address?.addressLocality,
         origin_postal: shipment.origin?.address?.postalCode,

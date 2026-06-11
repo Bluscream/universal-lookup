@@ -20,7 +20,7 @@ export const dhlWeb: Provider = {
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ParcelData>> {
     const start = Date.now();
     try {
-      const url = `https://www.dhl.de/int-verfolgen/data/search?piececode=${encodeURIComponent(query)}&language=de`;
+      const url = `https://www.dhl.de/int-verfolgen/data/search?piececode=${encodeURIComponent(query)}&language=en`;
 
       const resp = await axios.get(url, {
         timeout: config.serverTimeout,
@@ -28,7 +28,7 @@ export const dhlWeb: Provider = {
           'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           Accept: 'application/json',
-          'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
           Referer: 'https://www.dhl.de/de/privatkunden/pakete-empfangen/verfolgen.html',
         },
       });
@@ -67,6 +67,7 @@ export const dhlWeb: Provider = {
         tracking_number: sendung.id || query,
         couriers: ['DHL'],
         status: verlauf.status,
+        status_description: verlauf.status,
         delivered: !!details.istZugestellt,
         progress: verlauf.fortschritt,
         progress_max: verlauf.maximalFortschritt,
@@ -96,6 +97,7 @@ export const dhlWeb: Provider = {
           .map((e) => ({
             date: e.datum as string,
             status: e.status as string,
+            location: e.ort as string | undefined,
             is_return: (e.ruecksendung as boolean) || false,
             source: PROVIDER_NAME,
           }))

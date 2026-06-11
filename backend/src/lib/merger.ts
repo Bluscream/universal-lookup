@@ -1,4 +1,5 @@
 import type { ProviderResult } from '../types/common.js';
+import { isLikelyLocation } from './normalizer.js';
 
 /**
  * Key normalization map — maps various API field names to our canonical names.
@@ -189,6 +190,10 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
           courier?: string;
           source?: string | null;
         };
+        
+        if (ev.location && !isLikelyLocation(ev.location)) {
+          delete ev.location;
+        }
         
         // Normalize date to standard UTC ISO string if valid
         if (ev.date) {

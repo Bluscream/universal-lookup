@@ -1,5 +1,6 @@
 import { PkgeClient } from 'pkge-client';
 import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
+import { isLikelyLocation } from '../../lib/normalizer.js';
 
 const PROVIDER_NAME = 'pkge';
 
@@ -68,13 +69,17 @@ export const pkge: Provider = {
 
       // Map API checkpoints to standardized events
       const events = (trackingData.checkpoints || [])
-        .map((cp) => ({
-          date: cp.date || '',
-          status: cp.title || 'Update',
-          ...(cp.location ? { location: cp.location } : {}),
-          ...(cp.courier?.name ? { courier: cp.courier.name } : {}),
-          source: PROVIDER_NAME,
-        }))
+        .map((cp) => {
+          const isLoc = cp.location ? isLikelyLocation(cp.location) : false;
+          return {
+            date: cp.date || '',
+            status: cp.title || 'Update',
+            description: cp.location && !isLoc ? cp.location : undefined,
+            location: cp.location && isLoc ? cp.location : undefined,
+            ...(cp.courier?.name ? { courier: cp.courier.name } : {}),
+            source: PROVIDER_NAME,
+          };
+        })
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       // Extract couriers
