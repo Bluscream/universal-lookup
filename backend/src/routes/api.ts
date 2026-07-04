@@ -8,13 +8,14 @@ import { lookupDomain } from '../providers/domain/index.js';
 import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
 import { lookupLocation } from '../providers/location/index.js';
+import { lookupOrder } from '../providers/order/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
 import { lookupShipment } from '../providers/shipment/index.js';
+import { lookupStatus } from '../providers/status/index.js';
 import { lookupSteam } from '../providers/steam/index.js';
 import { lookupTel } from '../providers/tel/index.js';
 import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
-import { lookupOrder } from '../providers/order/index.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
 const VALID_TYPES = new Set<string>([
@@ -30,6 +31,7 @@ const VALID_TYPES = new Set<string>([
   'url',
   'apk',
   'order',
+  'status',
   'auto',
 ]);
 
@@ -62,7 +64,14 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     // GET: /:type/:query
     app.get<{
       Params: { type: string; query: string };
-      Querystring: { raw?: string; fresh?: string; wait?: string; zip?: string; postal_code?: string; postcode?: string };
+      Querystring: {
+        raw?: string;
+        fresh?: string;
+        wait?: string;
+        zip?: string;
+        postal_code?: string;
+        postcode?: string;
+      };
     }>(
       `${prefix}/:type/:query`,
       {
@@ -259,7 +268,14 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
 async function handleLookup(
   type: string,
   query: string,
-  queryParams: { raw?: string; fresh?: string; wait?: string; zip?: string; postal_code?: string; postcode?: string },
+  queryParams: {
+    raw?: string;
+    fresh?: string;
+    wait?: string;
+    zip?: string;
+    postal_code?: string;
+    postcode?: string;
+  },
   clientIp: string,
 ): Promise<LookupResponse> {
   const startTime = Date.now();
@@ -322,7 +338,12 @@ async function handleLookup(
 
   if (type === 'auto' && (resolvedType === 'ip' || resolvedType === 'domain')) {
     // Dual lookup logic
-    const firstDual = (getLookupFunction(resolvedType) as any)(normalizedQuery, resolvedType, undefined, options);
+    const firstDual = (getLookupFunction(resolvedType) as any)(
+      normalizedQuery,
+      resolvedType,
+      undefined,
+      options,
+    );
     const firstResults = await (waitForFull ? firstDual.serverPromise : firstDual.clientPromise);
     clientResults = [...firstResults];
 
@@ -466,6 +487,8 @@ function getLookupFunction(type: LookupType) {
       return lookupApk;
     case 'order':
       return lookupOrder;
+    case 'status':
+      return lookupStatus;
     default:
       return lookupWeb;
   }

@@ -12,6 +12,7 @@ export type LookupType =
   | 'url'
   | 'apk'
   | 'order'
+  | 'status'
   | 'auto';
 
 export interface SearchResult {
@@ -301,6 +302,50 @@ export interface OrderData {
 
 export interface WebData {
   web?: SearchResult[] | null;
+  [key: string]: unknown;
+}
+
+/** Canonical health indicator across all status providers. */
+export type StatusIndicator =
+  | 'none'
+  | 'minor'
+  | 'major'
+  | 'critical'
+  | 'maintenance'
+  | 'unknown';
+
+/** One service's current health, contributed by a single status provider. */
+export interface StatusServiceEntry {
+  service: string;
+  name: string;
+  indicator: StatusIndicator;
+  status: string;
+  operational: boolean;
+  updated_at?: string | null;
+  page_url?: string | null;
+  active_incidents?: number | null;
+  source: string;
+}
+
+/** An active incident/disruption reported by a status provider. */
+export interface StatusIncident {
+  service: string;
+  name: string;
+  impact?: string | null;
+  status?: string | null;
+  url?: string | null;
+  started_at?: string | null;
+  updated_at?: string | null;
+}
+
+/**
+ * Combined service-status response. Each provider emits a single-element
+ * `services` array (and any active `incidents`); the merger concatenates them
+ * across providers into one unified response.
+ */
+export interface StatusData {
+  services?: StatusServiceEntry[] | null;
+  incidents?: StatusIncident[] | null;
   [key: string]: unknown;
 }
 

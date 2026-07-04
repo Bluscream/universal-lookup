@@ -2,10 +2,10 @@ import { useState } from 'react';
 import type { LookupResponse, LookupType, WebResult } from '../types/api';
 import { ApkCard } from './ApkCard';
 import { MapCard } from './MapCard';
+import { OrderCard } from './OrderCard';
 import { ParcelTimeline } from './ParcelTimeline';
 import { SteamProfileCard } from './SteamProfileCard';
 import { UrlMetadataCard } from './UrlMetadataCard';
-import { OrderCard } from './OrderCard';
 
 interface LookupResultProps {
   data: LookupResponse;
@@ -250,11 +250,7 @@ export function LookupResult({ data }: LookupResultProps) {
       'couriers',
     ];
   } else if (isOrder) {
-    excludedKeys = [
-      'order_id',
-      'items',
-      'tracking_ids',
-    ];
+    excludedKeys = ['order_id', 'items', 'tracking_ids'];
   }
 
   // Check for geographic coordinates

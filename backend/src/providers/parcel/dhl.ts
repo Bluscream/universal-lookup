@@ -66,9 +66,11 @@ export const dhl: Provider = {
         weight: shipment.details?.weight
           ? `${shipment.details.weight.value} ${shipment.details.weight.unitText}`
           : undefined,
-        events: (shipment.events as Array<Record<string, unknown>> || [])
+        events: ((shipment.events as Array<Record<string, unknown>>) || [])
           .map((e) => {
-            const address = (e.location as Record<string, unknown>)?.address as Record<string, unknown> | undefined;
+            const address = (e.location as Record<string, unknown>)?.address as
+              | Record<string, unknown>
+              | undefined;
             return {
               date: e.timestamp as string,
               status: e.status as string,

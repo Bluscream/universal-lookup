@@ -1,6 +1,6 @@
 import { PkgeClient } from 'pkge-client';
-import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
 import { isLikelyLocation } from '../../lib/normalizer.js';
+import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'pkge';
 

@@ -1,15 +1,17 @@
-import puppeteer, { type Browser, type Page } from 'puppeteer';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
+import puppeteer, { type Browser, type Page } from 'puppeteer';
 import { config } from '../../config.js';
 import { resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
 import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
-import fs from 'node:fs';
 
 const PROVIDER_NAME = 'amazon';
 
 function cookiesFilePath(): string {
-  return config.amazonCookiesFile || path.resolve(path.dirname(config.dbPath), 'amazon-cookies.json');
+  return (
+    config.amazonCookiesFile || path.resolve(path.dirname(config.dbPath), 'amazon-cookies.json')
+  );
 }
 
 function loadCookies(): any[] | null {
@@ -17,7 +19,7 @@ function loadCookies(): any[] | null {
   if (!fs.existsSync(p)) return null;
   try {
     const raw: any[] = JSON.parse(fs.readFileSync(p, 'utf-8'));
-    return raw.map(c => ({
+    return raw.map((c) => ({
       name: String(c.name),
       value: String(c.value),
       domain: String(c.domain || '.amazon.de'),
@@ -130,7 +132,7 @@ export function parseGermanDate(dateStr: string): Date {
     'december',
   ];
 
-  let parsed = new Date(dateStr);
+  const parsed = new Date(dateStr);
   if (!Number.isNaN(parsed.getTime())) {
     if (parsed.getFullYear() < 2020) {
       parsed.setFullYear(year);
@@ -205,7 +207,8 @@ export const amazon: Provider = {
       try {
         const parsed = new URL(query);
         orderNo = parsed.searchParams.get('orderId') || '';
-        trackingNumber = parsed.searchParams.get('shipmentId') || parsed.searchParams.get('trackingId') || '';
+        trackingNumber =
+          parsed.searchParams.get('shipmentId') || parsed.searchParams.get('trackingId') || '';
       } catch (e) {}
     } else if (query.includes('::')) {
       const parts = query.split('::');
@@ -222,10 +225,10 @@ export const amazon: Provider = {
       const userDataDir = path.resolve(
         process.env.AMAZON_SESSION_DIR || path.join(path.dirname(config.dbPath), 'amazon-session'),
       );
-      
+
       // Ensure directory exists
       if (!fs.existsSync(userDataDir)) {
-         fs.mkdirSync(userDataDir, { recursive: true });
+        fs.mkdirSync(userDataDir, { recursive: true });
       }
 
       browser = await puppeteer.launch({
@@ -288,7 +291,9 @@ export const amazon: Provider = {
       } else if (orderNo) {
         trackingUrl = `https://www.amazon.de/gp/your-account/order-details?orderID=${orderNo}`;
       } else {
-        throw new Error("Amazon provider requires an order number, orderId::trackingNumber format, or a full tracking URL.");
+        throw new Error(
+          'Amazon provider requires an order number, orderId::trackingNumber format, or a full tracking URL.',
+        );
       }
 
       trackingUrl = ensureEnglishUrl(trackingUrl);
@@ -309,9 +314,9 @@ export const amazon: Provider = {
 
         const emailInput = await page.$('input[name="email"]');
         if (emailInput) {
-            await page.type('input[name="email"]', emailVal, { delay: 50 });
-            await page.click('#continue');
-            await new Promise((r) => setTimeout(r, 1500));
+          await page.type('input[name="email"]', emailVal, { delay: 50 });
+          await page.click('#continue');
+          await new Promise((r) => setTimeout(r, 1500));
         }
 
         await page.keyboard.press('Escape');
@@ -342,10 +347,10 @@ export const amazon: Provider = {
 
         const passwordInput = await page.$('input[name="password"]');
         if (passwordInput) {
-            await page.type('input[name="password"]', passwordVal, { delay: 50 });
-            await page.click('input#signInSubmit');
-            await page.waitForNavigation({ waitUntil: 'load', timeout: 20000 }).catch(() => {});
-            await new Promise((r) => setTimeout(r, 2000));
+          await page.type('input[name="password"]', passwordVal, { delay: 50 });
+          await page.click('input#signInSubmit');
+          await page.waitForNavigation({ waitUntil: 'load', timeout: 20000 }).catch(() => {});
+          await new Promise((r) => setTimeout(r, 2000));
         }
 
         if (
@@ -376,12 +381,12 @@ export const amazon: Provider = {
               await page.waitForNavigation({ waitUntil: 'load', timeout: 30000 }).catch(() => {});
             }
           } else {
-             throw new Error('2FA encountered but AMAZON_TOTP_KEY is missing.');
+            throw new Error('2FA encountered but AMAZON_TOTP_KEY is missing.');
           }
         }
 
         await page.goto(trackingUrl, { waitUntil: 'load', timeout: 60000 });
-        
+
         if (!page.url().includes('/ap/signin')) {
           const newCookies = await page.cookies();
           saveCookies(newCookies);
@@ -398,7 +403,9 @@ export const amazon: Provider = {
       if (page.url().includes('order-details')) {
         itemName = await page.evaluate(() => {
           const itemLinks = Array.from(
-            document.querySelectorAll(".yohtmlc-item a, .a-list-item a.a-link-normal, [class*='item-title'] a")
+            document.querySelectorAll(
+              ".yohtmlc-item a, .a-list-item a.a-link-normal, [class*='item-title'] a",
+            ),
           );
           for (const link of itemLinks) {
             const text = link.textContent?.trim();
@@ -425,25 +432,28 @@ export const amazon: Provider = {
         }
       }
 
-      const showAllUpdatesSelectors = "a:has-text('Aktualisierungen'), a:has-text('updates'), a:has-text('Updates')";
+      const showAllUpdatesSelectors =
+        "a:has-text('Aktualisierungen'), a:has-text('updates'), a:has-text('Updates')";
       const showAllUpdates = await page.$(showAllUpdatesSelectors).catch(() => null);
       if (showAllUpdates) {
-          await showAllUpdates.click().catch(() => {});
-          await new Promise((r) => setTimeout(r, 3000));
+        await showAllUpdates.click().catch(() => {});
+        await new Promise((r) => setTimeout(r, 3000));
       } else {
-         await page.evaluate(() => {
-				const elements = Array.from(document.querySelectorAll("a, button, span, div"));
-				const target = elements.find(el => {
-					const txt = el.textContent?.toLowerCase() || "";
-					return txt.includes("aktualisierungen anzeigen") ||
-						   txt.includes("see all updates") ||
-						   txt.includes("show all updates");
-				});
-				if (target) {
-					(target as HTMLElement).click();
-				}
-			});
-            await new Promise((r) => setTimeout(r, 3000));
+        await page.evaluate(() => {
+          const elements = Array.from(document.querySelectorAll('a, button, span, div'));
+          const target = elements.find((el) => {
+            const txt = el.textContent?.toLowerCase() || '';
+            return (
+              txt.includes('aktualisierungen anzeigen') ||
+              txt.includes('see all updates') ||
+              txt.includes('show all updates')
+            );
+          });
+          if (target) {
+            (target as HTMLElement).click();
+          }
+        });
+        await new Promise((r) => setTimeout(r, 3000));
       }
 
       await page
@@ -474,7 +484,8 @@ export const amazon: Provider = {
               const locEl = row.querySelector('.tracking-event-location');
 
               if (descEl && descEl.textContent?.trim()) {
-                const timeText = timeEl && timeEl.textContent?.trim() ? ` ${timeEl.textContent.trim()}` : '';
+                const timeText =
+                  timeEl && timeEl.textContent?.trim() ? ` ${timeEl.textContent.trim()}` : '';
                 eventsList.push({
                   date: `${dateText}${timeText}`,
                   status: descEl.textContent.trim(),
@@ -486,34 +497,44 @@ export const amazon: Provider = {
         }
 
         if (eventsList.length === 0) {
-            const dayGroups = document.querySelectorAll(".a-spacing-double-large, .a-spacing-large, .tracking-event-group");
-            for (const group of Array.from(dayGroups)) {
-                const dateHeader = group.querySelector("h4, .a-size-medium, .event-date, .tracking-event-date");
-                if (!dateHeader) continue;
-                const dateText = dateHeader.textContent?.trim() || "";
-                
-                const eventRows = group.querySelectorAll(".a-row, .event-details");
-                for (const row of Array.from(eventRows)) {
-                    const timeEl = row.querySelector(".a-size-small, .event-time, .tracking-event-time");
-                    const descEl = row.querySelector(".a-size-base, .event-description, .tracking-event-message, b, strong");
-                    const locEl = row.querySelector(".a-color-secondary, .event-location, .tracking-event-location, span[class*='secondary']");
-                    
-                    if (descEl && descEl.textContent?.trim()) {
-                        const timeText = timeEl ? ` ${timeEl.textContent.trim()}` : "";
-                        eventsList.push({
-                            date: `${dateText}${timeText}`,
-                            status: descEl.textContent.trim(),
-                            location: locEl ? locEl.textContent.trim() : undefined
-                        });
-                    }
-                }
+          const dayGroups = document.querySelectorAll(
+            '.a-spacing-double-large, .a-spacing-large, .tracking-event-group',
+          );
+          for (const group of Array.from(dayGroups)) {
+            const dateHeader = group.querySelector(
+              'h4, .a-size-medium, .event-date, .tracking-event-date',
+            );
+            if (!dateHeader) continue;
+            const dateText = dateHeader.textContent?.trim() || '';
+
+            const eventRows = group.querySelectorAll('.a-row, .event-details');
+            for (const row of Array.from(eventRows)) {
+              const timeEl = row.querySelector('.a-size-small, .event-time, .tracking-event-time');
+              const descEl = row.querySelector(
+                '.a-size-base, .event-description, .tracking-event-message, b, strong',
+              );
+              const locEl = row.querySelector(
+                ".a-color-secondary, .event-location, .tracking-event-location, span[class*='secondary']",
+              );
+
+              if (descEl && descEl.textContent?.trim()) {
+                const timeText = timeEl ? ` ${timeEl.textContent.trim()}` : '';
+                eventsList.push({
+                  date: `${dateText}${timeText}`,
+                  status: descEl.textContent.trim(),
+                  location: locEl ? locEl.textContent.trim() : undefined,
+                });
+              }
             }
+          }
         }
 
         let statusSlug = 'sent';
         const timelineHeader =
-          document.querySelector('h1, h2, .a-size-large, .tracking-object-state')?.textContent?.trim()?.toLowerCase() ||
-          '';
+          document
+            .querySelector('h1, h2, .a-size-large, .tracking-object-state')
+            ?.textContent?.trim()
+            ?.toLowerCase() || '';
         if (
           timelineHeader.includes('zugestellt') ||
           timelineHeader.includes('delivered') ||
@@ -538,7 +559,10 @@ export const amazon: Provider = {
         );
         if (trkMatch && trkMatch[1]) {
           const rawId = trkMatch[1].trim();
-          const rawIdClean = rawId.replace(/(?:Alle|Updates|Show|See|Details|Aktualisierungen).*$/i, '');
+          const rawIdClean = rawId.replace(
+            /(?:Alle|Updates|Show|See|Details|Aktualisierungen).*$/i,
+            '',
+          );
           const dhlMatch = rawIdClean.match(/(DE\d{10})/i);
           if (dhlMatch) {
             realTrackingId = dhlMatch[1].toUpperCase();
@@ -567,22 +591,33 @@ export const amazon: Provider = {
       });
 
       if (!itemName) {
-        itemName = await page.evaluate(() => {
-            const productLinks = Array.from(document.querySelectorAll("a[href*='/gp/product/'], a[href*='/dp/']"));
+        itemName = await page
+          .evaluate(() => {
+            const productLinks = Array.from(
+              document.querySelectorAll("a[href*='/gp/product/'], a[href*='/dp/']"),
+            );
             for (const link of productLinks) {
-                const text = link.textContent?.trim();
-                if (text && text.length > 5 && !text.toLowerCase().includes("details") && !text.toLowerCase().includes("review") && !text.toLowerCase().includes("feedback")) {
-                    return text;
-                }
+              const text = link.textContent?.trim();
+              if (
+                text &&
+                text.length > 5 &&
+                !text.toLowerCase().includes('details') &&
+                !text.toLowerCase().includes('review') &&
+                !text.toLowerCase().includes('feedback')
+              ) {
+                return text;
+              }
             }
             return null;
-        }).catch(() => null);
-        if (itemName) itemName = itemName.replace(/<[^>]*>/g, "").trim();
+          })
+          .catch(() => null);
+        if (itemName) itemName = itemName.replace(/<[^>]*>/g, '').trim();
       }
 
       await browser?.close();
 
-      const statusCode = scrapedData.status === 'delivered' ? 40 : scrapedData.status === 'arriving' ? 30 : 10;
+      const statusCode =
+        scrapedData.status === 'delivered' ? 40 : scrapedData.status === 'arriving' ? 30 : 10;
       const scrapedTrackingNumber = scrapedData.realTrackingId || trackingNumber;
 
       const data: ParcelData = {

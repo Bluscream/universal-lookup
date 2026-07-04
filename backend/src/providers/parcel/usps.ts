@@ -96,7 +96,13 @@ export const usps: Provider = {
         };
       };
 
-      const events: Array<{ date: string; status: string; description?: string; location?: string; source?: string }> = [];
+      const events: Array<{
+        date: string;
+        status: string;
+        description?: string;
+        location?: string;
+        source?: string;
+      }> = [];
 
       // Add summary event first
       events.push(parseEvent(summary));

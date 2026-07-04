@@ -12,11 +12,11 @@ export const amazonTba: Provider = {
 
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult<ParcelData>> {
     const start = Date.now();
-    
+
     // Check for Amazon Logistics tracking number formats (typically TBA, TBC, TBM, TQA)
     const upperQuery = query.toUpperCase();
     const isAmazonLogistics = /^(TBA|TBC|TBM|TQA)\d+/.test(upperQuery);
-    
+
     if (!isAmazonLogistics) {
       return {
         provider: PROVIDER_NAME,
@@ -32,9 +32,10 @@ export const amazonTba: Provider = {
       const response = await axios.get(url, {
         timeout: config.serverTimeout,
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
+          Accept: 'application/json',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
       });
 
       const raw = response.data;
@@ -96,8 +97,13 @@ export const amazonTba: Provider = {
       // Sort events oldest to newest
       events.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      const statusText = raw.status || progressTracker?.summary?.status || (events[events.length - 1]?.status) || 'In Transit';
-      const isDelivered = statusText.toLowerCase().includes('delivered') || raw.progressPercent === 100;
+      const statusText =
+        raw.status ||
+        progressTracker?.summary?.status ||
+        events[events.length - 1]?.status ||
+        'In Transit';
+      const isDelivered =
+        statusText.toLowerCase().includes('delivered') || raw.progressPercent === 100;
 
       let estimatedDelivery = progressTracker?.expectedDeliveryDate || undefined;
       if (estimatedDelivery) {

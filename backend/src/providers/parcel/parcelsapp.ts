@@ -41,7 +41,11 @@ export const parcelsapp: Provider = {
 };
 
 /** Free v1 mobile API (no key required) */
-async function lookupV1(query: string, start: number, options?: { postalCode?: string }): Promise<ProviderResult> {
+async function lookupV1(
+  query: string,
+  start: number,
+  options?: { postalCode?: string },
+): Promise<ProviderResult> {
   const postcodeParam = options?.postalCode || 'Default';
   const url = `https://parcelsapp.com/api/v1/parcels/${encodeURIComponent(query)}/Auto%20Detect/en/Germany/${encodeURIComponent(postcodeParam)}/android`;
 
@@ -118,7 +122,7 @@ async function lookupV1(query: string, start: number, options?: { postalCode?: s
     estimated_delivery: raw.estimatedDeliveryDate || raw.eta,
     delivered: raw.delivered,
     days_in_transit: raw.daysInTransit,
-    events: (raw.states as Array<Record<string, unknown>> || [])
+    events: ((raw.states as Array<Record<string, unknown>>) || [])
       .map((s) => ({
         date: s.date as string,
         status: s.status as string,
@@ -180,7 +184,11 @@ function hash_32_gc(text: string, seed: number): number {
 }
 
 /** Authenticated v3 API (requires key) */
-async function lookupV3(query: string, start: number, options?: { postalCode?: string }): Promise<ProviderResult> {
+async function lookupV3(
+  query: string,
+  start: number,
+  options?: { postalCode?: string },
+): Promise<ProviderResult> {
   // Step 1: Initiate tracking
   const initResp = await axios.post(
     'https://parcelsapp.com/api/v3/shipments/tracking',
@@ -214,7 +222,9 @@ async function lookupV3(query: string, start: number, options?: { postalCode?: s
   }
 
   // Step 2: Poll for results (max 5 attempts with 2s delay)
-  let trackingData: (Record<string, unknown> & { shipments?: Array<Record<string, unknown>> }) | null = null;
+  let trackingData:
+    | (Record<string, unknown> & { shipments?: Array<Record<string, unknown>> })
+    | null = null;
   for (let i = 0; i < 5; i++) {
     await new Promise((r) => setTimeout(r, 2000));
     const pollResp = await axios.get(
@@ -243,13 +253,13 @@ async function lookupV3(query: string, start: number, options?: { postalCode?: s
   const ship = trackingData.shipments[0];
   const data: ParcelData = {
     tracking_number: ship.trackingId as string | undefined,
-    couriers: [ship.slug as string || ship.carrier as string].filter(Boolean),
+    couriers: [(ship.slug as string) || (ship.carrier as string)].filter(Boolean),
     status: ship.status as string | undefined,
     status_description: ship.statusDescription as string | undefined,
     origin: ship.origin as string | undefined,
     destination: ship.destination as string | undefined,
     estimated_delivery: ship.estimatedDeliveryDate as string | undefined,
-    events: (ship.states as Array<Record<string, unknown>> || [])
+    events: ((ship.states as Array<Record<string, unknown>>) || [])
       .map((s) => ({
         date: s.date as string,
         status: s.status as string,

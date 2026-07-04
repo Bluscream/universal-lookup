@@ -1,15 +1,17 @@
-import puppeteer, { type Browser, type Page } from 'puppeteer';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
+import puppeteer, { type Browser, type Page } from 'puppeteer';
 import { config } from '../../config.js';
 import { resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
 import type { LookupType, OrderData, Provider, ProviderResult } from '../../types/common.js';
-import fs from 'node:fs';
 
 const PROVIDER_NAME = 'amazon';
 
 function cookiesFilePath(): string {
-  return config.amazonCookiesFile || path.resolve(path.dirname(config.dbPath), 'amazon-cookies.json');
+  return (
+    config.amazonCookiesFile || path.resolve(path.dirname(config.dbPath), 'amazon-cookies.json')
+  );
 }
 
 function loadCookies(): any[] | null {
@@ -17,7 +19,7 @@ function loadCookies(): any[] | null {
   if (!fs.existsSync(p)) return null;
   try {
     const raw: any[] = JSON.parse(fs.readFileSync(p, 'utf-8'));
-    return raw.map(c => ({
+    return raw.map((c) => ({
       name: String(c.name),
       value: String(c.value),
       domain: String(c.domain || '.amazon.de'),
@@ -44,7 +46,6 @@ function saveCookies(cookies: any[]): void {
     console.error('[Amazon] Failed to save cookies:', e);
   }
 }
-
 
 function base32Decode(base32: string): Buffer {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -131,7 +132,7 @@ export function parseGermanDate(dateStr: string): Date {
     'december',
   ];
 
-  let parsed = new Date(dateStr);
+  const parsed = new Date(dateStr);
   if (!Number.isNaN(parsed.getTime())) {
     if (parsed.getFullYear() < 2020) {
       parsed.setFullYear(year);
@@ -218,9 +219,9 @@ export const amazon: Provider = {
       const userDataDir = path.resolve(
         process.env.AMAZON_SESSION_DIR || path.join(path.dirname(config.dbPath), 'amazon-session'),
       );
-      
+
       if (!fs.existsSync(userDataDir)) {
-         fs.mkdirSync(userDataDir, { recursive: true });
+        fs.mkdirSync(userDataDir, { recursive: true });
       }
 
       browser = await puppeteer.launch({
@@ -294,9 +295,9 @@ export const amazon: Provider = {
 
         const emailInput = await page.$('input[name="email"]');
         if (emailInput) {
-            await page.type('input[name="email"]', emailVal, { delay: 50 });
-            await page.click('#continue');
-            await new Promise((r) => setTimeout(r, 1500));
+          await page.type('input[name="email"]', emailVal, { delay: 50 });
+          await page.click('#continue');
+          await new Promise((r) => setTimeout(r, 1500));
         }
 
         await page.keyboard.press('Escape');
@@ -327,10 +328,10 @@ export const amazon: Provider = {
 
         const passwordInput = await page.$('input[name="password"]');
         if (passwordInput) {
-            await page.type('input[name="password"]', passwordVal, { delay: 50 });
-            await page.click('input#signInSubmit');
-            await page.waitForNavigation({ waitUntil: 'load', timeout: 20000 }).catch(() => {});
-            await new Promise((r) => setTimeout(r, 2000));
+          await page.type('input[name="password"]', passwordVal, { delay: 50 });
+          await page.click('input#signInSubmit');
+          await page.waitForNavigation({ waitUntil: 'load', timeout: 20000 }).catch(() => {});
+          await new Promise((r) => setTimeout(r, 2000));
         }
 
         if (
@@ -361,12 +362,12 @@ export const amazon: Provider = {
               await page.waitForNavigation({ waitUntil: 'load', timeout: 30000 }).catch(() => {});
             }
           } else {
-             throw new Error('2FA encountered but AMAZON_TOTP_KEY is missing.');
+            throw new Error('2FA encountered but AMAZON_TOTP_KEY is missing.');
           }
         }
 
         await page.goto(targetUrl, { waitUntil: 'load', timeout: 60000 });
-        
+
         if (!page.url().includes('/ap/signin')) {
           const newCookies = await page.cookies();
           saveCookies(newCookies);
@@ -380,89 +381,132 @@ export const amazon: Provider = {
       // We should now be on the order details page
       const scrapedData = await page.evaluate(() => {
         const itemsList: Array<{ name: string; url?: string }> = [];
-        
+
         const trackingIds: string[] = [];
 
         // Try to find the main order container to avoid scraping recommended items
-        const orderContainer = document.querySelector('#orderDetails') || document.querySelector('.a-box-group') || document;
+        const orderContainer =
+          document.querySelector('#orderDetails') ||
+          document.querySelector('.a-box-group') ||
+          document;
 
         // Check if order exists
         const errorMsg = document.querySelector('.a-alert-heading');
         if (errorMsg && errorMsg.textContent?.toLowerCase().includes('problem')) {
-            const statusDescription = 'Order not found or access denied';
-            return { itemsList, trackingIds, totalPrice: '', status: 'error', statusDescription, shippingAddress: '' };
+          const statusDescription = 'Order not found or access denied';
+          return {
+            itemsList,
+            trackingIds,
+            totalPrice: '',
+            status: 'error',
+            statusDescription,
+            shippingAddress: '',
+          };
         }
 
-        const itemLinks = Array.from(orderContainer.querySelectorAll(".yohtmlc-item a.a-link-normal, .a-box.shipment a.a-link-normal, .shipment-is-delivered a.a-link-normal, .shipment-is-active a.a-link-normal"));
-        
+        const itemLinks = Array.from(
+          orderContainer.querySelectorAll(
+            '.yohtmlc-item a.a-link-normal, .a-box.shipment a.a-link-normal, .shipment-is-delivered a.a-link-normal, .shipment-is-active a.a-link-normal',
+          ),
+        );
+
         // Fallback to a broader search if the above fails, but avoid the "Recommendations" section
-        const generalLinks = itemLinks.length > 0 ? itemLinks : Array.from(orderContainer.querySelectorAll("a.a-link-normal"));
-        
+        const generalLinks =
+          itemLinks.length > 0
+            ? itemLinks
+            : Array.from(orderContainer.querySelectorAll('a.a-link-normal'));
+
         if (generalLinks.length > 0) {
-            for (const link of generalLinks) {
-                const text = link.textContent?.trim();
-                const href = (link as HTMLAnchorElement).href || "";
-                // Avoid extracting links from the bottom carousel
-                if (text && text.length > 5 && (href.includes("/gp/product/") || href.includes("/dp/")) && !href.includes('buyagain')) {
-                    // avoid duplicates
-                    if (!itemsList.find(i => i.name === text)) {
-                        itemsList.push({ name: text, url: href });
-                    }
-                }
+          for (const link of generalLinks) {
+            const text = link.textContent?.trim();
+            const href = (link as HTMLAnchorElement).href || '';
+            // Avoid extracting links from the bottom carousel
+            if (
+              text &&
+              text.length > 5 &&
+              (href.includes('/gp/product/') || href.includes('/dp/')) &&
+              !href.includes('buyagain')
+            ) {
+              // avoid duplicates
+              if (!itemsList.find((i) => i.name === text)) {
+                itemsList.push({ name: text, url: href });
+              }
             }
+          }
         }
 
         // Extract tracking IDs from progress-tracker links within the order container
         const trackLinksList: string[] = [];
-        const trackLinks = Array.from(orderContainer.querySelectorAll("a[href*='progress-tracker'], a[href*='ship-track']"));
+        const trackLinks = Array.from(
+          orderContainer.querySelectorAll("a[href*='progress-tracker'], a[href*='ship-track']"),
+        );
         for (const link of trackLinks) {
-            const href = (link as HTMLAnchorElement).href;
-            if (href && !trackLinksList.includes(href)) {
-                trackLinksList.push(href);
-            }
-            const parsed = new URL(href, window.location.origin);
-            const shipmentId = parsed.searchParams.get('shipmentId') || parsed.searchParams.get('trackingId');
-            if (shipmentId && !trackingIds.includes(shipmentId)) {
-                trackingIds.push(shipmentId);
-            }
+          const href = (link as HTMLAnchorElement).href;
+          if (href && !trackLinksList.includes(href)) {
+            trackLinksList.push(href);
+          }
+          const parsed = new URL(href, window.location.origin);
+          const shipmentId =
+            parsed.searchParams.get('shipmentId') || parsed.searchParams.get('trackingId');
+          if (shipmentId && !trackingIds.includes(shipmentId)) {
+            trackingIds.push(shipmentId);
+          }
         }
 
         // Extract Total Price
-        let totalPrice = "";
-        const priceElements = Array.from(document.querySelectorAll(".grand-total-price, [data-test='order-total']"));
+        let totalPrice = '';
+        const priceElements = Array.from(
+          document.querySelectorAll(".grand-total-price, [data-test='order-total']"),
+        );
         for (const el of priceElements) {
-            if (el.textContent) {
-                totalPrice = el.textContent.trim();
-                break;
-            }
+          if (el.textContent) {
+            totalPrice = el.textContent.trim();
+            break;
+          }
         }
 
         // Extract Status
-        let status = "unknown";
-        let statusDescription = "";
-        const statusEl = document.querySelector(".js-shipment-info-container h1, .yohtmlc-order-status, .js-shipment-info-container h3, [class*='order-status']");
+        let status = 'unknown';
+        let statusDescription = '';
+        const statusEl = document.querySelector(
+          ".js-shipment-info-container h1, .yohtmlc-order-status, .js-shipment-info-container h3, [class*='order-status']",
+        );
         if (statusEl && statusEl.textContent) {
-            statusDescription = statusEl.textContent.trim();
-            const lower = statusDescription.toLowerCase();
-            if (lower.includes("zugestellt") || lower.includes("delivered")) {
-                status = "delivered";
-            } else if (lower.includes("heute") || lower.includes("today") || lower.includes("arriving")) {
-                status = "arriving";
-            } else if (lower.includes("versandt") || lower.includes("shipped")) {
-                status = "shipped";
-            } else if (lower.includes("bestellt") || lower.includes("ordered")) {
-                status = "ordered";
-            }
+          statusDescription = statusEl.textContent.trim();
+          const lower = statusDescription.toLowerCase();
+          if (lower.includes('zugestellt') || lower.includes('delivered')) {
+            status = 'delivered';
+          } else if (
+            lower.includes('heute') ||
+            lower.includes('today') ||
+            lower.includes('arriving')
+          ) {
+            status = 'arriving';
+          } else if (lower.includes('versandt') || lower.includes('shipped')) {
+            status = 'shipped';
+          } else if (lower.includes('bestellt') || lower.includes('ordered')) {
+            status = 'ordered';
+          }
         }
 
         // Extract Shipping Address roughly
-        let shippingAddress = "";
-        const addressBlock = document.querySelector(".displayAddressDiv, [class*='shipping-address']");
+        let shippingAddress = '';
+        const addressBlock = document.querySelector(
+          ".displayAddressDiv, [class*='shipping-address']",
+        );
         if (addressBlock && addressBlock.textContent) {
-            shippingAddress = addressBlock.textContent.replace(/\\s+/g, ' ').trim();
+          shippingAddress = addressBlock.textContent.replace(/\\s+/g, ' ').trim();
         }
 
-        return { itemsList, trackingIds, trackLinksList, totalPrice, status, statusDescription, shippingAddress };
+        return {
+          itemsList,
+          trackingIds,
+          trackLinksList,
+          totalPrice,
+          status,
+          statusDescription,
+          shippingAddress,
+        };
       });
 
       const shipments: Array<{
@@ -475,7 +519,8 @@ export const amazon: Provider = {
       for (const trackUrl of scrapedData.trackLinksList || []) {
         try {
           const parsed = new URL(trackUrl, 'https://www.amazon.de');
-          const shipmentId = parsed.searchParams.get('shipmentId') || parsed.searchParams.get('trackingId');
+          const shipmentId =
+            parsed.searchParams.get('shipmentId') || parsed.searchParams.get('trackingId');
           const itemId = parsed.searchParams.get('itemId');
           const packageIndex = parsed.searchParams.get('packageIndex');
 
@@ -486,7 +531,7 @@ export const amazon: Provider = {
             package_index: packageIndex || undefined,
           });
         } catch (e) {
-           console.error("Failed to parse tracking link:", e);
+          console.error('Failed to parse tracking link:', e);
         }
       }
 

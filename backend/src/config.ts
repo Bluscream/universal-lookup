@@ -1,7 +1,7 @@
-import * as dotenv from 'dotenv';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as dotenv from 'dotenv';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: resolve(__dirname, '../../.env') });
@@ -35,6 +35,7 @@ export const config = {
   dbPath: env('DB_PATH', './data/cache.db'),
   cacheTtl: envInt('CACHE_TTL', 86400), // 24 hours
   cacheTtlParcel: envInt('CACHE_TTL_PARCEL', 3600), // 1 hour
+  cacheTtlStatus: envInt('CACHE_TTL_STATUS', 120), // 2 minutes (service health changes fast)
 
   // Timeouts
   clientTimeout: envInt('CLIENT_TIMEOUT', 5000),
@@ -106,10 +107,7 @@ export const config = {
     'PROVIDERS_PARCEL',
     'dhl-web,dhl,amazon-tba,ups,usps,fedex,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo',
   ),
-  providersShipment: env(
-    'PROVIDERS_SHIPMENT',
-    'amazon,google,bing,duckduckgo,yahoo',
-  ),
+  providersShipment: env('PROVIDERS_SHIPMENT', 'amazon,google,bing,duckduckgo,yahoo'),
   providersWeb: env('PROVIDERS_WEB', 'google,bing,duckduckgo,yahoo'),
   providersSteam: env(
     'PROVIDERS_STEAM',
@@ -117,6 +115,18 @@ export const config = {
   ),
   providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,urlscan,virustotal'),
   providersOrder: env('PROVIDERS_ORDER', 'amazon'),
+  providersStatus: env(
+    'PROVIDERS_STATUS',
+    'discord,vrchat,cloudflare,github,epic,reddit,twitch,xbox,playstation,activision',
+  ),
+
+  // Status providers
+  statusUserAgent: env(
+    'STATUS_USER_AGENT',
+    'Mozilla/5.0 (compatible; universal-lookup/1.0; +https://github.com/)',
+  ),
+  statusPsnRegion: env('STATUS_PSN_REGION', 'SCEA'), // SCEA=Americas, SCEE=Europe, SCEJ=Asia
+  statusPsnCountry: env('STATUS_PSN_COUNTRY', 'US'),
 
   // Universal Search
   universalResultsLimit: envInt('UNIVERSAL_RESULTS_LIMIT', 3),
@@ -135,6 +145,7 @@ export const config = {
 /** Get the cache TTL for a given lookup type */
 export function getCacheTtl(type: string): number {
   if (type === 'parcel' || type === 'shipment') return config.cacheTtlParcel;
+  if (type === 'status') return config.cacheTtlStatus;
   return config.cacheTtl;
 }
 

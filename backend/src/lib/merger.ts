@@ -190,11 +190,11 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
           courier?: string;
           source?: string | null;
         };
-        
+
         if (ev.location && !isLikelyLocation(ev.location)) {
           delete ev.location;
         }
-        
+
         // Normalize date to standard UTC ISO string if valid
         if (ev.date) {
           try {

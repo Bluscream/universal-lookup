@@ -68,7 +68,8 @@ export const fedex: Provider = {
           provider: PROVIDER_NAME,
           success: false,
           data: {},
-          error: trackResult?.error?.message || 'Tracking number not found or error returned from FedEx',
+          error:
+            trackResult?.error?.message || 'Tracking number not found or error returned from FedEx',
           raw,
           duration: Date.now() - start,
         };

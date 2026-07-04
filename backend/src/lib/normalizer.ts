@@ -188,10 +188,34 @@ export function isLikelyLocation(text: string): boolean {
 
   const lower = text.toLowerCase();
   const statusWords = [
-    'package', 'parcel', 'may', 'not', 'have', 'been', 'sent', 'yet', 'pending',
-    'information', 'status', 'delivery', 'carrier', 'your', 'order', 'arrived',
-    'departed', 'transit', 'facility', 'sorted', 'processed', 'shipping', 'shipped',
-    'delivered', 'handling', 'hub', 'courier', 'updates',
+    'package',
+    'parcel',
+    'may',
+    'not',
+    'have',
+    'been',
+    'sent',
+    'yet',
+    'pending',
+    'information',
+    'status',
+    'delivery',
+    'carrier',
+    'your',
+    'order',
+    'arrived',
+    'departed',
+    'transit',
+    'facility',
+    'sorted',
+    'processed',
+    'shipping',
+    'shipped',
+    'delivered',
+    'handling',
+    'hub',
+    'courier',
+    'updates',
   ];
 
   let statusWordCount = 0;

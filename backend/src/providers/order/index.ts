@@ -5,13 +5,10 @@ import {
   filterAndSortProviders,
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
-import { amazon } from './amazon.js';
 import { aliexpress } from './aliexpress.js';
+import { amazon } from './amazon.js';
 
-const ALL_PROVIDERS: Provider[] = [
-  amazon,
-  aliexpress,
-];
+const ALL_PROVIDERS: Provider[] = [amazon, aliexpress];
 
 export function lookupOrder(
   query: string,

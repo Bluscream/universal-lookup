@@ -108,7 +108,10 @@ export const ups: Provider = {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
-        error: error.response?.data?.trackResponse?.errors?.[0]?.message || error.message || String(error),
+        error:
+          error.response?.data?.trackResponse?.errors?.[0]?.message ||
+          error.message ||
+          String(error),
         duration: Date.now() - start,
       };
     }
