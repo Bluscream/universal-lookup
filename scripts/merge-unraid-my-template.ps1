@@ -66,5 +66,7 @@ if ($insertIndex -ge 0) {
     Write-Error "Could not find insertion point in $MyTemplatePath"
 }
 
-Set-Content -Path $MyTemplatePath -Value $myContent -NoNewline
+# Write UTF-8 without BOM explicitly so em-dashes/unicode survive across
+# PowerShell versions (default Set-Content encoding varies and can corrupt them).
+[System.IO.File]::WriteAllText($MyTemplatePath, $myContent, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "Merged $added new config field(s) into $(Split-Path $MyTemplatePath -Leaf)." -ForegroundColor Green

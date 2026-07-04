@@ -6,7 +6,7 @@
 
 param (
     [string]$CommitMessage = "update",
-    [string]$NasTemplatePath = "\\UNRAID\flash\config\plugins\dockerGui\templates-user",
+    [string]$NasTemplatePath = "\\UNRAID\flash\config\plugins\dockerMan\templates-user",
     [ValidateSet("patch", "minor", "major", "none")]
     [string]$Bump = "patch",
     [switch]$IgnoreWarnings,
@@ -147,6 +147,14 @@ if (-not $SkipDocker) {
 # 6. Unraid Template Deploy
 # Stock templates: unraid/*.xml -> templates-user/universal-lookup*.xml
 # Running containers use my-* templates (Unraid prefix for installed/customized containers).
+# Fall back to the locally-mounted flash (N:) if the SMB path isn't reachable.
+if (-not (Test-Path $NasTemplatePath)) {
+    $localFlash = "N:\boot\config\plugins\dockerMan\templates-user"
+    if (Test-Path $localFlash) {
+        Write-Host "NAS SMB path not found; using mounted flash: $localFlash" -ForegroundColor Yellow
+        $NasTemplatePath = $localFlash
+    }
+}
 if (Test-Path $NasTemplatePath) {
     Write-Host "Copying stock XML templates to NAS..." -ForegroundColor Cyan
     Copy-Item "unraid\universal-lookup.xml" $NasTemplatePath -Force

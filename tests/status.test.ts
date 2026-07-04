@@ -319,6 +319,50 @@ describe('nintendoToSummary', () => {
   });
 });
 
+describe('summaryToStatusData ignore list (STATUS_IGNORED)', () => {
+  const summary = {
+    page: { name: 'Activision', url: 'https://x' },
+    status: { indicator: 'major', description: '3 active issues' },
+    incidents: [
+      { name: 'Crash Team Racing Nitro-Fueled — Xbox One', status: 'identified' },
+      { name: 'Skylanders SuperChargers — Xbox 360', status: 'identified' },
+      { name: 'Call of Duty: matchmaking down', status: 'identified' },
+    ],
+  };
+
+  it('filters ignored incidents and keeps real ones', () => {
+    const ignored = new Set([
+      'crash team racing nitro-fueled — xbox one',
+      'skylanders superchargers — xbox 360',
+    ]);
+    const data = summaryToStatusData(summary, 'activision', 'Activision', ignored);
+    expect(data.incidents).toHaveLength(1);
+    expect(data.incidents?.[0].name).toContain('Call of Duty');
+    // Still one real incident -> stays non-operational.
+    expect(data.services?.[0].operational).toBe(false);
+    expect(data.services?.[0].active_incidents).toBe(1);
+  });
+
+  it('marks a service operational when ALL its incidents are ignored', () => {
+    const ignored = new Set([
+      'crash team racing nitro-fueled — xbox one',
+      'skylanders superchargers — xbox 360',
+      'call of duty', // substring match
+    ]);
+    const data = summaryToStatusData(summary, 'activision', 'Activision', ignored);
+    expect(data.incidents).toEqual([]);
+    expect(data.services?.[0].operational).toBe(true);
+    expect(data.services?.[0].indicator).toBe('none');
+    expect(data.services?.[0].status).toBe('All Systems Operational');
+  });
+
+  it('does nothing when the ignore set is empty', () => {
+    const data = summaryToStatusData(summary, 'activision', 'Activision', new Set());
+    expect(data.incidents).toHaveLength(3);
+    expect(data.services?.[0].operational).toBe(false);
+  });
+});
+
 describe('status providers merge into one unified response', () => {
   it('concatenates services and incidents across providers', () => {
     const discord = summaryToStatusData(

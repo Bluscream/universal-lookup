@@ -1,3 +1,4 @@
+import { config } from '../../config.js';
 import type {
   LookupType,
   Provider,
@@ -6,6 +7,36 @@ import type {
   StatusIndicator,
 } from '../../types/common.js';
 import { statusGet } from './http.js';
+
+let _ignoredCache: { raw: string; set: Set<string> } | null = null;
+
+/** Parsed STATUS_IGNORED list (lower-cased), memoized on the raw config string. */
+function ignoredIssues(): Set<string> {
+  const raw = config.statusIgnored;
+  if (!_ignoredCache || _ignoredCache.raw !== raw) {
+    _ignoredCache = {
+      raw,
+      set: new Set(
+        raw
+          .split(';')
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    };
+  }
+  return _ignoredCache.set;
+}
+
+/** True if an incident name matches any ignored entry (case-insensitive substring). */
+function isIgnored(name: string, ignored: Set<string>): boolean {
+  if (ignored.size === 0) return false;
+  const n = (name || '').trim().toLowerCase();
+  if (ignored.has(n)) return true;
+  for (const ig of ignored) {
+    if (n.includes(ig)) return true;
+  }
+  return false;
+}
 
 /**
  * Atlassian Statuspage v2 `summary.json` shape — the de-facto standard used by
@@ -59,13 +90,24 @@ export function summaryToStatusData(
   summary: StatuspageSummary,
   service: string,
   label: string,
+  ignored: Set<string> = ignoredIssues(),
 ): StatusData {
-  const indicator = normalizeIndicator(summary.status?.indicator);
+  let indicator = normalizeIndicator(summary.status?.indicator);
 
   // Only surface incidents that are not yet resolved.
-  const activeIncidents = (summary.incidents || []).filter(
+  const unresolved = (summary.incidents || []).filter(
     (i) => (i.status || '').toLowerCase() !== 'resolved',
   );
+  // Drop ignored incidents (STATUS_IGNORED).
+  const activeIncidents = unresolved.filter((i) => !isIgnored(i.name || '', ignored));
+
+  // If a service's only incidents were all ignored, treat it as operational.
+  const allIgnored = unresolved.length > 0 && activeIncidents.length === 0;
+  if (indicator !== 'none' && allIgnored) indicator = 'none';
+
+  const operational = indicator === 'none';
+  const status =
+    operational && allIgnored ? 'All Systems Operational' : summary.status?.description || 'Unknown';
 
   return {
     services: [
@@ -73,8 +115,8 @@ export function summaryToStatusData(
         service,
         name: label,
         indicator,
-        status: summary.status?.description || 'Unknown',
-        operational: indicator === 'none',
+        status,
+        operational,
         updated_at: summary.page?.updated_at || null,
         page_url: summary.page?.url || null,
         active_incidents: activeIncidents.length,

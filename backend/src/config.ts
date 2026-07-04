@@ -146,6 +146,14 @@ export const config = {
 
   // Nintendo netinfo locale (en_US, en_GB, ja_JP, …)
   statusNintendoLocale: env('STATUS_NINTENDO_LOCALE', 'en_US'),
+  // Semicolon-separated list of incident names to ignore across all status
+  // providers (case-insensitive substring match). If every listed incident for a
+  // service is ignored, that service is reported operational. Default hides some
+  // perpetually-"impacted" legacy Activision titles.
+  statusIgnored: env(
+    'STATUS_IGNORED',
+    'Crash Team Racing Nitro-Fueled — Xbox One;Crash Team Racing Nitro-Fueled — PlayStation 4;Crash Team Racing Nitro-Fueled — Nintendo Switch;Skylanders SuperChargers — Xbox 360',
+  ),
 
   // Universal Search
   universalResultsLimit: envInt('UNIVERSAL_RESULTS_LIMIT', 3),
