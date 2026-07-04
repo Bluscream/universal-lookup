@@ -117,7 +117,7 @@ export const config = {
   providersOrder: env('PROVIDERS_ORDER', 'amazon'),
   providersStatus: env(
     'PROVIDERS_STATUS',
-    'discord,vrchat,cloudflare,github,epic,reddit,twitch,xbox,playstation,activision',
+    'discord,vrchat,cloudflare,github,epic,reddit,twitch,xbox,playstation,activision,steam',
   ),
 
   // Status providers

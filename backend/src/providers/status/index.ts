@@ -7,6 +7,7 @@ import {
 import type { LookupType, Provider } from '../../types/common.js';
 import { activisionProvider } from './activision.js';
 import { playstationProvider } from './playstation.js';
+import { steamProvider } from './steam.js';
 import { makeStatuspageProvider, STATUSPAGE_SERVICES } from './statuspage.js';
 import { xboxProvider } from './xbox.js';
 
@@ -23,6 +24,7 @@ const ALL_STATUS_PROVIDERS: Provider[] = [
   xboxProvider,
   playstationProvider,
   activisionProvider,
+  steamProvider,
 ];
 
 /**
