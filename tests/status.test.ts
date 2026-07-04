@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { mergeResponses } from '../backend/src/lib/merger.js';
 import { activisionToSummary } from '../backend/src/providers/status/activision.js';
+import {
+  realmsToSummary,
+  reachabilityToSummary,
+} from '../backend/src/providers/status/blizzard.js';
+import { instatusToSummary } from '../backend/src/providers/status/instatus.js';
+import { nintendoToSummary } from '../backend/src/providers/status/nintendo.js';
 import { psnToSummary } from '../backend/src/providers/status/playstation.js';
+import { ubisoftToSummary } from '../backend/src/providers/status/ubisoft.js';
 import {
   normalizeIndicator,
   type StatuspageSummary,
@@ -186,6 +193,129 @@ describe('steamToSummary', () => {
     });
     expect(summary.status?.indicator).toBe('none');
     expect(summary.incidents).toEqual([]);
+  });
+});
+
+describe('instatusToSummary (EA)', () => {
+  it('maps page status UP to operational', () => {
+    const summary = instatusToSummary(
+      { page: { name: 'EA', url: 'https://ea.instatus.com', status: 'UP' } },
+      'EA',
+      'https://ea.instatus.com',
+    );
+    expect(summary.status?.indicator).toBe('none');
+    expect(summary.incidents).toEqual([]);
+  });
+
+  it('derives the indicator from the worst active incident', () => {
+    const summary = instatusToSummary(
+      {
+        page: { status: 'HASISSUES' },
+        activeIncidents: [
+          { name: 'Login delays', impact: 'MINOROUTAGE', status: 'MONITORING' },
+          { name: 'Matchmaking down', impact: 'MAJOROUTAGE', status: 'IDENTIFIED' },
+        ],
+      },
+      'EA',
+      'https://ea.instatus.com',
+    );
+    expect(summary.status?.indicator).toBe('major');
+    expect(summary.incidents).toHaveLength(2);
+  });
+
+  it('treats UNDERMAINTENANCE as maintenance', () => {
+    const summary = instatusToSummary(
+      { page: { status: 'UNDERMAINTENANCE' }, activeMaintenances: [{ name: 'Scheduled' }] },
+      'EA',
+      'https://ea.instatus.com',
+    );
+    expect(summary.status?.indicator).toBe('maintenance');
+    expect(summary.incidents).toHaveLength(1);
+  });
+});
+
+describe('ubisoftToSummary', () => {
+  it('is operational when all apps are online', () => {
+    const summary = ubisoftToSummary({
+      lastModifiedAt: '2026-07-04T00:00:00Z',
+      gameStatuses: [
+        { name: 'R6 - PC', status: 'online', isMaintenance: false, impactedFeatures: [] },
+        { name: 'R6 - PS5', status: 'online', isMaintenance: false, impactedFeatures: [] },
+      ],
+    });
+    expect(summary.status?.indicator).toBe('none');
+    expect(summary.incidents).toEqual([]);
+  });
+
+  it('flags maintenance, impacted features, and offline apps', () => {
+    const summary = ubisoftToSummary({
+      gameStatuses: [
+        { name: 'A - PC', status: 'online', isMaintenance: false, impactedFeatures: [] },
+        { name: 'B - PC', status: 'online', isMaintenance: true, impactedFeatures: [] },
+        { name: 'C - PC', status: 'online', isMaintenance: false, impactedFeatures: ['Matchmaking'] },
+        { name: 'D - PC', status: 'interrupted', isMaintenance: false, impactedFeatures: [] },
+      ],
+    });
+    // Worst is the interrupted app -> major.
+    expect(summary.status?.indicator).toBe('major');
+    // 3 non-operational apps become incidents (maintenance, impacted, interrupted).
+    expect(summary.incidents).toHaveLength(3);
+    expect(summary.incidents?.map((i) => i.name.split(':')[0])).toEqual(['B - PC', 'C - PC', 'D - PC']);
+  });
+});
+
+describe('blizzard realmsToSummary (detailed mode)', () => {
+  it('is operational when all sampled realms are up with no queue', () => {
+    const summary = realmsToSummary(
+      [
+        { name: 'Tichondrius', up: true, hasQueue: false },
+        { name: 'Area 52', up: true, hasQueue: false },
+      ],
+      'us',
+    );
+    expect(summary.status?.indicator).toBe('none');
+    expect(summary.incidents).toEqual([]);
+  });
+
+  it('flags a down realm as major and a queued realm as minor', () => {
+    const down = realmsToSummary([{ name: 'Illidan', up: false, hasQueue: false }], 'us');
+    expect(down.status?.indicator).toBe('major');
+    expect(down.incidents?.[0].name).toContain('Down');
+
+    const queued = realmsToSummary([{ name: 'Illidan', up: true, hasQueue: true }], 'us');
+    expect(queued.status?.indicator).toBe('minor');
+    expect(queued.incidents?.[0].name).toContain('queue');
+  });
+});
+
+describe('blizzard reachabilityToSummary (approximate mode)', () => {
+  it('reachable + fast = operational', () => {
+    expect(reachabilityToSummary(true, 120, 2500).status?.indicator).toBe('none');
+  });
+  it('reachable + slow = minor', () => {
+    expect(reachabilityToSummary(true, 4000, 2500).status?.indicator).toBe('minor');
+  });
+  it('unreachable = major', () => {
+    expect(reachabilityToSummary(false, 0, 2500).status?.indicator).toBe('major');
+  });
+});
+
+describe('nintendoToSummary', () => {
+  it('is operational when both arrays are empty', () => {
+    const summary = nintendoToSummary({ operational_statuses: [], temporary_maintenances: [] });
+    expect(summary.status?.indicator).toBe('none');
+    expect(summary.incidents).toEqual([]);
+  });
+
+  it('maps outages to major incidents and maintenance to maintenance', () => {
+    const summary = nintendoToSummary({
+      operational_statuses: [{ software_title: 'Splatoon 3', platform: ['Nintendo Switch'] }],
+      temporary_maintenances: [{ services: 'eShop', platform: ['Nintendo Switch 2'] }],
+    });
+    expect(summary.status?.indicator).toBe('major'); // an outage outranks maintenance
+    expect(summary.incidents).toHaveLength(2);
+    expect(summary.incidents?.[0].name).toBe('Splatoon 3');
+    expect(summary.incidents?.[1].impact).toBe('maintenance');
   });
 });
 

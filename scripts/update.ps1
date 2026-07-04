@@ -110,14 +110,16 @@ if (-not $SkipDocker) {
     }
 
     if ($hasBuildx) {
-        Write-Host "Using Docker Buildx for multi-arch support (linux/amd64, linux/arm64, linux/arm/v7, linux/386)..." -ForegroundColor Magenta
+        Write-Host "Using Docker Buildx for multi-arch support (linux/amd64, linux/arm64)..." -ForegroundColor Magenta
         $tagFlags = ""
         foreach ($tag in $tags) { $tagFlags += "-t $tag " }
-        
+
         # Try to use existing builder or create one
         docker buildx create --use --name universal-builder 2>$null
-        
-        docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7,linux/386 $tagFlags --push .
+
+        # amd64 (servers/unraid) + arm64 (Pi/Apple Silicon). The Chromium image is
+        # untested on arm/v7 and 386, and buildx pushes atomically, so keep to these.
+        docker buildx build --platform linux/amd64,linux/arm64 $tagFlags --push .
         Write-Host "Docker buildx build and push complete." -ForegroundColor Green
     } else {
         Write-Host "Docker Buildx not found. Falling back to legacy build (single architecture)..." -ForegroundColor Yellow

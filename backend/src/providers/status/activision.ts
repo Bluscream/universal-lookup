@@ -90,7 +90,7 @@ export const activisionProvider: Provider = {
       return {
         provider: PROVIDER_NAME,
         success: true,
-        data: summaryToStatusData(summary, PROVIDER_NAME, 'Activision (Call of Duty)'),
+        data: summaryToStatusData(summary, PROVIDER_NAME, 'Activision'),
         raw: summary,
         duration: Date.now() - start,
       };

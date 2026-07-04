@@ -246,7 +246,8 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
     return reply.type('text/html').send(html);
   };
 
-  const typePattern = 'tel|ip|domain|email|location|parcel|shipment|web|steam|url|apk|auto';
+  const typePattern =
+    'tel|ip|domain|email|location|parcel|shipment|web|steam|url|apk|order|status|auto';
 
   app.get<{
     Params: { type: string; query: string };

@@ -117,7 +117,7 @@ export const config = {
   providersOrder: env('PROVIDERS_ORDER', 'amazon'),
   providersStatus: env(
     'PROVIDERS_STATUS',
-    'discord,vrchat,cloudflare,github,epic,reddit,twitch,xbox,playstation,activision,steam',
+    'discord,vrchat,cloudflare,github,epic,reddit,twitch,xbox,playstation,activision,steam,ea,ubisoft,battlenet,nintendo',
   ),
 
   // Status providers
@@ -127,6 +127,25 @@ export const config = {
   ),
   statusPsnRegion: env('STATUS_PSN_REGION', 'SCEA'), // SCEA=Americas, SCEE=Europe, SCEJ=Asia
   statusPsnCountry: env('STATUS_PSN_COUNTRY', 'US'),
+  // Ubisoft gameStatuses API: public app-id header + a comma-separated list of
+  // application GUIDs to query (grab more from any game's /status page network tab).
+  // Default = Rainbow Six Siege across PC/PS4/PS5/Xbox Series/Xbox One.
+  statusUbisoftAppId: env('STATUS_UBISOFT_APP_ID', 'f612511e-58a2-4e9a-831f-61838b1950bb'),
+  statusUbisoftAppIds: env(
+    'STATUS_UBISOFT_APP_IDS',
+    'e3d5ea9e-50bd-43b7-88bf-39794f4e3d40,fb4cc4c9-2063-461d-a1e8-84a7d36525fc,6e3c99c9-6c3f-43f4-b4f6-f1a3143f2764,76f580d5-7f50-47cc-bbc1-152d000bfe59,4008612d-3baf-49e4-957a-33066726a7bc',
+  ),
+
+  // Battle.net / Blizzard. With client credentials -> detailed WoW connected-realm
+  // status; without -> reachability/latency approximation of the auth endpoint.
+  blizzardClientId: env('BLIZZARD_CLIENT_ID'),
+  blizzardClientSecret: env('BLIZZARD_CLIENT_SECRET'),
+  statusBlizzardRegion: env('STATUS_BLIZZARD_REGION', 'us'), // us, eu, kr, tw
+  statusBlizzardRealmSample: envInt('STATUS_BLIZZARD_REALM_SAMPLE', 3),
+  statusBlizzardSlowMs: envInt('STATUS_BLIZZARD_SLOW_MS', 2500),
+
+  // Nintendo netinfo locale (en_US, en_GB, ja_JP, …)
+  statusNintendoLocale: env('STATUS_NINTENDO_LOCALE', 'en_US'),
 
   // Universal Search
   universalResultsLimit: envInt('UNIVERSAL_RESULTS_LIMIT', 3),
