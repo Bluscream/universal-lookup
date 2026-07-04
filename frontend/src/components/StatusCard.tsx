@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, CircleDashed, Wrench } from 'lucide-react';
 import type { StatusIncident, StatusIndicator, StatusServiceEntry } from '../types/api';
+import { ServiceLogo } from './ServiceLogo';
 
 /** Colour + icon for each canonical indicator. */
 const INDICATOR_META: Record<StatusIndicator, { color: string; label: string }> = {
@@ -13,29 +14,6 @@ const INDICATOR_META: Record<StatusIndicator, { color: string; label: string }> 
 
 function meta(indicator: StatusIndicator) {
   return INDICATOR_META[indicator] ?? INDICATOR_META.unknown;
-}
-
-/** Per-service emoji icon, for quick visual scanning + linking cards to incidents. */
-const SERVICE_ICON: Record<string, string> = {
-  discord: '💬',
-  vrchat: '🥽',
-  cloudflare: '☁️',
-  github: '🐙',
-  epic: '🎮',
-  reddit: '👽',
-  twitch: '📺',
-  xbox: '🟩',
-  playstation: '🟦',
-  nintendo: '🟥',
-  steam: '♨️',
-  ea: '🏈',
-  ubisoft: '🌀',
-  activision: '👁️',
-  battlenet: '⚔️',
-};
-
-function serviceIcon(service: string): string {
-  return SERVICE_ICON[service.toLowerCase()] ?? '🌐';
 }
 
 function IndicatorIcon({ indicator }: { indicator: StatusIndicator }) {
@@ -71,7 +49,7 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {serviceIcon(s.service)} {s.name}
+          <ServiceLogo service={s.service} /> {s.name}
         </div>
         <div
           style={{
@@ -184,7 +162,7 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {serviceIcon(inc.service)} {inc.service}
+                  <ServiceLogo service={inc.service} size={13} /> {inc.service}
                 </span>
                 <span style={{ flex: 1 }}>{inc.name}</span>
                 {inc.status && (
