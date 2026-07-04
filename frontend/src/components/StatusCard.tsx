@@ -61,9 +61,6 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
         borderLeft: `3px solid ${m.color}`,
       }}
     >
-      <span style={{ fontSize: '1.15rem', lineHeight: 1 }} aria-hidden>
-        {serviceIcon(s.service)}
-      </span>
       <IndicatorIcon indicator={s.indicator} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div
@@ -74,7 +71,7 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {s.name}
+          {serviceIcon(s.service)} {s.name}
         </div>
         <div
           style={{
@@ -178,9 +175,6 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
                   color: 'inherit',
                 }}
               >
-                <span style={{ fontSize: '0.95rem', lineHeight: 1 }} aria-hidden>
-                  {serviceIcon(inc.service)}
-                </span>
                 <span
                   style={{
                     fontSize: '0.7rem',
@@ -190,7 +184,7 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {inc.service}
+                  {serviceIcon(inc.service)} {inc.service}
                 </span>
                 <span style={{ flex: 1 }}>{inc.name}</span>
                 {inc.status && (
