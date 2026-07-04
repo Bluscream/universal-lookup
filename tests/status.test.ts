@@ -50,6 +50,17 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
     expect(data.incidents).toEqual([]);
   });
 
+  it('includes a CDN icon URL for known services', () => {
+    const summary: StatuspageSummary = { status: { indicator: 'none', description: 'ok' } };
+    expect(summaryToStatusData(summary, 'discord', 'Discord').services?.[0].icon).toBe(
+      'https://cdn.simpleicons.org/discord',
+    );
+    expect(summaryToStatusData(summary, 'nintendo', 'Nintendo').services?.[0].icon).toContain(
+      'nintendo-switch',
+    );
+    expect(summaryToStatusData(summary, 'madeup', 'Made Up').services?.[0].icon).toBeNull();
+  });
+
   it('surfaces active incidents but drops resolved ones', () => {
     const summary: StatuspageSummary = {
       page: { name: 'Cloudflare', url: 'https://www.cloudflarestatus.com' },
@@ -112,7 +123,8 @@ describe('psnToSummary', () => {
     expect(summary.incidents).toEqual([]);
   });
 
-  it('flags impacted services in the target country', () => {
+  it('flags only services with an active Outage entry', () => {
+    const now = Date.parse('2026-07-05T00:00:00Z');
     const summary = psnToSummary(
       {
         regionName: 'SCEA',
@@ -123,16 +135,80 @@ describe('psnToSummary', () => {
             status: [],
             services: [
               { serviceName: 'Account Management', status: [] },
-              { serviceName: 'Gaming And Social', status: [{ note: 'down' }] },
+              {
+                serviceName: 'PlayStation Store',
+                status: [{ statusType: 'Outage', startDate: '2026-07-04T00:00:00Z' }],
+              },
             ],
           },
         ],
       },
       'US',
+      now,
     );
     expect(summary.status?.indicator).toBe('major');
     expect(summary.incidents).toHaveLength(1);
-    expect(summary.incidents?.[0].name).toBe('Gaming And Social');
+    expect(summary.incidents?.[0].name).toBe('PlayStation Store');
+  });
+
+  it('does NOT flag resolved (past endDate) or scheduled (future startDate) entries', () => {
+    const now = Date.parse('2026-07-05T00:00:00Z');
+    const summary = psnToSummary(
+      {
+        regionName: 'SCEA',
+        status: [],
+        countries: [
+          {
+            countryCode: 'US',
+            status: [],
+            services: [
+              // Resolved outage (ended yesterday) — the feed still lists it.
+              {
+                serviceName: 'Account Management',
+                status: [
+                  { statusType: 'Outage', startDate: '2026-07-01T00:00:00Z', endDate: '2026-07-02T00:00:00Z' },
+                ],
+              },
+              // Scheduled maintenance next week.
+              {
+                serviceName: 'PlayStation Store',
+                status: [{ statusType: 'Maintenance', startDate: '2026-07-12T00:00:00Z' }],
+              },
+            ],
+          },
+        ],
+      },
+      'US',
+      now,
+    );
+    expect(summary.status?.indicator).toBe('none');
+    expect(summary.incidents).toEqual([]);
+  });
+
+  it('reports active maintenance as a maintenance indicator, not major', () => {
+    const now = Date.parse('2026-07-05T00:00:00Z');
+    const summary = psnToSummary(
+      {
+        regionName: 'SCEA',
+        status: [],
+        countries: [
+          {
+            countryCode: 'US',
+            status: [],
+            services: [
+              {
+                serviceName: 'PlayStation Video',
+                status: [{ statusType: 'Maintenance', startDate: '2026-07-04T23:00:00Z' }],
+              },
+            ],
+          },
+        ],
+      },
+      'US',
+      now,
+    );
+    expect(summary.status?.indicator).toBe('maintenance');
+    expect(summary.incidents?.[0].impact).toBe('maintenance');
   });
 });
 

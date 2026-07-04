@@ -9,50 +9,89 @@ const PAGE_URL = 'https://status.playstation.com/';
 /**
  * PlayStation Network status is served as region JSON backing status.playstation.com.
  * Region codes: SCEA (Americas), SCEE (Europe), SCEJ (Japan/Asia).
- * A `status` array is empty when the region/country/service is operational and
- * populated during a disruption. We convert it into a canonical StatuspageSummary.
+ *
+ * A service's `status` array holds entries only when there is (or was) an event.
+ * Each entry has a `statusType` ("Outage" / "Maintenance") and start/end dates.
+ * The feed keeps resolved and scheduled/future entries too, so a non-empty array
+ * does NOT mean "currently down" — we only count entries that are an Outage or
+ * Maintenance and whose time window is currently active.
  */
+interface PsnStatusEntry {
+  statusType?: string;
+  startDate?: string;
+  endDate?: string;
+}
 interface PsnService {
   serviceId?: string;
   serviceName?: string;
-  status?: unknown[];
+  status?: PsnStatusEntry[];
 }
 interface PsnCountry {
   countryCode?: string;
-  status?: unknown[];
+  status?: PsnStatusEntry[];
   services?: PsnService[];
 }
 interface PsnRegion {
   regionName?: string;
-  status?: unknown[];
+  status?: PsnStatusEntry[];
   countries?: PsnCountry[];
 }
 
+/** The kind of active disruption an entry represents, or null if not active. */
+function activeKind(entry: PsnStatusEntry, now: number): 'outage' | 'maintenance' | null {
+  const type = (entry.statusType || '').toLowerCase();
+  if (type !== 'outage' && type !== 'maintenance') return null;
+  const start = entry.startDate ? Date.parse(entry.startDate) : Number.NaN;
+  const end = entry.endDate ? Date.parse(entry.endDate) : Number.NaN;
+  if (!Number.isNaN(start) && start > now) return null; // scheduled / not started
+  if (!Number.isNaN(end) && end < now) return null; // already ended / resolved
+  return type as 'outage' | 'maintenance';
+}
+
+/** Worst active disruption across a status array. */
+function worstKind(entries: PsnStatusEntry[] | undefined, now: number): 'outage' | 'maintenance' | null {
+  let kind: 'outage' | 'maintenance' | null = null;
+  for (const e of entries || []) {
+    const k = activeKind(e, now);
+    if (k === 'outage') return 'outage';
+    if (k === 'maintenance') kind = 'maintenance';
+  }
+  return kind;
+}
+
 /** Convert a PSN region feed into a canonical StatuspageSummary. */
-export function psnToSummary(body: PsnRegion, country: string): StatuspageSummary {
+export function psnToSummary(body: PsnRegion, country: string, now: number = Date.now()): StatuspageSummary {
   const target =
     (body.countries || []).find(
       (c) => (c.countryCode || '').toUpperCase() === country.toUpperCase(),
     ) || (body.countries || [])[0];
 
-  const impacted = (target?.services || []).filter(
-    (s) => Array.isArray(s.status) && s.status.length > 0,
-  );
-  const regionDisrupted = Array.isArray(body.status) && body.status.length > 0;
-  const countryDisrupted = Array.isArray(target?.status) && (target?.status?.length ?? 0) > 0;
-  const hasIssues = regionDisrupted || countryDisrupted || impacted.length > 0;
+  const impacted = (target?.services || [])
+    .map((s) => ({ service: s, kind: worstKind(s.status, now) }))
+    .filter((x): x is { service: PsnService; kind: 'outage' | 'maintenance' } => x.kind !== null);
+
+  const regionKind = worstKind(body.status, now);
+  const countryKind = worstKind(target?.status, now);
+  const anyOutage =
+    regionKind === 'outage' ||
+    countryKind === 'outage' ||
+    impacted.some((x) => x.kind === 'outage');
+  const anyIssue = regionKind || countryKind || impacted.length > 0;
+
+  const indicator = anyOutage ? 'major' : anyIssue ? 'maintenance' : 'none';
 
   return {
     page: { name: 'PlayStation Network', url: PAGE_URL, updated_at: null },
     status: {
-      indicator: hasIssues ? 'major' : 'none',
-      description: hasIssues
-        ? `Issues affecting: ${impacted.map((s) => s.serviceName).filter(Boolean).join(', ') || 'PSN services'}`
-        : 'All Services Are Up and Running',
+      indicator,
+      description:
+        indicator === 'none'
+          ? 'All Services Are Up and Running'
+          : `${indicator === 'major' ? 'Issues' : 'Maintenance'} affecting: ${impacted.map((x) => x.service.serviceName).filter(Boolean).join(', ') || 'PSN services'}`,
     },
-    incidents: impacted.map((s) => ({
-      name: s.serviceName || s.serviceId || 'PSN service disruption',
-      impact: 'major',
+    incidents: impacted.map((x) => ({
+      name: x.service.serviceName || x.service.serviceId || 'PSN service disruption',
+      impact: x.kind === 'outage' ? 'major' : 'maintenance',
       status: 'identified',
       shortlink: PAGE_URL,
     })),

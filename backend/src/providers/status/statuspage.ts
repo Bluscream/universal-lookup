@@ -7,6 +7,7 @@ import type {
   StatusIndicator,
 } from '../../types/common.js';
 import { statusGet } from './http.js';
+import { serviceIconUrl } from './icons.js';
 
 let _ignoredCache: { raw: string; set: Set<string> } | null = null;
 
@@ -119,6 +120,7 @@ export function summaryToStatusData(
         operational,
         updated_at: summary.page?.updated_at || null,
         page_url: summary.page?.url || null,
+        icon: serviceIconUrl(service),
         active_incidents: activeIncidents.length,
         source: service,
       },

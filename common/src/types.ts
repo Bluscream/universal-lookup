@@ -323,6 +323,8 @@ export interface StatusServiceEntry {
   operational: boolean;
   updated_at?: string | null;
   page_url?: string | null;
+  /** CDN URL of the service's brand icon (for API consumers). */
+  icon?: string | null;
   active_incidents?: number | null;
   source: string;
 }
