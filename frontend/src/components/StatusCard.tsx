@@ -15,6 +15,29 @@ function meta(indicator: StatusIndicator) {
   return INDICATOR_META[indicator] ?? INDICATOR_META.unknown;
 }
 
+/** Per-service emoji icon, for quick visual scanning + linking cards to incidents. */
+const SERVICE_ICON: Record<string, string> = {
+  discord: '💬',
+  vrchat: '🥽',
+  cloudflare: '☁️',
+  github: '🐙',
+  epic: '🎮',
+  reddit: '👽',
+  twitch: '📺',
+  xbox: '🟩',
+  playstation: '🟦',
+  nintendo: '🟥',
+  steam: '♨️',
+  ea: '🏈',
+  ubisoft: '🌀',
+  activision: '👁️',
+  battlenet: '⚔️',
+};
+
+function serviceIcon(service: string): string {
+  return SERVICE_ICON[service.toLowerCase()] ?? '🌐';
+}
+
 function IndicatorIcon({ indicator }: { indicator: StatusIndicator }) {
   const { color } = meta(indicator);
   if (indicator === 'none') return <CheckCircle2 size={18} color={color} />;
@@ -38,6 +61,9 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
         borderLeft: `3px solid ${m.color}`,
       }}
     >
+      <span style={{ fontSize: '1.15rem', lineHeight: 1 }} aria-hidden>
+        {serviceIcon(s.service)}
+      </span>
       <IndicatorIcon indicator={s.indicator} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div
@@ -119,7 +145,7 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
       >
         {services
           .slice()
-          .sort((a, b) => Number(a.operational) - Number(b.operational))
+          .sort((a, b) => a.name.localeCompare(b.name))
           .map((s) => (
             <ServiceTile key={s.service} s={s} />
           ))}
@@ -132,7 +158,10 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
             Active Incidents ({incidents.length})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {incidents.map((inc) => (
+            {incidents
+              .slice()
+              .sort((a, b) => a.service.localeCompare(b.service))
+              .map((inc) => (
               <a
                 key={`${inc.service}-${inc.name}`}
                 href={inc.url || undefined}
@@ -149,6 +178,9 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
                   color: 'inherit',
                 }}
               >
+                <span style={{ fontSize: '0.95rem', lineHeight: 1 }} aria-hidden>
+                  {serviceIcon(inc.service)}
+                </span>
                 <span
                   style={{
                     fontSize: '0.7rem',
