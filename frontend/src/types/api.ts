@@ -13,7 +13,38 @@ export type LookupType =
   | 'url'
   | 'apk'
   | 'order'
+  | 'status'
   | 'auto';
+
+export type StatusIndicator =
+  | 'none'
+  | 'minor'
+  | 'major'
+  | 'critical'
+  | 'maintenance'
+  | 'unknown';
+
+export interface StatusServiceEntry {
+  service: string;
+  name: string;
+  indicator: StatusIndicator;
+  status: string;
+  operational: boolean;
+  updated_at?: string | null;
+  page_url?: string | null;
+  active_incidents?: number | null;
+  source: string;
+}
+
+export interface StatusIncident {
+  service: string;
+  name: string;
+  impact?: string | null;
+  status?: string | null;
+  url?: string | null;
+  started_at?: string | null;
+  updated_at?: string | null;
+}
 
 export interface LookupRequest {
   type: LookupType;
@@ -146,6 +177,7 @@ export const PLACEHOLDERS: Record<LookupType, string> = {
   url: 'e.g. https://github.com or google.com',
   apk: 'e.g. com.google.android.youtube or Play Store URL',
   order: 'e.g. 305-1827771-7197161',
+  status: 'all, or e.g. discord,xbox,playstation',
   auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
 };
 
@@ -162,5 +194,6 @@ export const LOOKUP_OPTIONS: { value: LookupType; label: string; icon: string }[
   { value: 'url', label: 'URL / Domain', icon: '🌐' },
   { value: 'apk', label: 'App Package', icon: '📱' },
   { value: 'order', label: 'Order', icon: '📦' },
+  { value: 'status', label: 'Service Status', icon: '🚦' },
   { value: 'auto', label: 'Auto Detect', icon: '✨' },
 ];

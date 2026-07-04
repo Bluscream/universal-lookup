@@ -4,6 +4,7 @@ import { ApkCard } from './ApkCard';
 import { MapCard } from './MapCard';
 import { OrderCard } from './OrderCard';
 import { ParcelTimeline } from './ParcelTimeline';
+import { StatusCard } from './StatusCard';
 import { SteamProfileCard } from './SteamProfileCard';
 import { UrlMetadataCard } from './UrlMetadataCard';
 
@@ -130,6 +131,7 @@ export function LookupResult({ data }: LookupResultProps) {
   const isApk = reqType === 'apk' || 'package_name' in response;
   const isParcel = reqType === 'parcel' || reqType === 'shipment' || 'tracking_number' in response;
   const isOrder = reqType === 'order' || 'order_id' in response;
+  const isStatus = reqType === 'status' || 'services' in response;
 
   // Determine excluded keys based on card type
   let excludedKeys: string[] = [];
@@ -251,6 +253,8 @@ export function LookupResult({ data }: LookupResultProps) {
     ];
   } else if (isOrder) {
     excludedKeys = ['order_id', 'items', 'tracking_ids'];
+  } else if (isStatus) {
+    excludedKeys = ['services', 'incidents'];
   }
 
   // Check for geographic coordinates
@@ -323,6 +327,7 @@ export function LookupResult({ data }: LookupResultProps) {
           />
         )}
         {isOrder && <OrderCard response={response} />}
+        {isStatus && <StatusCard response={response} />}
 
         {/* Priority key cards */}
         {CARD_KEYS.filter(

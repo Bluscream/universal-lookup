@@ -1,0 +1,176 @@
+import { AlertTriangle, CheckCircle2, CircleDashed, Wrench } from 'lucide-react';
+import type { StatusIncident, StatusIndicator, StatusServiceEntry } from '../types/api';
+
+/** Colour + icon for each canonical indicator. */
+const INDICATOR_META: Record<StatusIndicator, { color: string; label: string }> = {
+  none: { color: '#22c55e', label: 'Operational' },
+  minor: { color: '#eab308', label: 'Minor issues' },
+  major: { color: '#f97316', label: 'Major outage' },
+  critical: { color: '#ef4444', label: 'Critical outage' },
+  maintenance: { color: '#3b82f6', label: 'Maintenance' },
+  unknown: { color: '#6b7280', label: 'Unknown' },
+};
+
+function meta(indicator: StatusIndicator) {
+  return INDICATOR_META[indicator] ?? INDICATOR_META.unknown;
+}
+
+function IndicatorIcon({ indicator }: { indicator: StatusIndicator }) {
+  const { color } = meta(indicator);
+  if (indicator === 'none') return <CheckCircle2 size={18} color={color} />;
+  if (indicator === 'maintenance') return <Wrench size={18} color={color} />;
+  if (indicator === 'unknown') return <CircleDashed size={18} color={color} />;
+  return <AlertTriangle size={18} color={color} />;
+}
+
+function ServiceTile({ s }: { s: StatusServiceEntry }) {
+  const m = meta(s.indicator);
+  const tile = (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        padding: '0.6rem 0.75rem',
+        borderRadius: '0.5rem',
+        background: 'rgba(255,255,255,0.03)',
+        border: `1px solid ${m.color}33`,
+        borderLeft: `3px solid ${m.color}`,
+      }}
+    >
+      <IndicatorIcon indicator={s.indicator} />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div
+          style={{
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {s.name}
+        </div>
+        <div
+          style={{
+            fontSize: '0.8rem',
+            color: m.color,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {s.status}
+          {s.active_incidents
+            ? ` · ${s.active_incidents} incident${s.active_incidents === 1 ? '' : 's'}`
+            : ''}
+        </div>
+      </div>
+    </div>
+  );
+
+  return s.page_url ? (
+    <a href={s.page_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+      {tile}
+    </a>
+  ) : (
+    tile
+  );
+}
+
+export function StatusCard({ response }: { response: Record<string, unknown> }) {
+  const services = (response.services as StatusServiceEntry[] | undefined) || [];
+  const incidents = (response.incidents as StatusIncident[] | undefined) || [];
+
+  if (services.length === 0 && incidents.length === 0) return null;
+
+  const down = services.filter((s) => !s.operational);
+  const allOk = down.length === 0 && services.length > 0;
+
+  return (
+    <div className="result-card full-width" style={{ flexDirection: 'column', gap: '1rem' }}>
+      {/* Header / rollup */}
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}
+      >
+        <div className="card-label">Service Status</div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            fontWeight: 600,
+            color: allOk ? INDICATOR_META.none.color : INDICATOR_META.major.color,
+          }}
+        >
+          {allOk ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+          {allOk
+            ? `All ${services.length} services operational`
+            : `${down.length} of ${services.length} services affected`}
+        </div>
+      </div>
+
+      {/* Service grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: '0.6rem',
+        }}
+      >
+        {services
+          .slice()
+          .sort((a, b) => Number(a.operational) - Number(b.operational))
+          .map((s) => (
+            <ServiceTile key={s.service} s={s} />
+          ))}
+      </div>
+
+      {/* Active incidents */}
+      {incidents.length > 0 && (
+        <div>
+          <div className="card-label" style={{ marginBottom: '0.5rem' }}>
+            Active Incidents ({incidents.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {incidents.map((inc) => (
+              <a
+                key={`${inc.service}-${inc.name}`}
+                href={inc.url || undefined}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '0.6rem',
+                  padding: '0.5rem 0.6rem',
+                  borderRadius: '0.4rem',
+                  background: 'rgba(249,115,22,0.06)',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    textTransform: 'uppercase',
+                    fontWeight: 700,
+                    color: INDICATOR_META.major.color,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {inc.service}
+                </span>
+                <span style={{ flex: 1 }}>{inc.name}</span>
+                {inc.status && (
+                  <span style={{ fontSize: '0.75rem', opacity: 0.7, whiteSpace: 'nowrap' }}>
+                    {inc.status}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -42,7 +42,8 @@ export function SearchBar({
   const handleSubmit = useCallback(
     (e: FormEvent) => {
       e.preventDefault();
-      const trimmed = query.trim();
+      // Status lookups are aggregate by default — an empty query means "all".
+      const trimmed = query.trim() || (type === 'status' ? 'all' : '');
       if (!trimmed) return;
       onSearch(type, trimmed, { raw, fresh, wait });
     },
