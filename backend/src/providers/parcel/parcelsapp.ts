@@ -72,7 +72,7 @@ async function lookupV1(
   const hash = hash_32_gc(jsonStr, 978);
   settings.push(hash);
 
-  const payload: any[] = [
+  const payload: Array<{ slug: string; data: unknown }> = [
     {
       slug: 'ahkref',
       data: settings,

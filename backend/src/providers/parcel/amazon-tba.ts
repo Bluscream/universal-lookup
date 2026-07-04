@@ -4,6 +4,18 @@ import type { LookupType, ParcelData, Provider, ProviderResult } from '../../typ
 
 const PROVIDER_NAME = 'amazon-tba';
 
+interface AmazonTbaEvent {
+  eventTime?: string;
+  status?: string;
+  location?: string;
+}
+
+interface AmazonProgressTracker {
+  errors?: Array<{ errorMessage?: string; errorCode?: string }>;
+  summary?: { status?: string };
+  expectedDeliveryDate?: string;
+}
+
 export const amazonTba: Provider = {
   name: PROVIDER_NAME,
   isAvailable() {
@@ -50,7 +62,7 @@ export const amazonTba: Provider = {
         };
       }
 
-      let progressTracker: any = null;
+      let progressTracker: AmazonProgressTracker | null = null;
       if (typeof raw.progressTracker === 'string') {
         try {
           progressTracker = JSON.parse(raw.progressTracker);
@@ -83,8 +95,8 @@ export const amazonTba: Provider = {
         };
       }
 
-      const eventHistory = raw.eventHistory || [];
-      const events = eventHistory.map((e: any) => {
+      const eventHistory: AmazonTbaEvent[] = raw.eventHistory || [];
+      const events = eventHistory.map((e) => {
         return {
           date: e.eventTime ? new Date(e.eventTime).toISOString() : new Date().toISOString(),
           status: e.status || 'Status Update',
@@ -95,7 +107,7 @@ export const amazonTba: Provider = {
       });
 
       // Sort events oldest to newest
-      events.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       const statusText =
         raw.status ||
@@ -132,9 +144,9 @@ export const amazonTba: Provider = {
         raw,
         duration: Date.now() - start,
       };
-    } catch (error: any) {
+    } catch (error) {
       // 404 is common if the tracking number is not found
-      if (error.response?.status === 404) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
         return {
           provider: PROVIDER_NAME,
           success: false,
@@ -147,7 +159,7 @@ export const amazonTba: Provider = {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
-        error: error.message || String(error),
+        error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - start,
       };
     }

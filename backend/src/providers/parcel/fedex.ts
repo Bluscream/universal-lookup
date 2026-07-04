@@ -4,6 +4,17 @@ import type { LookupType, ParcelData, Provider, ProviderResult } from '../../typ
 
 const PROVIDER_NAME = 'fedex';
 
+interface FedexScanEvent {
+  date?: string;
+  eventDescription?: string;
+  scanLocation?: {
+    city?: string;
+    stateOrProvinceCode?: string;
+    postalCode?: string;
+    countryCode?: string;
+  };
+}
+
 export const fedex: Provider = {
   name: PROVIDER_NAME,
   isAvailable() {
@@ -75,8 +86,8 @@ export const fedex: Provider = {
         };
       }
 
-      const scanEvents = trackResult.scanEvents || [];
-      const events = scanEvents.map((event: any) => {
+      const scanEvents: FedexScanEvent[] = trackResult.scanEvents || [];
+      const events = scanEvents.map((event) => {
         const location = event.scanLocation;
         const locationParts = [
           location?.city,
@@ -95,7 +106,7 @@ export const fedex: Provider = {
       });
 
       // Sort events oldest to newest
-      events.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       const latestStatus = trackResult.latestStatusDetail || {};
       const statusText = latestStatus.description || 'In Transit';
@@ -119,12 +130,15 @@ export const fedex: Provider = {
         raw,
         duration: Date.now() - start,
       };
-    } catch (error: any) {
+    } catch (error) {
+      const apiMessage = axios.isAxiosError(error)
+        ? error.response?.data?.errors?.[0]?.message
+        : undefined;
       return {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
-        error: error.response?.data?.errors?.[0]?.message || error.message || String(error),
+        error: apiMessage || (error instanceof Error ? error.message : String(error)),
         duration: Date.now() - start,
       };
     }

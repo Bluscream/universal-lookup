@@ -5,6 +5,9 @@ import type { LookupType, ParcelData, Provider, ProviderResult } from '../../typ
 
 const PROVIDER_NAME = 'usps';
 
+/** A Cheerio selection (`$(...)`), typed without resorting to `any`. */
+type CheerioSelection = ReturnType<ReturnType<typeof cheerio.load>>;
+
 export const usps: Provider = {
   name: PROVIDER_NAME,
   isAvailable() {
@@ -66,7 +69,7 @@ export const usps: Provider = {
         };
       }
 
-      const parseEvent = (el: cheerio.Cheerio<any>) => {
+      const parseEvent = (el: CheerioSelection) => {
         const eventText = el.find('Event').text() || '';
         const eventDateText = el.find('EventDate').text() || '';
         const eventTimeText = el.find('EventTime').text() || '';
@@ -135,12 +138,12 @@ export const usps: Provider = {
         raw: response.data,
         duration: Date.now() - start,
       };
-    } catch (error: any) {
+    } catch (error) {
       return {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
-        error: error.message || String(error),
+        error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - start,
       };
     }

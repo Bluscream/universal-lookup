@@ -35,9 +35,10 @@ const ALL_PROVIDERS: Provider[] = [
 export function lookupParcel(
   query: string,
   type?: LookupType,
+  originalQuery?: string,
   options?: { postalCode?: string },
 ): DualPromiseResult {
   const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersParcel);
 
-  return executeProvidersBackground(providers, query, type, undefined, options);
+  return executeProvidersBackground(providers, query, type, originalQuery, options);
 }

@@ -99,11 +99,12 @@ if (-not $SkipDocker) {
         "bluscream1/universal-lookup:$version"
     )
 
-    # Check for buildx
+    # Check for buildx (rely on exit code; `docker buildx version` output does
+    # not contain the literal word "version")
     $hasBuildx = $false
     try {
-        $check = docker buildx version 2>&1
-        if ($check -match "version") { $hasBuildx = $true }
+        docker buildx version *> $null
+        if ($LASTEXITCODE -eq 0) { $hasBuildx = $true }
     } catch {
         $hasBuildx = $false
     }

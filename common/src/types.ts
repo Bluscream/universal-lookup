@@ -168,7 +168,7 @@ export interface ParcelData {
   tracking_number?: string | null;
   couriers?: string[] | null;
   status?: string | null;
-  status_code?: number | null;
+  status_code?: number | string | null;
   status_description?: string | null;
   delivered?: boolean | null;
   origin?: string | null;

@@ -248,7 +248,7 @@ const CATEGORY_SCHEMAS: Record<string, Record<string, unknown>> = {
       tracking_number: { type: ['string', 'null'] },
       couriers: { type: ['array', 'null'], items: { type: 'string' } },
       status: { type: ['string', 'null'] },
-      status_code: { type: ['number', 'null'] },
+      status_code: { type: ['number', 'string', 'null'] },
       status_description: { type: ['string', 'null'] },
       delivered: { type: ['boolean', 'null'] },
       origin: { type: ['string', 'null'] },

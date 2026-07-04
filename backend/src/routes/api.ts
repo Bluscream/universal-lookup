@@ -16,7 +16,16 @@ import { lookupSteam } from '../providers/steam/index.js';
 import { lookupTel } from '../providers/tel/index.js';
 import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
+import type { DualPromiseResult } from '../lib/providers.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
+
+/** Signature shared by every `lookup<Type>()` orchestrator. */
+type LookupFn = (
+  query: string,
+  type?: LookupType,
+  originalQuery?: string,
+  options?: { postalCode?: string },
+) => DualPromiseResult;
 
 const VALID_TYPES = new Set<string>([
   'tel',
@@ -338,7 +347,7 @@ async function handleLookup(
 
   if (type === 'auto' && (resolvedType === 'ip' || resolvedType === 'domain')) {
     // Dual lookup logic
-    const firstDual = (getLookupFunction(resolvedType) as any)(
+    const firstDual = getLookupFunction(resolvedType)(
       normalizedQuery,
       resolvedType,
       undefined,
@@ -352,14 +361,14 @@ async function handleLookup(
     // Attempt to find the "other" query
     if (resolvedType === 'ip') {
       // IP -> Domain
-      const dnsResult = firstResults.find((r: any) => r.provider === 'dns' && r.success);
+      const dnsResult = firstResults.find((r) => r.provider === 'dns' && r.success);
       const domain = (dnsResult?.data?.reverse_dns as string[])?.[0];
       if (domain) {
         secondDual = lookupDomain(domain, 'domain');
       }
     } else {
       // Domain -> IP
-      const dnsResult = firstResults.find((r: any) => r.provider === 'dns' && r.success);
+      const dnsResult = firstResults.find((r) => r.provider === 'dns' && r.success);
       const ip =
         (dnsResult?.data?.dns_a as string[])?.[0] || (dnsResult?.data?.dns_aaaa as string[])?.[0];
       if (ip) {
@@ -383,7 +392,7 @@ async function handleLookup(
   } else {
     // Normal single lookup
     const lookupFn = getLookupFunction(resolvedType);
-    const dual = (lookupFn as any)(normalizedQuery, resolvedType, undefined, options);
+    const dual = lookupFn(normalizedQuery, resolvedType, undefined, options);
     clientResults = await (waitForFull ? dual.serverPromise : dual.clientPromise);
     if (!waitForFull) {
       serverPromise = dual.serverPromise;
@@ -461,7 +470,7 @@ async function handleLookup(
   return sortObjectKeys(deepClean(response)) as LookupResponse;
 }
 
-function getLookupFunction(type: LookupType) {
+function getLookupFunction(type: LookupType): LookupFn {
   switch (type) {
     case 'ip':
       return lookupIp;

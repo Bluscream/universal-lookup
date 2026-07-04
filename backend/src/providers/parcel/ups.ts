@@ -4,6 +4,20 @@ import type { LookupType, ParcelData, Provider, ProviderResult } from '../../typ
 
 const PROVIDER_NAME = 'ups';
 
+interface UpsActivity {
+  status?: { description?: string; code?: string };
+  location?: {
+    address?: {
+      city?: string;
+      stateProvince?: string;
+      postalCode?: string;
+      countryCode?: string;
+    };
+  };
+  date?: string;
+  time?: string;
+}
+
 function parseUpsDateTime(dateStr: string, timeStr: string): string {
   if (!dateStr) return new Date().toISOString();
   try {
@@ -58,8 +72,8 @@ export const ups: Provider = {
         };
       }
 
-      const rawActivities = packageInfo.activity || [];
-      const events = rawActivities.map((act: any) => {
+      const rawActivities: UpsActivity[] = packageInfo.activity || [];
+      const events = rawActivities.map((act) => {
         const statusText = act.status?.description || act.status?.code || 'Unknown Event';
         const address = act.location?.address;
         const locationParts = [
@@ -70,7 +84,7 @@ export const ups: Provider = {
         ].filter(Boolean);
 
         return {
-          date: parseUpsDateTime(act.date, act.time),
+          date: parseUpsDateTime(act.date ?? '', act.time ?? ''),
           status: statusText,
           description: statusText,
           location: locationParts.join(', ') || undefined,
@@ -79,9 +93,9 @@ export const ups: Provider = {
       });
 
       // Sort events oldest to newest
-      events.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      const latestActivity = rawActivities[0] || {};
+      const latestActivity: UpsActivity = rawActivities[0] || {};
       const statusText = latestActivity.status?.description || 'In Transit';
       const statusCode = latestActivity.status?.code;
       const isDelivered = statusCode === 'D' || statusText.toLowerCase().includes('delivered');
@@ -103,15 +117,17 @@ export const ups: Provider = {
         raw,
         duration: Date.now() - start,
       };
-    } catch (error: any) {
+    } catch (error) {
+      const apiMessage = axios.isAxiosError(error)
+        ? error.response?.data?.trackResponse?.errors?.[0]?.message
+        : undefined;
       return {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
         error:
-          error.response?.data?.trackResponse?.errors?.[0]?.message ||
-          error.message ||
-          String(error),
+          apiMessage ||
+          (error instanceof Error ? error.message : String(error)),
         duration: Date.now() - start,
       };
     }

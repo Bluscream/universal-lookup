@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import puppeteer, { type Browser, type Page } from 'puppeteer';
+import puppeteer, { type Browser, type Cookie, type CookieParam, type Page } from 'puppeteer';
 import { config } from '../../config.js';
 import { resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
 import type { LookupType, OrderData, Provider, ProviderResult } from '../../types/common.js';
@@ -14,11 +14,11 @@ function cookiesFilePath(): string {
   );
 }
 
-function loadCookies(): any[] | null {
+function loadCookies(): CookieParam[] | null {
   const p = cookiesFilePath();
   if (!fs.existsSync(p)) return null;
   try {
-    const raw: any[] = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    const raw: Array<Record<string, unknown>> = JSON.parse(fs.readFileSync(p, 'utf-8'));
     return raw.map((c) => ({
       name: String(c.name),
       value: String(c.value),
@@ -27,14 +27,14 @@ function loadCookies(): any[] | null {
       expires: typeof c.expires === 'number' && c.expires > 0 ? c.expires : undefined,
       httpOnly: Boolean(c.httpOnly),
       secure: Boolean(c.secure),
-      sameSite: c.sameSite || undefined,
+      sameSite: (c.sameSite as CookieParam['sameSite']) || undefined,
     }));
   } catch {
     return null;
   }
 }
 
-function saveCookies(cookies: any[]): void {
+function saveCookies(cookies: Cookie[]): void {
   const p = cookiesFilePath();
   try {
     const dir = path.dirname(p);
@@ -244,7 +244,7 @@ export const amazon: Provider = {
         Object.defineProperty(navigator, 'languages', {
           get: () => ['de-DE', 'de', 'en-US', 'en'],
         });
-        delete (window as any).PublicKeyCredential;
+        delete (window as unknown as { PublicKeyCredential?: unknown }).PublicKeyCredential;
         if (navigator.credentials) {
           navigator.credentials.get = () => Promise.reject(new Error('WebAuthn disabled'));
           navigator.credentials.create = () => Promise.reject(new Error('WebAuthn disabled'));
