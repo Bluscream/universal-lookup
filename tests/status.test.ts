@@ -14,7 +14,7 @@ import {
   type StatuspageSummary,
   summaryToStatusData,
 } from '../backend/src/providers/status/statuspage.js';
-import { steamToSummary } from '../backend/src/providers/status/steam.js';
+import { steamGroupSummary } from '../backend/src/providers/status/steam.js';
 import { xboxToSummary } from '../backend/src/providers/status/xbox.js';
 import type { ProviderResult, StatusServiceEntry } from '../backend/src/types/common.js';
 
@@ -59,6 +59,14 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
       'nintendo-switch',
     );
     expect(summaryToStatusData(summary, 'madeup', 'Made Up').services?.[0].icon).toBeNull();
+  });
+
+  it('tags each service with a category', () => {
+    const summary: StatuspageSummary = { status: { indicator: 'none', description: 'ok' } };
+    expect(summaryToStatusData(summary, 'aws', 'AWS').services?.[0].category).toBe('Cloud');
+    expect(summaryToStatusData(summary, 'steam', 'Steam').services?.[0].category).toBe('Games');
+    expect(summaryToStatusData(summary, 'github', 'GitHub').services?.[0].category).toBe('Web');
+    expect(summaryToStatusData(summary, 'madeup', 'X').services?.[0].category).toBe('Other');
   });
 
   it('surfaces active incidents but drops resolved ones', () => {
@@ -233,42 +241,37 @@ describe('activisionToSummary', () => {
   });
 });
 
-describe('steamToSummary', () => {
-  it('is operational when core services are normal', () => {
-    const summary = steamToSummary({
-      result: { services: { SessionsLogon: 'normal', SteamCommunity: 'normal' } },
-    });
-    expect(summary.status?.indicator).toBe('none');
-    const data = summaryToStatusData(summary, 'steam', 'Steam');
-    expect(data.services?.[0].operational).toBe(true);
+describe('steamGroupSummary (Steam / CS2 split)', () => {
+  const STEAM = { SessionsLogon: 'Sessions & Login', SteamCommunity: 'Community' };
+  const CS2 = { IEconItems: 'Economy / Inventories', Leaderboards: 'Leaderboards' };
+
+  it('Steam group is operational when login + community are normal', () => {
+    const s = steamGroupSummary(
+      { SessionsLogon: 'normal', SteamCommunity: 'normal', IEconItems: 'offline' },
+      STEAM,
+      'Steam',
+    );
+    expect(s.status?.indicator).toBe('none');
+    expect(s.incidents).toEqual([]);
   });
 
-  it('marks Steam down when a core service is offline', () => {
-    const summary = steamToSummary({
-      result: { services: { SessionsLogon: 'offline', SteamCommunity: 'normal' } },
-    });
-    expect(summary.status?.indicator).toBe('major');
+  it('CS2 group reflects its own services (econ offline = major, no contradiction)', () => {
+    const services = { SessionsLogon: 'normal', SteamCommunity: 'normal', IEconItems: 'offline' };
+    const cs2 = steamGroupSummary(services, CS2, 'Counter-Strike 2');
+    expect(cs2.status?.indicator).toBe('major');
+    expect(cs2.incidents).toHaveLength(1);
+    expect(cs2.incidents?.[0].name).toContain('Economy');
   });
 
-  it('does NOT mark Steam down for a degraded non-core (CS econ) service', () => {
-    const summary = steamToSummary({
-      result: {
-        services: { SessionsLogon: 'normal', SteamCommunity: 'normal', IEconItems: 'offline' },
-      },
-    });
-    // Overall stays operational...
-    expect(summary.status?.indicator).toBe('none');
-    // ...but the degraded econ service is still surfaced as an incident.
-    expect(summary.incidents).toHaveLength(1);
-    expect(summary.incidents?.[0].name).toContain('Economy');
+  it('Steam group is down when a core service is offline', () => {
+    const s = steamGroupSummary({ SessionsLogon: 'offline', SteamCommunity: 'normal' }, STEAM, 'Steam');
+    expect(s.status?.indicator).toBe('major');
   });
 
   it('treats "idle" as operational', () => {
-    const summary = steamToSummary({
-      result: { services: { SessionsLogon: 'idle', SteamCommunity: 'idle' } },
-    });
-    expect(summary.status?.indicator).toBe('none');
-    expect(summary.incidents).toEqual([]);
+    const s = steamGroupSummary({ SessionsLogon: 'idle', SteamCommunity: 'idle' }, STEAM, 'Steam');
+    expect(s.status?.indicator).toBe('none');
+    expect(s.incidents).toEqual([]);
   });
 });
 

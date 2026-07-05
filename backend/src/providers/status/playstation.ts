@@ -86,7 +86,7 @@ export function psnToSummary(body: PsnRegion, country: string, now: number = Dat
       indicator,
       description:
         indicator === 'none'
-          ? 'All Services Are Up and Running'
+          ? 'All Systems Operational'
           : `${indicator === 'major' ? 'Issues' : 'Maintenance'} affecting: ${impacted.map((x) => x.service.serviceName).filter(Boolean).join(', ') || 'PSN services'}`,
     },
     incidents: impacted.map((x) => ({

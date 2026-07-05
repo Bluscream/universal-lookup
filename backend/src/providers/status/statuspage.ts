@@ -7,7 +7,7 @@ import type {
   StatusIndicator,
 } from '../../types/common.js';
 import { statusGet } from './http.js';
-import { serviceIconUrl } from './icons.js';
+import { serviceCategory, serviceIconUrl } from './icons.js';
 
 let _ignoredCache: { raw: string; set: Set<string> } | null = null;
 
@@ -121,6 +121,7 @@ export function summaryToStatusData(
         updated_at: summary.page?.updated_at || null,
         page_url: summary.page?.url || null,
         icon: serviceIconUrl(service),
+        category: serviceCategory(service),
         active_incidents: activeIncidents.length,
         source: service,
       },
@@ -197,4 +198,12 @@ export const STATUSPAGE_SERVICES: StatuspageProviderOptions[] = [
   { service: 'epic', label: 'Epic Games', url: 'https://status.epicgames.com/api/v2/summary.json' },
   { service: 'reddit', label: 'Reddit', url: 'https://www.redditstatus.com/api/v2/summary.json' },
   { service: 'twitch', label: 'Twitch', url: 'https://status.twitch.com/api/v2/summary.json' },
+  // Cloud / hosting providers (Atlassian Statuspage)
+  { service: 'vercel', label: 'Vercel', url: 'https://www.vercel-status.com/api/v2/summary.json' },
+  {
+    service: 'digitalocean',
+    label: 'DigitalOcean',
+    url: 'https://status.digitalocean.com/api/v2/summary.json',
+  },
+  { service: 'netlify', label: 'Netlify', url: 'https://www.netlifystatus.com/api/v2/summary.json' },
 ];

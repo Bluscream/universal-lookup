@@ -71,7 +71,7 @@ export function ubisoftToSummary(body: UbisoftResponse): StatuspageSummary {
       indicator: worst,
       description:
         worst === 'none'
-          ? 'All Services Are Up and Running'
+          ? 'All Systems Operational'
           : `Issues affecting: ${affected.map((e) => e.game.name).filter(Boolean).join(', ')}`,
     },
     incidents: affected.map((e) => {

@@ -52,7 +52,7 @@ export function nintendoToSummary(body: NintendoStatus): StatuspageSummary {
       indicator,
       description:
         indicator === 'none'
-          ? 'All Services Operational'
+          ? 'All Systems Operational'
           : `${outages.length} outage(s), ${maintenances.length} maintenance(s)`,
     },
     incidents: [

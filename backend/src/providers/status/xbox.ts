@@ -51,7 +51,7 @@ export function xboxToSummary(body: XboxServiceStatus): StatuspageSummary {
       indicator,
       description:
         indicator === 'none'
-          ? 'All Services Up and Running'
+          ? 'All Systems Operational'
           : `Issues affecting: ${impacted.map((c) => c.name).join(', ') || overallState}`,
     },
     incidents: impacted.map((c) => ({

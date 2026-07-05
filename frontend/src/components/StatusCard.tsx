@@ -78,6 +78,27 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
   );
 }
 
+const CATEGORY_ORDER = ['Cloud', 'Games', 'Web', 'Other'];
+
+/** Group services by category, categories in preferred order, services A–Z within. */
+function groupByCategory(services: StatusServiceEntry[]): Array<[string, StatusServiceEntry[]]> {
+  const groups = new Map<string, StatusServiceEntry[]>();
+  for (const s of services) {
+    const cat = s.category || 'Other';
+    const list = groups.get(cat) ?? [];
+    list.push(s);
+    groups.set(cat, list);
+  }
+  const cats = [
+    ...CATEGORY_ORDER.filter((c) => groups.has(c)),
+    ...[...groups.keys()].filter((c) => !CATEGORY_ORDER.includes(c)).sort(),
+  ];
+  return cats.map((c) => [
+    c,
+    (groups.get(c) ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
+  ]);
+}
+
 export function StatusCard({ response }: { response: Record<string, unknown> }) {
   const services = (response.services as StatusServiceEntry[] | undefined) || [];
   const incidents = (response.incidents as StatusIncident[] | undefined) || [];
@@ -110,21 +131,28 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
         </div>
       </div>
 
-      {/* Service grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '0.6rem',
-        }}
-      >
-        {services
-          .slice()
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((s) => (
-            <ServiceTile key={s.service} s={s} />
-          ))}
-      </div>
+      {/* Service grid, grouped by category */}
+      {groupByCategory(services).map(([category, entries]) => (
+        <div key={category}>
+          <div
+            className="card-label"
+            style={{ marginBottom: '0.4rem', fontSize: '0.75rem', opacity: 0.7 }}
+          >
+            {category}
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: '0.6rem',
+            }}
+          >
+            {entries.map((s) => (
+              <ServiceTile key={s.service} s={s} />
+            ))}
+          </div>
+        </div>
+      ))}
 
       {/* Active incidents */}
       {incidents.length > 0 && (

@@ -6,7 +6,10 @@ import {
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
 import { activisionProvider } from './activision.js';
+import { awsProvider } from './aws.js';
+import { azureProvider } from './azure.js';
 import { blizzardProvider } from './blizzard.js';
+import { gcpProvider } from './gcp.js';
 import { INSTATUS_SERVICES, makeInstatusProvider } from './instatus.js';
 import { nintendoProvider } from './nintendo.js';
 import { playstationProvider } from './playstation.js';
@@ -34,6 +37,9 @@ const ALL_STATUS_PROVIDERS: Provider[] = [
   ubisoftProvider,
   blizzardProvider,
   nintendoProvider,
+  gcpProvider,
+  awsProvider,
+  azureProvider,
 ];
 
 /**

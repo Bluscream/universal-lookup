@@ -33,6 +33,7 @@ export interface StatusServiceEntry {
   updated_at?: string | null;
   page_url?: string | null;
   icon?: string | null;
+  category?: string | null;
   active_incidents?: number | null;
   source: string;
 }

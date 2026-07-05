@@ -15,20 +15,31 @@ const PAGE_URL = 'https://steamstat.us/';
  *   result.services = { SessionsLogon, SteamCommunity, IEconItems, Leaderboards }
  *   values: "normal" | "idle" | "delayed" | "surge" | "offline" | "critical"
  *
- * Overall health is driven by the core Steam services (login + community); the
- * CS2-specific econ/leaderboard services are surfaced as incidents only.
+ * The endpoint is app 730 (CS2), so it only carries Steam-wide services (login,
+ * community) plus CS2-specific ones (economy, leaderboards) — Valve doesn't
+ * expose this for other games. We split it into two independent services:
+ * "Steam" (the platform) and "Counter-Strike 2" (its economy/leaderboards), so
+ * each reads consistently instead of hiding CS2 issues under Steam.
  */
 const STEAM_STATUS_URL = 'https://api.steampowered.com/ICSGOServers_730/GetGameServersStatus/v1/';
 
-/** Core services that represent "is Steam itself up". */
-const CORE_SERVICES = new Set(['SessionsLogon', 'SteamCommunity']);
-
-const SERVICE_LABELS: Record<string, string> = {
-  SessionsLogon: 'Steam Sessions & Login',
-  SteamCommunity: 'Steam Community',
-  IEconItems: 'Steam Economy / Inventories',
-  Leaderboards: 'Steam Leaderboards',
-};
+/** Which raw services belong to which reported service, and their display labels. */
+const GROUPS: Array<{
+  service: string;
+  label: string;
+  members: Record<string, string>;
+}> = [
+  {
+    service: 'steam',
+    label: 'Steam',
+    members: { SessionsLogon: 'Sessions & Login', SteamCommunity: 'Community' },
+  },
+  {
+    service: 'cs2',
+    label: 'Counter-Strike 2',
+    members: { IEconItems: 'Economy / Inventories', Leaderboards: 'Leaderboards' },
+  },
+];
 
 interface SteamStatusResponse {
   result?: { services?: Record<string, string> };
@@ -61,38 +72,36 @@ const SEVERITY_RANK: Record<string, number> = {
   unknown: 1,
 };
 
-/** Convert the Steam GetGameServersStatus payload into a canonical StatuspageSummary. */
-export function steamToSummary(body: SteamStatusResponse): StatuspageSummary {
-  const services = body.result?.services || {};
-  const entries = Object.entries(services).map(([key, state]) => ({
-    key,
-    label: SERVICE_LABELS[key] || key,
-    state,
-    indicator: stateToIndicator(state),
-    core: CORE_SERVICES.has(key),
-  }));
+/** Build a canonical summary for one group of Steam services. */
+export function steamGroupSummary(
+  services: Record<string, string>,
+  members: Record<string, string>,
+  label: string,
+): StatuspageSummary {
+  const entries = Object.entries(members)
+    .filter(([key]) => key in services)
+    .map(([key, memberLabel]) => ({
+      label: memberLabel,
+      state: services[key],
+      indicator: stateToIndicator(services[key]),
+    }));
 
-  // Overall severity is driven by the core services only.
-  const coreEntries = entries.filter((e) => e.core);
-  const worst = coreEntries.reduce(
+  const worst = entries.reduce(
     (acc, e) => ((SEVERITY_RANK[e.indicator] ?? 1) > (SEVERITY_RANK[acc] ?? 1) ? e.indicator : acc),
     'none',
   );
-  const coreIssues = coreEntries.filter((e) => e.indicator !== 'none');
-
-  // Any non-normal service (core or CS-specific) becomes an incident.
-  const incidents = entries.filter((e) => e.indicator !== 'none');
+  const issues = entries.filter((e) => e.indicator !== 'none');
 
   return {
-    page: { name: 'Steam', url: PAGE_URL, updated_at: null },
+    page: { name: label, url: PAGE_URL, updated_at: null },
     status: {
       indicator: worst,
       description:
         worst === 'none'
-          ? 'Steam is operational'
-          : `Issues affecting: ${coreIssues.map((e) => e.label).join(', ')}`,
+          ? 'All Systems Operational'
+          : `Issues affecting: ${issues.map((e) => e.label).join(', ')}`,
     },
-    incidents: incidents.map((e) => ({
+    incidents: issues.map((e) => ({
       name: `${e.label}: ${e.state}`,
       impact: e.state,
       status: 'identified',
@@ -114,12 +123,25 @@ export const steamProvider: Provider = {
       const resp = await statusGet<SteamStatusResponse>(STEAM_STATUS_URL, {
         params: { key: config.steamApiKey },
       });
-      const summary = steamToSummary(resp.data || {});
+      const services = resp.data?.result?.services || {};
+
+      // Emit one service entry per group (Steam + Counter-Strike 2), merged.
+      const mergedServices: NonNullable<StatusData['services']> = [];
+      const mergedIncidents: NonNullable<StatusData['incidents']> = [];
+      const raw: Record<string, unknown> = {};
+      for (const g of GROUPS) {
+        const summary = steamGroupSummary(services, g.members, g.label);
+        const data = summaryToStatusData(summary, g.service, g.label);
+        mergedServices.push(...(data.services || []));
+        mergedIncidents.push(...(data.incidents || []));
+        raw[g.service] = summary;
+      }
+
       return {
         provider: PROVIDER_NAME,
         success: true,
-        data: summaryToStatusData(summary, PROVIDER_NAME, 'Steam'),
-        raw: summary,
+        data: { services: mergedServices, incidents: mergedIncidents },
+        raw,
         duration: Date.now() - start,
       };
     } catch (error) {

@@ -325,6 +325,8 @@ export interface StatusServiceEntry {
   page_url?: string | null;
   /** CDN URL of the service's brand icon (for API consumers). */
   icon?: string | null;
+  /** Category for grouping (Cloud / Games / Web / Other). */
+  category?: string | null;
   active_incidents?: number | null;
   source: string;
 }

@@ -26,9 +26,50 @@ const SERVICE_ICON_URL: Record<string, string> = {
   activision: SI('activision'),
   nintendo: MDI('nintendo-switch'),
   xbox: MDI('microsoft-xbox'),
+  cs2: SI('counterstrike'),
+  vercel: SI('vercel'),
+  digitalocean: SI('digitalocean'),
+  netlify: SI('netlify'),
+  gcp: SI('googlecloud'),
+  aws: MDI('aws'),
+  azure: MDI('microsoft-azure'),
 };
 
 /** CDN URL of a service's brand icon, or null if we don't have one. */
 export function serviceIconUrl(service: string): string | null {
   return SERVICE_ICON_URL[service.toLowerCase()] ?? null;
+}
+
+/** Category a service belongs to, for grouping in the UI. */
+const SERVICE_CATEGORY: Record<string, string> = {
+  // Cloud / hosting / infrastructure
+  cloudflare: 'Cloud',
+  aws: 'Cloud',
+  azure: 'Cloud',
+  gcp: 'Cloud',
+  vercel: 'Cloud',
+  digitalocean: 'Cloud',
+  netlify: 'Cloud',
+  // Games / gaming platforms
+  steam: 'Games',
+  cs2: 'Games',
+  xbox: 'Games',
+  playstation: 'Games',
+  nintendo: 'Games',
+  activision: 'Games',
+  ea: 'Games',
+  ubisoft: 'Games',
+  battlenet: 'Games',
+  epic: 'Games',
+  vrchat: 'Games',
+  // Web / social / dev
+  discord: 'Web',
+  github: 'Web',
+  reddit: 'Web',
+  twitch: 'Web',
+};
+
+/** Category for a service (Cloud / Games / Web), or 'Other' if unmapped. */
+export function serviceCategory(service: string): string {
+  return SERVICE_CATEGORY[service.toLowerCase()] ?? 'Other';
 }

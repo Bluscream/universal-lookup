@@ -70,13 +70,13 @@ export function reachabilityToSummary(
   let description: string;
   if (!reachable) {
     indicator = 'major';
-    description = 'Battle.net auth endpoint unreachable';
+    description = 'Unreachable';
   } else if (ms > slowMs) {
     indicator = 'minor';
-    description = `Battle.net auth endpoint responding slowly (${ms}ms)`;
+    description = `Degraded — slow response (${ms}ms)`;
   } else {
     indicator = 'none';
-    description = `Battle.net auth endpoint reachable (${ms}ms, approximate)`;
+    description = `All Systems Operational (${ms}ms)`;
   }
   return {
     page: { name: 'Battle.net', url: PAGE_URL, updated_at: null },
