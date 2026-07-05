@@ -1,6 +1,6 @@
 {
     "name":  "universal-lookup",
-    "version":  "1.7.23",
+    "version":  "1.7.24",
     "description":  "Universal lookup service aggregating multiple APIs for phone, IP, email, location, and parcel lookups with smart caching and response merging",
     "main":  "dist/index.js",
     "bin":  {
