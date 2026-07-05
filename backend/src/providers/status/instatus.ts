@@ -120,7 +120,7 @@ export function makeInstatusProvider(opts: InstatusProviderOptions): Provider {
         return {
           provider: opts.service,
           success: true,
-          data: summaryToStatusData(summary, opts.service, opts.label),
+          data: summaryToStatusData(summary, opts.service, opts.label, undefined, true),
           raw: summary,
           duration: Date.now() - start,
         };

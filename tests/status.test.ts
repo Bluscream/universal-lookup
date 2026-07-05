@@ -69,6 +69,47 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
     expect(summaryToStatusData(summary, 'madeup', 'X').services?.[0].category).toBe('Other');
   });
 
+  it('normalizes the status text for hand-rolled providers (verbatim=false)', () => {
+    const oneIncident: StatuspageSummary = {
+      status: { indicator: 'major', description: 'Issues affecting: Economy / Inventories' },
+      incidents: [{ name: 'Inventory errors', status: 'identified', impact: 'major' }],
+    };
+    // A single active incident -> "Minor Service Outage" regardless of the
+    // provider's own wordier description.
+    expect(summaryToStatusData(oneIncident, 'cs2', 'Counter-Strike 2').services?.[0].status).toBe(
+      'Minor Service Outage',
+    );
+
+    const many: StatuspageSummary = {
+      status: { indicator: 'major', description: '3 active issues' },
+      incidents: [
+        { name: 'A', status: 'identified', impact: 'major' },
+        { name: 'B', status: 'identified', impact: 'major' },
+      ],
+    };
+    expect(summaryToStatusData(many, 'playstation', 'PSN').services?.[0].status).toBe(
+      'Major Service Outage',
+    );
+
+    const maint: StatuspageSummary = { status: { indicator: 'maintenance', description: 'x' } };
+    expect(summaryToStatusData(maint, 'psn', 'PSN').services?.[0].status).toBe('Under Maintenance');
+
+    const ok: StatuspageSummary = { status: { indicator: 'none', description: 'All Systems Operational (240ms)' } };
+    expect(summaryToStatusData(ok, 'battlenet', 'Battle.net').services?.[0].status).toBe(
+      'All Systems Operational',
+    );
+  });
+
+  it('keeps the upstream one-liner verbatim for native feeds (verbatim=true)', () => {
+    const summary: StatuspageSummary = {
+      status: { indicator: 'major', description: 'Partial System Outage' },
+      incidents: [{ name: 'x', status: 'identified', impact: 'major' }],
+    };
+    expect(
+      summaryToStatusData(summary, 'cloudflare', 'Cloudflare', undefined, true).services?.[0].status,
+    ).toBe('Partial System Outage');
+  });
+
   it('surfaces active incidents but drops resolved ones', () => {
     const summary: StatuspageSummary = {
       page: { name: 'Cloudflare', url: 'https://www.cloudflarestatus.com' },

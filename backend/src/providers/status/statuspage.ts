@@ -83,6 +83,26 @@ export function normalizeIndicator(indicator?: string): StatusIndicator {
 }
 
 /**
+ * Produce the concise one-line status label shown in the UI.
+ *
+ * Operational is always "All Systems Operational". For `verbatim` feeds (native
+ * Statuspage / Instatus) the upstream one-liner is kept as-is. Otherwise the
+ * label is normalized: maintenance -> "Under Maintenance", a single active
+ * incident -> "Minor Service Outage", more than one -> "Major Service Outage".
+ */
+export function normalizeStatusText(
+  indicator: StatusIndicator,
+  activeIncidents: number,
+  description: string | undefined,
+  verbatim: boolean,
+): string {
+  if (indicator === 'none') return 'All Systems Operational';
+  if (verbatim && description) return description;
+  if (indicator === 'maintenance') return 'Under Maintenance';
+  return activeIncidents > 1 ? 'Major Service Outage' : 'Minor Service Outage';
+}
+
+/**
  * Convert a canonical {@link StatuspageSummary} into our unified {@link StatusData}
  * (a single-element `services` array plus active `incidents`). Shared by every
  * provider so proprietary formats come out identical to native Statuspage ones.
@@ -92,6 +112,15 @@ export function summaryToStatusData(
   service: string,
   label: string,
   ignored: Set<string> = ignoredIssues(),
+  /**
+   * When true, keep the upstream `summary.status.description` verbatim (for
+   * feeds that already return a short, concise one-line status — native
+   * Atlassian Statuspage and Instatus). When false (default, for our
+   * hand-rolled providers) the status text is normalized to a consistent
+   * "All Systems Operational / Minor Service Outage / Major Service Outage /
+   * Under Maintenance" set so the UI reads uniformly.
+   */
+  verbatim: boolean = false,
 ): StatusData {
   let indicator = normalizeIndicator(summary.status?.indicator);
 
@@ -107,8 +136,7 @@ export function summaryToStatusData(
   if (indicator !== 'none' && allIgnored) indicator = 'none';
 
   const operational = indicator === 'none';
-  const status =
-    operational && allIgnored ? 'All Systems Operational' : summary.status?.description || 'Unknown';
+  const status = normalizeStatusText(indicator, activeIncidents.length, summary.status?.description, verbatim);
 
   return {
     services: [
@@ -168,7 +196,7 @@ export function makeStatuspageProvider(opts: StatuspageProviderOptions): Provide
         return {
           provider: opts.service,
           success: true,
-          data: summaryToStatusData(summary, opts.service, opts.label),
+          data: summaryToStatusData(summary, opts.service, opts.label, undefined, true),
           raw: summary,
           duration: Date.now() - start,
         };
