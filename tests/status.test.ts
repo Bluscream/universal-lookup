@@ -156,10 +156,10 @@ describe('psnToSummary', () => {
     );
     expect(summary.status?.indicator).toBe('major');
     expect(summary.incidents).toHaveLength(1);
-    expect(summary.incidents?.[0].name).toBe('PlayStation Store');
+    expect(summary.incidents?.[0].name).toContain('PlayStation Store');
   });
 
-  it('does NOT flag the target country for an outage in a different country (region aggregate)', () => {
+  it('target country stays operational for another country outage, but still lists it', () => {
     const now = Date.parse('2026-07-05T00:00:00Z');
     const outage = { statusType: 'Outage', startDate: '2026-07-04T00:00:00Z' };
     const summary = psnToSummary(
@@ -174,8 +174,34 @@ describe('psnToSummary', () => {
       'DE',
       now,
     );
+    // DE itself is operational...
     expect(summary.status?.indicator).toBe('none');
-    expect(summary.incidents).toEqual([]);
+    // ...but the RU outage is still surfaced as an incident, labelled with RU.
+    expect(summary.incidents).toHaveLength(1);
+    expect(summary.incidents?.[0].name).toContain('RU');
+    expect(summary.status?.description).toContain('elsewhere');
+  });
+
+  it('global mode ("all"): any active outage anywhere marks PSN affected', () => {
+    const now = Date.parse('2026-07-05T00:00:00Z');
+    const outage = { statusType: 'Outage', startDate: '2026-07-04T00:00:00Z' };
+    const summary = psnToSummary(
+      {
+        regionName: 'SCEE',
+        status: [outage],
+        countries: [
+          { countryCode: 'DE', status: [], services: [{ serviceName: 'Store', status: [] }] },
+          { countryCode: 'RU', status: [outage], services: [{ serviceName: 'Store', status: [outage] }] },
+        ],
+      },
+      'all',
+      now,
+    );
+    // No country filter -> the RU outage drives the overall status.
+    expect(summary.status?.indicator).toBe('major');
+    expect(summary.status?.description).not.toContain('elsewhere');
+    expect(summary.incidents).toHaveLength(1);
+    expect(summary.incidents?.[0].name).toContain('RU');
   });
 
   it('does NOT flag resolved (past endDate) or scheduled (future startDate) entries', () => {

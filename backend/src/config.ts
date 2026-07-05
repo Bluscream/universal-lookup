@@ -125,8 +125,13 @@ export const config = {
     'STATUS_USER_AGENT',
     'Mozilla/5.0 (compatible; universal-lookup/1.0; +https://github.com/)',
   ),
-  statusPsnRegion: env('STATUS_PSN_REGION', 'SCEA'), // SCEA=Americas, SCEE=Europe, SCEJ=Asia
-  statusPsnCountry: env('STATUS_PSN_COUNTRY', 'US'),
+  // SCEA=Americas, SCEE=Europe, SCEJ=Asia. Also accepts a comma-separated list or
+  // "all" (fetch every region). Default "all" for a global view.
+  statusPsnRegion: env('STATUS_PSN_REGION', 'all'),
+  // Empty / "all" / "global" = global overall status (any active issue anywhere
+  // counts). A country code (e.g. US, DE) narrows the overall to that country;
+  // incidents from other regions are still listed either way.
+  statusPsnCountry: env('STATUS_PSN_COUNTRY', 'all'),
   // Ubisoft gameStatuses API: public app-id header + a comma-separated list of
   // application GUIDs to query (grab more from any game's /status page network tab).
   // Default = Rainbow Six Siege across PC/PS4/PS5/Xbox Series/Xbox One.
