@@ -70,13 +70,13 @@ export function psnToSummary(body: PsnRegion, country: string, now: number = Dat
     .map((s) => ({ service: s, kind: worstKind(s.status, now) }))
     .filter((x): x is { service: PsnService; kind: 'outage' | 'maintenance' } => x.kind !== null);
 
-  const regionKind = worstKind(body.status, now);
+  // NOTE: the region-level `body.status` aggregates outages from ANY country in
+  // the region (e.g. a Russia-only outage shows up there), so we deliberately
+  // ignore it and judge only the target country + its services — otherwise an
+  // outage in one country marks the whole region (all countries) as down.
   const countryKind = worstKind(target?.status, now);
-  const anyOutage =
-    regionKind === 'outage' ||
-    countryKind === 'outage' ||
-    impacted.some((x) => x.kind === 'outage');
-  const anyIssue = regionKind || countryKind || impacted.length > 0;
+  const anyOutage = countryKind === 'outage' || impacted.some((x) => x.kind === 'outage');
+  const anyIssue = countryKind || impacted.length > 0;
 
   const indicator = anyOutage ? 'major' : anyIssue ? 'maintenance' : 'none';
 

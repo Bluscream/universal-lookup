@@ -159,6 +159,25 @@ describe('psnToSummary', () => {
     expect(summary.incidents?.[0].name).toBe('PlayStation Store');
   });
 
+  it('does NOT flag the target country for an outage in a different country (region aggregate)', () => {
+    const now = Date.parse('2026-07-05T00:00:00Z');
+    const outage = { statusType: 'Outage', startDate: '2026-07-04T00:00:00Z' };
+    const summary = psnToSummary(
+      {
+        regionName: 'SCEE',
+        status: [outage], // region-level aggregate includes another country's outage
+        countries: [
+          { countryCode: 'DE', status: [], services: [{ serviceName: 'Store', status: [] }] },
+          { countryCode: 'RU', status: [outage], services: [{ serviceName: 'Store', status: [outage] }] },
+        ],
+      },
+      'DE',
+      now,
+    );
+    expect(summary.status?.indicator).toBe('none');
+    expect(summary.incidents).toEqual([]);
+  });
+
   it('does NOT flag resolved (past endDate) or scheduled (future startDate) entries', () => {
     const now = Date.parse('2026-07-05T00:00:00Z');
     const summary = psnToSummary(

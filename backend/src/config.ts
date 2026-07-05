@@ -97,7 +97,7 @@ export const config = {
   providersDomain: env('PROVIDERS_DOMAIN', 'whois,dns,subdomain,google,bing,duckduckgo,yahoo'),
   providersEmail: env(
     'PROVIDERS_EMAIL',
-    'dns,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/risk,google,bing,duckduckgo,yahoo',
+    'dns-email,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/email-risk,google,bing,duckduckgo,yahoo',
   ),
   providersLocation: env(
     'PROVIDERS_LOCATION',
@@ -111,10 +111,10 @@ export const config = {
   providersWeb: env('PROVIDERS_WEB', 'google,bing,duckduckgo,yahoo'),
   providersSteam: env(
     'PROVIDERS_STEAM',
-    'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat',
+    'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat,steam-db',
   ),
   providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,urlscan,virustotal'),
-  providersOrder: env('PROVIDERS_ORDER', 'amazon'),
+  providersOrder: env('PROVIDERS_ORDER', 'amazon,aliexpress'),
   providersStatus: env(
     'PROVIDERS_STATUS',
     'discord,vrchat,cloudflare,github,epic,reddit,twitch,xbox,playstation,activision,steam,ea,ubisoft,battlenet,nintendo,vercel,digitalocean,netlify,gcp,aws,azure',
@@ -152,7 +152,7 @@ export const config = {
   // perpetually-"impacted" legacy Activision titles.
   statusIgnored: env(
     'STATUS_IGNORED',
-    'Crash Team Racing Nitro-Fueled — Xbox One;Crash Team Racing Nitro-Fueled — PlayStation 4;Crash Team Racing Nitro-Fueled — Nintendo Switch;Skylanders SuperChargers — Xbox 360',
+    'Crash Team Racing Nitro-Fueled — Xbox One;Crash Team Racing Nitro-Fueled — PlayStation 4;Crash Team Racing Nitro-Fueled — Nintendo Switch;Skylanders SuperChargers — Xbox 360;Workers AI experiencing degraded availability in some models',
   ),
 
   // Universal Search
