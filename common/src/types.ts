@@ -328,6 +328,11 @@ export interface StatusServiceEntry {
   /** Category for grouping (Cloud / Games / Web / Other). */
   category?: string | null;
   active_incidents?: number | null;
+  /**
+   * Upstream data origin that produced this entry. Usually equal to `service`,
+   * but differs when one provider feed splits into several services (e.g. both
+   * `steam` and `cs2` have `source: "steam"`, sharing the Steam Web API).
+   */
   source: string;
 }
 
