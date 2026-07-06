@@ -233,4 +233,14 @@ export const STATUSPAGE_SERVICES: StatuspageProviderOptions[] = [
     url: 'https://status.digitalocean.com/api/v2/summary.json',
   },
   { service: 'netlify', label: 'Netlify', url: 'https://www.netlifystatus.com/api/v2/summary.json' },
+  { service: 'mongodb', label: 'MongoDB', url: 'https://status.mongodb.com/api/v2/summary.json' },
+  // Dev tools / web / social (Atlassian Statuspage)
+  { service: 'sentry', label: 'Sentry', url: 'https://status.sentry.io/api/v2/summary.json' },
+  // Bluesky's custom status domain doesn't serve the API; use its Statuspage id.
+  { service: 'bluesky', label: 'Bluesky', url: 'https://zp3d53cvflx3.statuspage.io/api/v2/summary.json' },
+  // AI providers (Atlassian Statuspage)
+  { service: 'openai', label: 'OpenAI', url: 'https://status.openai.com/api/v2/summary.json' },
+  { service: 'claude', label: 'Claude', url: 'https://status.claude.com/api/v2/summary.json' },
+  { service: 'windsurf', label: 'Windsurf', url: 'https://status.windsurf.com/api/v2/summary.json' },
+  { service: 'devin', label: 'Devin', url: 'https://www.devinstatus.com/api/v2/summary.json' },
 ];

@@ -9,6 +9,8 @@
  */
 const SI = (slug: string) => `https://cdn.simpleicons.org/${slug}`;
 const MDI = (name: string) => `https://api.iconify.design/mdi/${name}.svg`;
+/** Arbitrary Iconify icon, for brands not in Simple Icons (e.g. `ri/openai-fill`). */
+const IC = (path: string) => `https://api.iconify.design/${path}.svg`;
 
 const SERVICE_ICON_URL: Record<string, string> = {
   discord: SI('discord'),
@@ -33,6 +35,14 @@ const SERVICE_ICON_URL: Record<string, string> = {
   gcp: SI('googlecloud'),
   aws: MDI('aws'),
   azure: MDI('microsoft-azure'),
+  mongodb: SI('mongodb'),
+  sentry: SI('sentry'),
+  bluesky: SI('bluesky'),
+  // AI providers
+  openai: IC('ri/openai-fill'), // OpenAI isn't in Simple Icons
+  claude: SI('claude'),
+  windsurf: SI('windsurf'),
+  devin: MDI('robot-happy'), // Devin isn't in Simple Icons
 };
 
 /** CDN URL of a service's brand icon, or null if we don't have one. */
@@ -67,6 +77,15 @@ const SERVICE_CATEGORY: Record<string, string> = {
   github: 'Web',
   reddit: 'Web',
   twitch: 'Web',
+  sentry: 'Web',
+  bluesky: 'Web',
+  // Databases / data platforms
+  mongodb: 'Cloud',
+  // AI providers
+  openai: 'AI',
+  claude: 'AI',
+  windsurf: 'AI',
+  devin: 'AI',
 };
 
 /** Category for a service (Cloud / Games / Web), or 'Other' if unmapped. */
