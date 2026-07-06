@@ -61,9 +61,7 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
           }}
         >
           {s.status}
-          {s.active_incidents
-            ? ` · ${s.active_incidents} incident${s.active_incidents === 1 ? '' : 's'}`
-            : ''}
+          {s.active_incidents ? ` (${s.active_incidents})` : ''}
         </div>
       </div>
     </div>
