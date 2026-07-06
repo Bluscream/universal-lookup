@@ -121,14 +121,6 @@ export function summaryToStatusData(
    * Under Maintenance" set so the UI reads uniformly.
    */
   verbatim: boolean = false,
-  /**
-   * The upstream data origin that produced this entry. Defaults to `service`
-   * (they match for single-service providers). Providers that split one feed
-   * into several services — e.g. the Steam Web API yields both `steam` and
-   * `cs2` — pass their provider name here so consumers can see the shared
-   * origin.
-   */
-  source: string = service,
 ): StatusData {
   let indicator = normalizeIndicator(summary.status?.indicator);
 
@@ -159,7 +151,6 @@ export function summaryToStatusData(
         icon: serviceIconUrl(service),
         category: serviceCategory(service),
         active_incidents: activeIncidents.length,
-        source,
       },
     ],
     incidents: activeIncidents.map((i) => ({

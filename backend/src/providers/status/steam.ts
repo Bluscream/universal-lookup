@@ -131,9 +131,7 @@ export const steamProvider: Provider = {
       const raw: Record<string, unknown> = {};
       for (const g of GROUPS) {
         const summary = steamGroupSummary(services, g.members, g.label);
-        // Both "steam" and "cs2" derive from the same Steam Web API feed, so
-        // tag their shared origin via `source`.
-        const data = summaryToStatusData(summary, g.service, g.label, undefined, false, PROVIDER_NAME);
+        const data = summaryToStatusData(summary, g.service, g.label);
         mergedServices.push(...(data.services || []));
         mergedIncidents.push(...(data.incidents || []));
         raw[g.service] = summary;
