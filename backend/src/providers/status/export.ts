@@ -237,7 +237,9 @@ export function statusDataToStatuspageSummary(
   });
 
   const componentByService = new Map<string, StatuspageComponent>();
-  services.forEach((svc, index) => componentByService.set(svc.service, components[index]));
+  services.forEach((svc, index) => {
+    componentByService.set(svc.service, components[index]);
+  });
 
   // Incidents (only unresolved ones are present in StatusData).
   const spIncidents: StatuspageIncident[] = incidents.map((inc) => {
