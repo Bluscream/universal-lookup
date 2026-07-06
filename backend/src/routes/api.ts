@@ -12,6 +12,7 @@ import { lookupOrder } from '../providers/order/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
 import { lookupShipment } from '../providers/shipment/index.js';
 import { lookupStatus } from '../providers/status/index.js';
+import { statusDataToStatuspageSummary } from '../providers/status/export.js';
 import { lookupSteam } from '../providers/steam/index.js';
 import { lookupTel } from '../providers/tel/index.js';
 import { lookupUrl } from '../providers/url/index.js';
@@ -80,6 +81,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         zip?: string;
         postal_code?: string;
         postcode?: string;
+        format?: string;
       };
     }>(
       `${prefix}/:type/:query`,
@@ -105,12 +107,16 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
               zip: { type: 'string' },
               postal_code: { type: 'string' },
               postcode: { type: 'string' },
+              format: { type: 'string', enum: ['statuspage'] },
             },
           },
           response: responseSchema,
         },
       },
-      async (request) => {
+      async (request, reply) => {
+        if (request.query.format === 'statuspage') {
+          return handleStatuspageFormat(request, reply);
+        }
         return handleLookup(request.params.type, request.params.query, request.query, request.ip);
       },
     );
@@ -469,6 +475,36 @@ async function handleLookup(
   }
 
   return sortObjectKeys(deepClean(response)) as LookupResponse;
+}
+
+/**
+ * Serve a status lookup as an Atlassian Statuspage v2 `summary.json`
+ * (`?format=statuspage`). Only valid for the `status` type; any other type
+ * falls back to the normal unified response.
+ *
+ * Bypasses the route's `responseSchema` serializer (which would strip the
+ * Statuspage fields) via `reply.serializer`, so output is byte-compatible with
+ * a real Statuspage feed. Only Atlassian Statuspage output is supported.
+ */
+async function handleStatuspageFormat(
+  request: FastifyRequest<{
+    Params: { type: string; query: string };
+    Querystring: { fresh?: string; wait?: string };
+  }>,
+  reply: FastifyReply,
+): Promise<unknown> {
+  const { type, query } = request.params;
+  if (type !== 'status') {
+    return handleLookup(type, query, request.query, request.ip);
+  }
+
+  const result = await handleLookup(type, query, request.query, request.ip);
+  const host = request.headers.host || `${config.host}`;
+  const pageUrl = `${request.protocol}://${host}`;
+  const summary = statusDataToStatuspageSummary(result.response, { pageUrl });
+
+  reply.serializer((payload: unknown) => JSON.stringify(payload));
+  return reply.type('application/json').send(summary);
 }
 
 function getLookupFunction(type: LookupType): LookupFn {
