@@ -2,6 +2,8 @@
 # Universal Lookup Update & Deploy Script
 # ==============================================================================
 # Automates: Git Push -> Docker Build -> Docker Push -> Unraid Template Deploy
+# Docker Desktop is started automatically if it isn't running. Pass
+# -ShutdownDocker to stop Docker Desktop (and its engine) once the run finishes.
 # ==============================================================================
 
 param (
@@ -12,7 +14,9 @@ param (
     [switch]$IgnoreWarnings,
     [switch]$IgnoreErrors,
     [switch]$SkipDocker,
-    [switch]$SkipNpm
+    [switch]$SkipNpm,
+    # Shut Docker Desktop (and its engine) down after the run completes.
+    [switch]$ShutdownDocker
 )
 
 if ($IgnoreErrors) {
@@ -53,6 +57,53 @@ function Invoke-ProjectStep {
     }
 }
 
+# True if the Docker daemon is reachable.
+function Test-DockerRunning {
+    docker info *> $null
+    return ($LASTEXITCODE -eq 0)
+}
+
+# Ensure Docker is running; start Docker Desktop and wait if it isn't.
+function Start-DockerIfNeeded {
+    param ([int]$TimeoutSeconds = 180)
+
+    if (Test-DockerRunning) {
+        Write-Host "Docker is already running." -ForegroundColor Green
+        return
+    }
+
+    $dd = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
+    if (-not (Test-Path $dd)) {
+        throw "Docker daemon is not running and Docker Desktop was not found at '$dd'."
+    }
+
+    Write-Host "Docker daemon not reachable. Starting Docker Desktop..." -ForegroundColor Cyan
+    Start-Process $dd
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($sw.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
+        Start-Sleep -Seconds 5
+        if (Test-DockerRunning) {
+            Write-Host "Docker is ready (waited $([int]$sw.Elapsed.TotalSeconds)s)." -ForegroundColor Green
+            return
+        }
+    }
+    throw "Docker did not become ready within $TimeoutSeconds seconds."
+}
+
+# Stop Docker Desktop and its backend engine (best-effort).
+function Stop-DockerDesktop {
+    Write-Host "Shutting down Docker Desktop..." -ForegroundColor Cyan
+    # Quit the UI/app first so it doesn't restart the engine.
+    Get-Process "Docker Desktop" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    # Stop the backend/helper processes.
+    Get-Process "com.docker.backend", "com.docker.build", "com.docker.dev-envs", "vpnkit" -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
+    # Terminate the WSL2 engine distro (the "everything" part).
+    wsl --terminate docker-desktop *> $null
+    Write-Host "Docker Desktop stopped." -ForegroundColor Green
+}
+
 
 # 1. Quality Assurance (Lint, Build, Test)
 Write-Host "Running QA checks..." -ForegroundColor Cyan
@@ -91,6 +142,9 @@ Write-Host "Git push complete." -ForegroundColor Green
 
 if (-not $SkipDocker) {
     # 4. Docker Build
+    # Make sure the Docker daemon is up before we try to build/push.
+    Start-DockerIfNeeded
+
     Write-Host "Building Docker images..." -ForegroundColor Cyan
     $tags = @(
         "ghcr.io/bluscream/universal-lookup:latest",
@@ -129,19 +183,32 @@ if (-not $SkipDocker) {
         $buildArgs += '--push'
         $buildArgs += '.'
         docker @buildArgs
-        Write-Host "Docker buildx build and push complete." -ForegroundColor Green
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Docker buildx build/push failed (Exit Code: $LASTEXITCODE)" -ForegroundColor Red
+            if (-not $IgnoreErrors) { exit $LASTEXITCODE }
+        } else {
+            Write-Host "Docker buildx build and push complete." -ForegroundColor Green
+        }
     } else {
         Write-Host "Docker Buildx not found. Falling back to legacy build (single architecture)..." -ForegroundColor Yellow
         $buildCmd = "docker build "
         foreach ($tag in $tags) { $buildCmd += "-t $tag " }
         $buildCmd += "."
         Invoke-Expression $buildCmd
-        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Docker build failed (Exit Code: $LASTEXITCODE)" -ForegroundColor Red
+            if (-not $IgnoreErrors) { exit $LASTEXITCODE }
+        }
+
         # 5. Docker Push (Legacy)
         Write-Host "Pushing images to registries..." -ForegroundColor Cyan
         foreach ($tag in $tags) {
             Write-Host "Pushing $tag..." -ForegroundColor Gray
             docker push $tag
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Docker push failed for $tag (Exit Code: $LASTEXITCODE)" -ForegroundColor Red
+                if (-not $IgnoreErrors) { exit $LASTEXITCODE }
+            }
         }
         Write-Host "Docker push complete." -ForegroundColor Green
     }
@@ -216,6 +283,11 @@ if (-not $SkipNpm) {
     }
 } else {
     Write-Host "Skipping npm publish." -ForegroundColor Yellow
+}
+
+# 8. Optional teardown: shut Docker down once everything is done.
+if ($ShutdownDocker -and -not $SkipDocker) {
+    Stop-DockerDesktop
 }
 
 Write-Host "All tasks completed successfully!" -ForegroundColor Green
