@@ -178,7 +178,7 @@ if (-not $SkipDocker) {
         # interpolated string is treated as one invalid tag reference).
         # amd64 (servers/unraid) + arm64 (Pi/Apple Silicon); the Chromium image is
         # untested on arm/v7 and 386, and buildx pushes atomically, so keep to these.
-        $buildArgs = @('buildx', 'build', '--platform', 'linux/amd64,linux/arm64')
+        $buildArgs = @('buildx', 'build', '--platform', 'linux/amd64')
         foreach ($tag in $tags) { $buildArgs += '-t'; $buildArgs += $tag }
         $buildArgs += '--push'
         $buildArgs += '.'

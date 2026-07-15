@@ -13,15 +13,7 @@ const MDI = (name: string) => `https://api.iconify.design/mdi/${name}.svg`;
 const IC = (path: string) => `https://api.iconify.design/${path}.svg`;
 
 const SERVICE_ICON_URL: Record<string, string> = {
-  discord: SI('discord'),
-  vrchat: SI('vrchat'),
-  cloudflare: SI('cloudflare'),
-  github: SI('github'),
-  epic: SI('epicgames'),
-  reddit: SI('reddit'),
-  twitch: SI('twitch'),
   steam: SI('steam'),
-  ea: SI('ea'),
   ubisoft: SI('ubisoft'),
   playstation: SI('playstation'),
   battlenet: SI('battledotnet'),
@@ -29,20 +21,23 @@ const SERVICE_ICON_URL: Record<string, string> = {
   nintendo: MDI('nintendo-switch'),
   xbox: MDI('microsoft-xbox'),
   cs2: SI('counterstrike'),
-  vercel: SI('vercel'),
-  digitalocean: SI('digitalocean'),
-  netlify: SI('netlify'),
   gcp: SI('googlecloud'),
   aws: MDI('aws'),
   azure: MDI('microsoft-azure'),
-  mongodb: SI('mongodb'),
-  sentry: SI('sentry'),
-  bluesky: SI('bluesky'),
-  // AI providers
-  openai: IC('ri/openai-fill'), // OpenAI isn't in Simple Icons
-  claude: SI('claude'),
-  windsurf: SI('windsurf'),
-  devin: MDI('robot-happy'), // Devin isn't in Simple Icons
+};
+
+const SERVICE_COLOR: Record<string, string> = {
+  steam: '#00ADEE',
+  ubisoft: '#000000',
+  playstation: '#003087',
+  battlenet: '#00AEFF',
+  activision: '#000000',
+  nintendo: '#E60012',
+  xbox: '#107C10',
+  cs2: '#DE9B35',
+  gcp: '#4285F4',
+  aws: '#FF9900',
+  azure: '#0078D4',
 };
 
 /** CDN URL of a service's brand icon, or null if we don't have one. */
@@ -50,16 +45,18 @@ export function serviceIconUrl(service: string): string | null {
   return SERVICE_ICON_URL[service.toLowerCase()] ?? null;
 }
 
+/** Brand accent color of a service, or a default gray. */
+export function serviceColor(service: string): string {
+  return SERVICE_COLOR[service.toLowerCase()] ?? '#9ca3af';
+}
+
+
 /** Category a service belongs to, for grouping in the UI. */
 const SERVICE_CATEGORY: Record<string, string> = {
   // Cloud / hosting / infrastructure
-  cloudflare: 'Cloud',
   aws: 'Cloud',
   azure: 'Cloud',
   gcp: 'Cloud',
-  vercel: 'Cloud',
-  digitalocean: 'Cloud',
-  netlify: 'Cloud',
   // Games / gaming platforms
   steam: 'Games',
   cs2: 'Games',
@@ -67,25 +64,8 @@ const SERVICE_CATEGORY: Record<string, string> = {
   playstation: 'Games',
   nintendo: 'Games',
   activision: 'Games',
-  ea: 'Games',
   ubisoft: 'Games',
   battlenet: 'Games',
-  epic: 'Games',
-  vrchat: 'Games',
-  // Web / social / dev
-  discord: 'Web',
-  github: 'Web',
-  reddit: 'Web',
-  twitch: 'Web',
-  sentry: 'Web',
-  bluesky: 'Web',
-  // Databases / data platforms
-  mongodb: 'Cloud',
-  // AI providers
-  openai: 'AI',
-  claude: 'AI',
-  windsurf: 'AI',
-  devin: 'AI',
 };
 
 /** Category for a service (Cloud / Games / Web), or 'Other' if unmapped. */

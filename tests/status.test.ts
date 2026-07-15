@@ -13,10 +13,18 @@ import {
   normalizeIndicator,
   type StatuspageSummary,
   summaryToStatusData,
+  clearIncidentCache,
 } from '../backend/src/providers/status/statuspage.js';
 import { steamGroupSummary } from '../backend/src/providers/status/steam.js';
 import { xboxToSummary } from '../backend/src/providers/status/xbox.js';
 import type { ProviderResult, StatusServiceEntry } from '../backend/src/types/common.js';
+
+import { beforeEach } from 'vitest';
+
+beforeEach(() => {
+  clearIncidentCache();
+  vi.useRealTimers();
+});
 
 describe('normalizeIndicator', () => {
   it('passes through canonical indicators', () => {
@@ -54,8 +62,8 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
 
   it('includes a CDN icon URL for known services', () => {
     const summary: StatuspageSummary = { status: { indicator: 'none', description: 'ok' } };
-    expect(summaryToStatusData(summary, 'discord', 'Discord').services?.[0].icon).toBe(
-      'https://cdn.simpleicons.org/discord',
+    expect(summaryToStatusData(summary, 'steam', 'Steam').services?.[0].icon).toBe(
+      'https://cdn.simpleicons.org/steam',
     );
     expect(summaryToStatusData(summary, 'nintendo', 'Nintendo').services?.[0].icon).toContain(
       'nintendo-switch',
@@ -67,8 +75,26 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
     const summary: StatuspageSummary = { status: { indicator: 'none', description: 'ok' } };
     expect(summaryToStatusData(summary, 'aws', 'AWS').services?.[0].category).toBe('Cloud');
     expect(summaryToStatusData(summary, 'steam', 'Steam').services?.[0].category).toBe('Games');
-    expect(summaryToStatusData(summary, 'github', 'GitHub').services?.[0].category).toBe('Web');
+    expect(summaryToStatusData(summary, 'playstation', 'PlayStation').services?.[0].category).toBe('Games');
     expect(summaryToStatusData(summary, 'madeup', 'X').services?.[0].category).toBe('Other');
+  });
+
+  it('respects explicitly passed category, brandColor, and icon parameters', () => {
+    const summary: StatuspageSummary = { status: { indicator: 'none', description: 'ok' } };
+    const data = summaryToStatusData(
+      summary,
+      'my-service',
+      'My Service',
+      undefined,
+      false,
+      undefined,
+      'Custom Category',
+      '#FF00FF',
+      'custom-icon'
+    );
+    expect(data.services?.[0].category).toBe('Custom Category');
+    expect(data.services?.[0].service_color).toBe('#FF00FF');
+    expect(data.services?.[0].icon).toBe('https://cdn.simpleicons.org/custom-icon');
   });
 
   it('normalizes the status text for hand-rolled providers (verbatim=false)', () => {
@@ -87,6 +113,7 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
       incidents: [
         { name: 'A', status: 'identified', impact: 'major' },
         { name: 'B', status: 'identified', impact: 'major' },
+        { name: 'C', status: 'identified', impact: 'major' },
       ],
     };
     expect(summaryToStatusData(many, 'playstation', 'PSN').services?.[0].status).toBe(
@@ -182,19 +209,25 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
       status: { indicator: 'none', description: 'All Systems Operational' },
     };
     
-    const steamData = summaryToStatusData(summary, 'steam', 'Steam');
+    const steamData = summaryToStatusData(summary, 'steam', 'Steam', undefined, false, [
+      { utcDay: 2, utcHourStart: 22, utcHourEnd: 2 },
+    ]);
     expect(steamData.services?.[0].maintenance).toBe(true);
     expect(steamData.services?.[0].maintainance).toBe(true);
 
     // Non-maintenance time: Monday 12:00 UTC
     vi.setSystemTime(new Date('2026-07-13T12:00:00Z')); // Monday
-    const steamDataOk = summaryToStatusData(summary, 'steam', 'Steam');
+    const steamDataOk = summaryToStatusData(summary, 'steam', 'Steam', undefined, false, [
+      { utcDay: 2, utcHourStart: 22, utcHourEnd: 2 },
+    ]);
     expect(steamDataOk.services?.[0].maintenance).toBe(false);
     expect(steamDataOk.services?.[0].maintainance).toBe(false);
 
     // Blizzard: Tuesdays 14:00 to 18:00 UTC
     vi.setSystemTime(new Date('2026-07-14T15:00:00Z')); // Tuesday 15:00 UTC
-    const blizzardData = summaryToStatusData(summary, 'blizzard', 'Battle.net');
+    const blizzardData = summaryToStatusData(summary, 'blizzard', 'Battle.net', undefined, false, [
+      { utcDay: 2, utcHourStart: 14, utcHourEnd: 18 },
+    ]);
     expect(blizzardData.services?.[0].maintenance).toBe(true);
     expect(blizzardData.services?.[0].maintainance).toBe(true);
 

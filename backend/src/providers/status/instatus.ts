@@ -108,6 +108,9 @@ export interface InstatusProviderOptions {
   label: string;
   url: string;
   maintenanceTimes?: MaintenanceWindow[];
+  category?: string;
+  brandColor?: string;
+  icon?: string;
 }
 
 /** Build a status Provider backed by an Instatus `summary.json` endpoint. */
@@ -138,6 +141,9 @@ export function makeInstatusProvider(opts: InstatusProviderOptions): Provider {
             undefined,
             true,
             opts.maintenanceTimes,
+            opts.category,
+            opts.brandColor,
+            opts.icon,
           ),
           raw: summary,
           duration: Date.now() - start,
@@ -157,5 +163,12 @@ export function makeInstatusProvider(opts: InstatusProviderOptions): Provider {
 
 /** Services that expose an Instatus `summary.json`. */
 export const INSTATUS_SERVICES: InstatusProviderOptions[] = [
-  { service: 'ea', label: 'EA', url: 'https://ea.instatus.com/summary.json' },
+  {
+    service: 'ea',
+    label: 'EA',
+    url: 'https://ea.instatus.com/summary.json',
+    category: 'Games',
+    brandColor: '#F56C2D',
+    icon: 'ea',
+  },
 ];

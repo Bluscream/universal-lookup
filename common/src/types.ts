@@ -324,6 +324,8 @@ export interface StatusServiceEntry {
   active_incidents?: number | null;
   maintenance: boolean;
   maintainance: boolean;
+  status_color?: string | null;
+  service_color?: string | null;
 }
 
 /** An active incident/disruption reported by a status provider. */

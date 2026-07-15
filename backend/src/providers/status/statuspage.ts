@@ -8,10 +8,176 @@ import type {
   MaintenanceWindow,
 } from '../../types/common.js';
 import { statusGet } from './http.js';
-import { serviceCategory, serviceIconUrl } from './icons.js';
+import { serviceCategory, serviceIconUrl, serviceColor } from './icons.js';
+
+export interface StatuspageProviderOptions {
+  /** Provider/service id, e.g. "discord". */
+  service: string;
+  /** Human-friendly service name, e.g. "Discord". */
+  label: string;
+  /** The `summary.json` endpoint. */
+  url: string;
+  /** Optional recurring maintenance windows */
+  maintenanceTimes?: MaintenanceWindow[];
+  /** Optional custom category */
+  category?: string;
+  /** Optional custom brand accent color */
+  brandColor?: string;
+  /** Optional custom icon name/slug or full URL */
+  icon?: string;
+}
+
+/** Registry of services that expose a standard Statuspage `summary.json`. */
+export const STATUSPAGE_SERVICES: StatuspageProviderOptions[] = [
+  {
+    service: 'discord',
+    label: 'Discord',
+    url: 'https://discordstatus.com/api/v2/summary.json',
+    category: 'Web',
+    brandColor: '#5865F2',
+    icon: 'discord',
+  },
+  {
+    service: 'vrchat',
+    label: 'VRChat',
+    url: 'https://status.vrchat.com/api/v2/summary.json',
+    category: 'Games',
+    brandColor: '#1FD1EC',
+    icon: 'vrchat',
+  },
+  {
+    service: 'cloudflare',
+    label: 'Cloudflare',
+    url: 'https://www.cloudflarestatus.com/api/v2/summary.json',
+    category: 'Cloud',
+    brandColor: '#F38020',
+    icon: 'cloudflare',
+  },
+  {
+    service: 'github',
+    label: 'GitHub',
+    url: 'https://www.githubstatus.com/api/v2/summary.json',
+    category: 'Web',
+    brandColor: '#24292e',
+    icon: 'github',
+  },
+  {
+    service: 'epic',
+    label: 'Epic Games',
+    url: 'https://status.epicgames.com/api/v2/summary.json',
+    category: 'Games',
+    brandColor: '#313131',
+    icon: 'epicgames',
+  },
+  {
+    service: 'reddit',
+    label: 'Reddit',
+    url: 'https://www.redditstatus.com/api/v2/summary.json',
+    category: 'Web',
+    brandColor: '#FF4500',
+    icon: 'reddit',
+  },
+  {
+    service: 'twitch',
+    label: 'Twitch',
+    url: 'https://status.twitch.com/api/v2/summary.json',
+    category: 'Web',
+    brandColor: '#9146FF',
+    icon: 'twitch',
+  },
+  // Cloud / hosting providers (Atlassian Statuspage)
+  {
+    service: 'vercel',
+    label: 'Vercel',
+    url: 'https://www.vercel-status.com/api/v2/summary.json',
+    category: 'Cloud',
+    brandColor: '#000000',
+    icon: 'vercel',
+  },
+  {
+    service: 'digitalocean',
+    label: 'DigitalOcean',
+    url: 'https://status.digitalocean.com/api/v2/summary.json',
+    category: 'Cloud',
+    brandColor: '#0080FF',
+    icon: 'digitalocean',
+  },
+  {
+    service: 'netlify',
+    label: 'Netlify',
+    url: 'https://www.netlifystatus.com/api/v2/summary.json',
+    category: 'Cloud',
+    brandColor: '#00C7B7',
+    icon: 'netlify',
+  },
+  {
+    service: 'mongodb',
+    label: 'MongoDB',
+    url: 'https://status.mongodb.com/api/v2/summary.json',
+    category: 'Cloud',
+    brandColor: '#47A248',
+    icon: 'mongodb',
+  },
+  // Dev tools / web / social (Atlassian Statuspage)
+  {
+    service: 'sentry',
+    label: 'Sentry',
+    url: 'https://status.sentry.io/api/v2/summary.json',
+    category: 'Web',
+    brandColor: '#362D59',
+    icon: 'sentry',
+  },
+  // Bluesky's custom status domain doesn't serve the API; use its Statuspage id.
+  {
+    service: 'bluesky',
+    label: 'Bluesky',
+    url: 'https://zp3d53cvflx3.statuspage.io/api/v2/summary.json',
+    category: 'Web',
+    brandColor: '#0085FF',
+    icon: 'bluesky',
+  },
+  // AI providers (Atlassian Statuspage)
+  {
+    service: 'openai',
+    label: 'OpenAI',
+    url: 'https://status.openai.com/api/v2/summary.json',
+    category: 'AI',
+    brandColor: '#412991',
+    icon: 'ri/openai-fill',
+  },
+  {
+    service: 'claude',
+    label: 'Claude',
+    url: 'https://status.claude.com/api/v2/summary.json',
+    category: 'AI',
+    brandColor: '#D97706',
+    icon: 'claude',
+  },
+  {
+    service: 'windsurf',
+    label: 'Windsurf',
+    url: 'https://status.windsurf.com/api/v2/summary.json',
+    category: 'AI',
+    brandColor: '#00B0FF',
+    icon: 'windsurf',
+  },
+  {
+    service: 'devin',
+    label: 'Devin',
+    url: 'https://www.devinstatus.com/api/v2/summary.json',
+    category: 'AI',
+    brandColor: '#FFD700',
+    icon: 'mdi/robot-happy',
+  },
+];
+
 
 let _ignoredCache: { raw: string; set: Set<string> } | null = null;
 const _incidentFirstSeen = new Map<string, string>();
+
+export function clearIncidentCache() {
+  _incidentFirstSeen.clear();
+}
 
 /** Parsed STATUS_IGNORED list (lower-cased), memoized on the raw config string. */
 function ignoredIssues(): Set<string> {
@@ -111,7 +277,7 @@ export function normalizeStatusText(
   if (indicator === 'none') return 'All Systems Operational';
   if (verbatim && description) return description;
   if (indicator === 'maintenance') return 'Under Maintenance';
-  return activeIncidents > 1 ? 'Major Service Outage' : 'Minor Service Outage';
+  return activeIncidents >= 3 ? 'Major Service Outage' : 'Minor Service Outage';
 }
 
 function isScheduledMaintenanceTime(windows?: MaintenanceWindow[]): boolean {
@@ -130,6 +296,47 @@ function isScheduledMaintenanceTime(windows?: MaintenanceWindow[]): boolean {
     }
   }
   return false;
+}
+
+function resolveIcon(icon?: string, service?: string): string | null {
+  if (!icon) return serviceIconUrl(service || '');
+  if (icon.startsWith('http')) return icon;
+  const mapped = serviceIconUrl(icon);
+  if (mapped) return mapped;
+  if (icon.includes('/')) return `https://api.iconify.design/${icon}.svg`;
+  return `https://cdn.simpleicons.org/${icon}`;
+}
+
+export function getStatusColor(isMaint: boolean, incidentCount: number, indicator: string): string {
+  if (isMaint) return '#3b82f6'; // light blue
+  if (incidentCount === 1) return '#eab308'; // yellow
+  if (incidentCount === 2) return '#f97316'; // orange
+  if (incidentCount >= 3) return '#ef4444'; // red
+  if (indicator === 'minor') return '#eab308';
+  if (indicator === 'major') return '#f97316';
+  if (indicator === 'critical') return '#ef4444';
+  return '#22c55e'; // default light green
+}
+
+function checkIsMaintenance(
+  indicator: string,
+  status: string,
+  label: string,
+  times?: MaintenanceWindow[],
+  incidents: Array<{ impact?: string | null; name?: string | null; status?: string | null }> = [],
+): boolean {
+  return (
+    indicator === 'maintenance' ||
+    /mainten/i.test(status) ||
+    /mainten/i.test(label) ||
+    isScheduledMaintenanceTime(times) ||
+    incidents.some(
+      (inc) =>
+        inc.impact === 'maintenance' ||
+        (inc.name && /mainten/i.test(inc.name)) ||
+        (inc.status && /mainten/i.test(inc.status)),
+    )
+  );
 }
 
 /**
@@ -152,7 +359,11 @@ export function summaryToStatusData(
    */
   verbatim: boolean = false,
   maintenanceTimes?: MaintenanceWindow[],
+  category?: string,
+  brandColor?: string,
+  icon?: string,
 ): StatusData {
+  const times = maintenanceTimes;
   let indicator = normalizeIndicator(summary.status?.indicator);
 
   const allIncidents = [
@@ -217,7 +428,15 @@ export function summaryToStatusData(
       continue;
     }
 
-    const key = JSON.stringify([inc.service, inc.name]);
+    const key = JSON.stringify([
+      inc.service,
+      inc.name,
+      inc.impact,
+      inc.status,
+      inc.url,
+      inc.started_at,
+      inc.updated_at
+    ]);
     if (!seenKeys.has(key)) {
       seenKeys.add(key);
       uniqueIncidents.push(inc);
@@ -241,17 +460,9 @@ export function summaryToStatusData(
     verbatim,
   );
 
-  const isMaint =
-    indicator === 'maintenance' ||
-    /mainten/i.test(status) ||
-    /mainten/i.test(label) ||
-    isScheduledMaintenanceTime(maintenanceTimes) ||
-    uniqueIncidents.some(
-      (inc) =>
-        inc.impact === 'maintenance' ||
-        (inc.name && /mainten/i.test(inc.name)) ||
-        (inc.status && /mainten/i.test(inc.status)),
-    );
+  const isMaint = checkIsMaintenance(indicator, status, label, times, uniqueIncidents);
+
+  const statusColor = getStatusColor(isMaint, uniqueIncidents.length, indicator);
 
   return {
     services: [
@@ -263,27 +474,20 @@ export function summaryToStatusData(
         operational,
         updated_at: summary.page?.updated_at || null,
         page_url: summary.page?.url || null,
-        icon: serviceIconUrl(service),
-        category: serviceCategory(service),
+        icon: resolveIcon(icon, service),
+        category: category || serviceCategory(service),
         active_incidents: uniqueIncidents.length,
         maintenance: isMaint,
         maintainance: isMaint,
+        status_color: statusColor,
+        service_color: brandColor || serviceColor(service),
       },
     ],
     incidents: uniqueIncidents,
   };
 }
 
-export interface StatuspageProviderOptions {
-  /** Provider/service id, e.g. "discord". */
-  service: string;
-  /** Human-friendly service name, e.g. "Discord". */
-  label: string;
-  /** The `summary.json` endpoint. */
-  url: string;
-  /** Optional recurring maintenance windows */
-  maintenanceTimes?: MaintenanceWindow[];
-}
+
 
 /**
  * Build a status Provider backed by a native Atlassian Statuspage `summary.json`
@@ -313,6 +517,9 @@ export function makeStatuspageProvider(opts: StatuspageProviderOptions): Provide
             undefined,
             true,
             opts.maintenanceTimes,
+            opts.category,
+            opts.brandColor,
+            opts.icon,
           ),
           raw: summary,
           duration: Date.now() - start,
@@ -330,47 +537,4 @@ export function makeStatuspageProvider(opts: StatuspageProviderOptions): Provide
   };
 }
 
-/** Registry of services that expose a standard Statuspage `summary.json`. */
-export const STATUSPAGE_SERVICES: StatuspageProviderOptions[] = [
-  { service: 'discord', label: 'Discord', url: 'https://discordstatus.com/api/v2/summary.json' },
-  { service: 'vrchat', label: 'VRChat', url: 'https://status.vrchat.com/api/v2/summary.json' },
-  {
-    service: 'cloudflare',
-    label: 'Cloudflare',
-    url: 'https://www.cloudflarestatus.com/api/v2/summary.json',
-  },
-  { service: 'github', label: 'GitHub', url: 'https://www.githubstatus.com/api/v2/summary.json' },
-  { service: 'epic', label: 'Epic Games', url: 'https://status.epicgames.com/api/v2/summary.json' },
-  { service: 'reddit', label: 'Reddit', url: 'https://www.redditstatus.com/api/v2/summary.json' },
-  { service: 'twitch', label: 'Twitch', url: 'https://status.twitch.com/api/v2/summary.json' },
-  // Cloud / hosting providers (Atlassian Statuspage)
-  { service: 'vercel', label: 'Vercel', url: 'https://www.vercel-status.com/api/v2/summary.json' },
-  {
-    service: 'digitalocean',
-    label: 'DigitalOcean',
-    url: 'https://status.digitalocean.com/api/v2/summary.json',
-  },
-  {
-    service: 'netlify',
-    label: 'Netlify',
-    url: 'https://www.netlifystatus.com/api/v2/summary.json',
-  },
-  { service: 'mongodb', label: 'MongoDB', url: 'https://status.mongodb.com/api/v2/summary.json' },
-  // Dev tools / web / social (Atlassian Statuspage)
-  { service: 'sentry', label: 'Sentry', url: 'https://status.sentry.io/api/v2/summary.json' },
-  // Bluesky's custom status domain doesn't serve the API; use its Statuspage id.
-  {
-    service: 'bluesky',
-    label: 'Bluesky',
-    url: 'https://zp3d53cvflx3.statuspage.io/api/v2/summary.json',
-  },
-  // AI providers (Atlassian Statuspage)
-  { service: 'openai', label: 'OpenAI', url: 'https://status.openai.com/api/v2/summary.json' },
-  { service: 'claude', label: 'Claude', url: 'https://status.claude.com/api/v2/summary.json' },
-  {
-    service: 'windsurf',
-    label: 'Windsurf',
-    url: 'https://status.windsurf.com/api/v2/summary.json',
-  },
-  { service: 'devin', label: 'Devin', url: 'https://www.devinstatus.com/api/v2/summary.json' },
-];
+

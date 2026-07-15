@@ -29,12 +29,12 @@ function isMaintenance(
   return false;
 }
 
-function IndicatorIcon({ indicator }: { indicator: StatusIndicator }) {
-  const { color } = meta(indicator);
-  if (indicator === 'none') return <CheckCircle2 size={18} color={color} />;
-  if (indicator === 'maintenance') return <Wrench size={18} color={color} />;
-  if (indicator === 'unknown') return <CircleDashed size={18} color={color} />;
-  return <AlertTriangle size={18} color={color} />;
+function IndicatorIcon({ indicator, color }: { indicator: StatusIndicator; color?: string }) {
+  const finalColor = color || meta(indicator).color;
+  if (indicator === 'none') return <CheckCircle2 size={18} color={finalColor} />;
+  if (indicator === 'maintenance') return <Wrench size={18} color={finalColor} />;
+  if (indicator === 'unknown') return <CircleDashed size={18} color={finalColor} />;
+  return <AlertTriangle size={18} color={finalColor} />;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -84,8 +84,8 @@ function IncidentStatus({ inc }: { inc: StatusIncident }) {
 }
 
 function ServiceTile({ s }: { s: StatusServiceEntry }) {
-  const isMaint = isMaintenance(s.status, s.name, s.indicator);
-  const m = isMaint ? INDICATOR_META.maintenance : meta(s.indicator);
+  const isMaint = s.maintenance || isMaintenance(s.status, s.name, s.indicator);
+  const statusColor = s.status_color || (isMaint ? '#3b82f6' : meta(s.indicator).color);
   const tile = (
     <div
       style={{
@@ -95,11 +95,11 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
         padding: '0.6rem 0.75rem',
         borderRadius: '0.5rem',
         background: 'rgba(255,255,255,0.03)',
-        border: `1px solid ${m.color}33`,
-        borderLeft: `3px solid ${m.color}`,
+        border: `1px solid ${statusColor}33`,
+        borderLeft: `3px solid ${statusColor}`,
       }}
     >
-      <IndicatorIcon indicator={isMaint ? 'maintenance' : s.indicator} />
+      <IndicatorIcon indicator={isMaint ? 'maintenance' : s.indicator} color={statusColor} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div
           style={{
@@ -107,14 +107,20 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
           }}
         >
-          <ServiceLogo service={s.service} /> {s.name}
+          <span style={{ color: s.service_color || 'inherit', display: 'inline-flex', alignItems: 'center' }}>
+            <ServiceLogo service={s.service} />
+          </span>
+          <span>{s.name}</span>
         </div>
         <div
           style={{
             fontSize: '0.8rem',
-            color: m.color,
+            color: statusColor,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',

@@ -31,6 +31,8 @@ export interface StatusServiceEntry {
   active_incidents?: number | null;
   maintenance: boolean;
   maintainance: boolean;
+  status_color?: string | null;
+  service_color?: string | null;
 }
 
 export interface StatusIncident {
