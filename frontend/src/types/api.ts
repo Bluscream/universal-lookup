@@ -35,6 +35,8 @@ export interface StatusServiceEntry {
   icon?: string | null;
   category?: string | null;
   active_incidents?: number | null;
+  maintenance: boolean;
+  maintainance: boolean;
 }
 
 export interface StatusIncident {

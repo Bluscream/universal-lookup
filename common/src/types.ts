@@ -328,6 +328,8 @@ export interface StatusServiceEntry {
   /** Category for grouping (Cloud / Games / Web / Other). */
   category?: string | null;
   active_incidents?: number | null;
+  maintenance: boolean;
+  maintainance: boolean;
 }
 
 /** An active incident/disruption reported by a status provider. */

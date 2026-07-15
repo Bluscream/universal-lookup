@@ -1,87 +1,87 @@
 {
-  "name": "universal-lookup",
-  "version": "1.7.25",
-  "description": "Universal lookup service aggregating multiple APIs for phone, IP, email, location, and parcel lookups with smart caching and response merging",
-  "main": "dist/index.js",
-  "bin": {
-    "universal-lookup": "dist/index.js"
-  },
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "workspaces": [
-    "common",
-    "backend",
-    "frontend"
-  ],
-  "scripts": {
-    "dev": "npm run dev -w backend",
-    "dev:frontend": "npm run dev -w frontend",
-    "build:common": "npm run build -w common",
-    "build:frontend": "npm run build -w frontend",
-    "build:backend": "npm run build -w backend",
-    "build": "npm run build:common && npm run build:frontend && npm run build:backend",
-    "start": "npm run start -w backend",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome lint backend/src/ frontend/src/ common/src/",
-    "format": "biome format --write backend/src/ frontend/src/ common/src/"
-  },
-  "keywords": [
-    "lookup",
-    "ip",
-    "email",
-    "phone",
-    "geolocation",
-    "whois",
-    "dns",
-    "parcel",
-    "tracking"
-  ],
-  "author": "Bluscream",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Bluscream/universal-lookup.git"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "dependencies": {
-    "@fastify/cors": "^11.2.0",
-    "@fastify/rate-limit": "^10.3.0",
-    "@fastify/static": "^9.1.3",
-    "@fastify/swagger": "^9.7.0",
-    "@fastify/swagger-ui": "^5.2.6",
-    "@maxmind/geoip2-node": "^6.3.4",
-    "app-info-parser": "^1.1.6",
-    "axios": "^1.16.0",
-    "better-sqlite3": "^12.9.0",
-    "cheerio": "^1.2.0",
-    "cloudscraper": "^4.6.0",
-    "dotenv": "^17.4.2",
-    "fastify": "^5.8.5",
-    "google-play-scraper": "^10.1.2",
-    "ping": "^1.0.0",
-    "pkge-client": "^0.1.0",
-    "puppeteer": "^24.43.0",
-    "request": "^2.88.2",
-    "request-promise": "^4.2.6",
-    "request-promise-core": "^1.1.4",
-    "sql.js": "^1.14.1",
-    "whois": "^2.16.1",
-    "zod": "^4.4.3",
-    "zod-to-json-schema": "^3.25.2"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.6.0",
-    "tsx": "^4.21.0",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
-  }
+    "name":  "universal-lookup",
+    "version":  "1.7.26",
+    "description":  "Universal lookup service aggregating multiple APIs for phone, IP, email, location, and parcel lookups with smart caching and response merging",
+    "main":  "dist/index.js",
+    "bin":  {
+                "universal-lookup":  "dist/index.js"
+            },
+    "files":  [
+                  "dist"
+              ],
+    "type":  "module",
+    "workspaces":  [
+                       "common",
+                       "backend",
+                       "frontend"
+                   ],
+    "scripts":  {
+                    "dev":  "npm run dev -w backend",
+                    "dev:frontend":  "npm run dev -w frontend",
+                    "build:common":  "npm run build -w common",
+                    "build:frontend":  "npm run build -w frontend",
+                    "build:backend":  "npm run build -w backend",
+                    "build":  "npm run build:common \u0026\u0026 npm run build:frontend \u0026\u0026 npm run build:backend",
+                    "start":  "npm run start -w backend",
+                    "test":  "vitest run",
+                    "test:watch":  "vitest",
+                    "test:coverage":  "vitest run --coverage",
+                    "typecheck":  "tsc --noEmit",
+                    "lint":  "biome lint backend/src/ frontend/src/ common/src/",
+                    "format":  "biome format --write backend/src/ frontend/src/ common/src/"
+                },
+    "keywords":  [
+                     "lookup",
+                     "ip",
+                     "email",
+                     "phone",
+                     "geolocation",
+                     "whois",
+                     "dns",
+                     "parcel",
+                     "tracking"
+                 ],
+    "author":  "Bluscream",
+    "license":  "MIT",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/Bluscream/universal-lookup.git"
+                   },
+    "engines":  {
+                    "node":  "\u003e=20.0.0"
+                },
+    "dependencies":  {
+                         "@fastify/cors":  "^11.2.0",
+                         "@fastify/rate-limit":  "^10.3.0",
+                         "@fastify/static":  "^9.1.3",
+                         "@fastify/swagger":  "^9.7.0",
+                         "@fastify/swagger-ui":  "^5.2.6",
+                         "@maxmind/geoip2-node":  "^6.3.4",
+                         "app-info-parser":  "^1.1.6",
+                         "axios":  "^1.16.0",
+                         "better-sqlite3":  "^12.9.0",
+                         "cheerio":  "^1.2.0",
+                         "cloudscraper":  "^4.6.0",
+                         "dotenv":  "^17.4.2",
+                         "fastify":  "^5.8.5",
+                         "google-play-scraper":  "^10.1.2",
+                         "ping":  "^1.0.0",
+                         "pkge-client":  "^0.1.0",
+                         "puppeteer":  "^24.43.0",
+                         "request":  "^2.88.2",
+                         "request-promise":  "^4.2.6",
+                         "request-promise-core":  "^1.1.4",
+                         "sql.js":  "^1.14.1",
+                         "whois":  "^2.16.1",
+                         "zod":  "^4.4.3",
+                         "zod-to-json-schema":  "^3.25.2"
+                     },
+    "devDependencies":  {
+                            "@biomejs/biome":  "^2.4.14",
+                            "@types/better-sqlite3":  "^7.6.13",
+                            "@types/node":  "^25.6.0",
+                            "tsx":  "^4.21.0",
+                            "typescript":  "^6.0.3",
+                            "vitest":  "^4.1.5"
+                        }
 }

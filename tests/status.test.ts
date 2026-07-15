@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mergeResponses } from '../backend/src/lib/merger.js';
 import { activisionToSummary } from '../backend/src/providers/status/activision.js';
 import {
@@ -46,6 +46,8 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
     expect(svc.indicator).toBe('none');
     expect(svc.operational).toBe(true);
     expect(svc.active_incidents).toBe(0);
+    expect(svc.maintenance).toBe(false);
+    expect(svc.maintainance).toBe(false);
     expect(svc.page_url).toBe('https://discordstatus.com');
     expect(data.incidents).toEqual([]);
   });
@@ -129,6 +131,74 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
       status: 'monitoring',
       url: 'https://x/1',
     });
+  });
+
+  it('deduplicates identical incidents with the exact same status and content', () => {
+    const summary: StatuspageSummary = {
+      page: { name: 'Nintendo', url: 'https://nintendo.com' },
+      status: { indicator: 'maintenance', description: 'maintenance' },
+      incidents: [
+        {
+          name: 'Online Play (Nintendo Switch games) (maintenance)',
+          status: 'scheduled',
+          impact: 'maintenance',
+          shortlink: 'https://nintendo.com/info',
+          started_at: 'Thursday,  9 July 2026  5:55',
+          updated_at: 'Thursday,  9 July 2026  5:55',
+        },
+        {
+          name: 'Online Play (Nintendo Switch games) (maintenance)',
+          status: 'scheduled',
+          impact: 'maintenance',
+          shortlink: 'https://nintendo.com/info',
+          started_at: 'Thursday,  9 July 2026  5:55',
+          updated_at: 'Thursday,  9 July 2026  5:55',
+        },
+        {
+          name: 'Online Play (Nintendo Switch games) (maintenance)',
+          status: 'scheduled',
+          impact: 'maintenance',
+          shortlink: 'https://nintendo.com/info',
+          started_at: 'Thursday,  9 July 2026  1:55',
+          updated_at: 'Thursday,  9 July 2026  1:55',
+        },
+      ],
+    };
+    const data = summaryToStatusData(summary, 'nintendo', 'Nintendo');
+    expect(data.services?.[0].active_incidents).toBe(2);
+    expect(data.services?.[0].maintenance).toBe(true);
+    expect(data.services?.[0].maintainance).toBe(true);
+    expect(data.incidents).toHaveLength(2);
+    expect(data.incidents?.[0].started_at).toBe('Thursday,  9 July 2026  5:55');
+  });
+
+  it('marks maintenance as true during scheduled weekly maintenance times', () => {
+    // Steam: Tuesdays 22:00 UTC to Wednesdays 02:00 UTC
+    // Tuesday is day 2. Let's set time to Tuesday 23:00 UTC.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-14T23:00:00Z')); // 2026-07-14 is Tuesday
+
+    const summary: StatuspageSummary = {
+      status: { indicator: 'none', description: 'All Systems Operational' },
+    };
+    
+    const steamData = summaryToStatusData(summary, 'steam', 'Steam');
+    expect(steamData.services?.[0].maintenance).toBe(true);
+    expect(steamData.services?.[0].maintainance).toBe(true);
+
+    // Non-maintenance time: Monday 12:00 UTC
+    vi.setSystemTime(new Date('2026-07-13T12:00:00Z')); // Monday
+    const steamDataOk = summaryToStatusData(summary, 'steam', 'Steam');
+    expect(steamDataOk.services?.[0].maintenance).toBe(false);
+    expect(steamDataOk.services?.[0].maintainance).toBe(false);
+
+    // Blizzard: Tuesdays 14:00 to 18:00 UTC
+    vi.setSystemTime(new Date('2026-07-14T15:00:00Z')); // Tuesday 15:00 UTC
+    const blizzardData = summaryToStatusData(summary, 'blizzard', 'Battle.net');
+    expect(blizzardData.services?.[0].maintenance).toBe(true);
+    expect(blizzardData.services?.[0].maintainance).toBe(true);
+
+    vi.useRealTimers();
   });
 });
 

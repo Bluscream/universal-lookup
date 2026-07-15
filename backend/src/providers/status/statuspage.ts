@@ -102,6 +102,23 @@ export function normalizeStatusText(
   return activeIncidents > 1 ? 'Major Service Outage' : 'Minor Service Outage';
 }
 
+function isScheduledMaintenanceTime(service: string): boolean {
+  const now = new Date();
+  const utcDay = now.getUTCDay(); // 0 = Sun, 1 = Mon, 2 = Tue, 3 = Wed, ...
+  const utcHour = now.getUTCHours();
+
+  if (service === 'steam') {
+    // Tuesdays 22:00 UTC to Wednesdays 02:00 UTC
+    if (utcDay === 2 && utcHour >= 22) return true;
+    if (utcDay === 3 && utcHour < 2) return true;
+  }
+  if (service === 'battlenet' || service === 'blizzard') {
+    // Tuesdays 14:00 to 18:00 UTC
+    if (utcDay === 2 && utcHour >= 14 && utcHour < 18) return true;
+  }
+  return false;
+}
+
 /**
  * Convert a canonical {@link StatuspageSummary} into our unified {@link StatusData}
  * (a single-element `services` array plus active `incidents`). Shared by every
@@ -136,7 +153,48 @@ export function summaryToStatusData(
   if (indicator !== 'none' && allIgnored) indicator = 'none';
 
   const operational = indicator === 'none';
-  const status = normalizeStatusText(indicator, activeIncidents.length, summary.status?.description, verbatim);
+
+  const mappedIncidents = activeIncidents.map((i) => ({
+    service,
+    name: i.name || 'Incident',
+    impact: i.impact || null,
+    status: i.status || null,
+    url: i.shortlink || null,
+    started_at: i.started_at || i.created_at || null,
+    updated_at: i.updated_at || null,
+  }));
+
+  const uniqueIncidents: typeof mappedIncidents = [];
+  const seenKeys = new Set<string>();
+  for (const inc of mappedIncidents) {
+    const key = JSON.stringify([
+      inc.service,
+      inc.name,
+      inc.impact,
+      inc.status,
+      inc.url,
+      inc.started_at,
+      inc.updated_at,
+    ]);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueIncidents.push(inc);
+    }
+  }
+
+  const status = normalizeStatusText(indicator, uniqueIncidents.length, summary.status?.description, verbatim);
+
+  const isMaint =
+    indicator === 'maintenance' ||
+    /mainten/i.test(status) ||
+    /mainten/i.test(label) ||
+    isScheduledMaintenanceTime(service) ||
+    uniqueIncidents.some(
+      (inc) =>
+        inc.impact === 'maintenance' ||
+        (inc.name && /mainten/i.test(inc.name)) ||
+        (inc.status && /mainten/i.test(inc.status))
+    );
 
   return {
     services: [
@@ -150,18 +208,12 @@ export function summaryToStatusData(
         page_url: summary.page?.url || null,
         icon: serviceIconUrl(service),
         category: serviceCategory(service),
-        active_incidents: activeIncidents.length,
+        active_incidents: uniqueIncidents.length,
+        maintenance: isMaint,
+        maintainance: isMaint,
       },
     ],
-    incidents: activeIncidents.map((i) => ({
-      service,
-      name: i.name || 'Incident',
-      impact: i.impact || null,
-      status: i.status || null,
-      url: i.shortlink || null,
-      started_at: i.started_at || i.created_at || null,
-      updated_at: i.updated_at || null,
-    })),
+    incidents: uniqueIncidents,
   };
 }
 

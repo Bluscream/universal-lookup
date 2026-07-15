@@ -16,6 +16,19 @@ function meta(indicator: StatusIndicator) {
   return INDICATOR_META[indicator] ?? INDICATOR_META.unknown;
 }
 
+function isMaintenance(
+  statusText?: string | null,
+  name?: string | null,
+  indicator?: string | null,
+  impact?: string | null
+): boolean {
+  if (indicator === 'maintenance' || impact === 'maintenance') return true;
+  const matchPattern = /mainten/i;
+  if (statusText && matchPattern.test(statusText)) return true;
+  if (name && matchPattern.test(name)) return true;
+  return false;
+}
+
 function IndicatorIcon({ indicator }: { indicator: StatusIndicator }) {
   const { color } = meta(indicator);
   if (indicator === 'none') return <CheckCircle2 size={18} color={color} />;
@@ -25,7 +38,8 @@ function IndicatorIcon({ indicator }: { indicator: StatusIndicator }) {
 }
 
 function ServiceTile({ s }: { s: StatusServiceEntry }) {
-  const m = meta(s.indicator);
+  const isMaint = isMaintenance(s.status, s.name, s.indicator);
+  const m = isMaint ? INDICATOR_META.maintenance : meta(s.indicator);
   const tile = (
     <div
       style={{
@@ -39,7 +53,7 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
         borderLeft: `3px solid ${m.color}`,
       }}
     >
-      <IndicatorIcon indicator={s.indicator} />
+      <IndicatorIcon indicator={isMaint ? 'maintenance' : s.indicator} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div
           style={{
@@ -162,42 +176,51 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
             {incidents
               .slice()
               .sort((a, b) => a.service.localeCompare(b.service))
-              .map((inc) => (
-              <a
-                key={`${inc.service}-${inc.name}`}
-                href={inc.url || undefined}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: '0.6rem',
-                  padding: '0.5rem 0.6rem',
-                  borderRadius: '0.4rem',
-                  background: 'rgba(249,115,22,0.06)',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    textTransform: 'uppercase',
-                    fontWeight: 700,
-                    color: INDICATOR_META.major.color,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <ServiceLogo service={inc.service} size={13} /> {inc.service}
-                </span>
-                <span style={{ flex: 1 }}>{inc.name}</span>
-                {inc.status && (
-                  <span style={{ fontSize: '0.75rem', opacity: 0.7, whiteSpace: 'nowrap' }}>
-                    {inc.status}
-                  </span>
-                )}
-              </a>
-            ))}
+              .map((inc) => {
+                const isMaint = isMaintenance(inc.status, inc.name, null, inc.impact);
+                const color = isMaint ? INDICATOR_META.maintenance.color : INDICATOR_META.major.color;
+                const bg = isMaint ? 'rgba(59,130,246,0.06)' : 'rgba(249,115,22,0.06)';
+                return (
+                  <a
+                    key={`${inc.service}-${inc.name}`}
+                    href={inc.url || undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: '0.6rem',
+                      padding: '0.5rem 0.6rem',
+                      borderRadius: '0.4rem',
+                      background: bg,
+                      textDecoration: 'none',
+                      color: 'inherit',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        fontWeight: 700,
+                        color: color,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isMaint ? <Wrench size={13} color={color} /> : <ServiceLogo service={inc.service} size={13} />}
+                      {inc.service}
+                    </span>
+                    <span style={{ flex: 1 }}>{inc.name}</span>
+                    {inc.status && (
+                      <span style={{ fontSize: '0.75rem', opacity: 0.7, whiteSpace: 'nowrap' }}>
+                        {inc.status}
+                      </span>
+                    )}
+                  </a>
+                );
+              })}
           </div>
         </div>
       )}
