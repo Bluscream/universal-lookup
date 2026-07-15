@@ -1,4 +1,10 @@
-import type { LookupType, Provider, ProviderResult, StatusData } from '../../types/common.js';
+import type {
+  LookupType,
+  Provider,
+  ProviderResult,
+  StatusData,
+  MaintenanceWindow,
+} from '../../types/common.js';
 import { statusGet } from './http.js';
 import { type StatuspageSummary, summaryToStatusData } from './statuspage.js';
 
@@ -101,6 +107,7 @@ export interface InstatusProviderOptions {
   service: string;
   label: string;
   url: string;
+  maintenanceTimes?: MaintenanceWindow[];
 }
 
 /** Build a status Provider backed by an Instatus `summary.json` endpoint. */
@@ -116,11 +123,22 @@ export function makeInstatusProvider(opts: InstatusProviderOptions): Provider {
       const start = Date.now();
       try {
         const resp = await statusGet<InstatusSummary>(opts.url);
-        const summary = instatusToSummary(resp.data || {}, opts.label, opts.url.replace(/\/summary\.json$/, ''));
+        const summary = instatusToSummary(
+          resp.data || {},
+          opts.label,
+          opts.url.replace(/\/summary\.json$/, ''),
+        );
         return {
           provider: opts.service,
           success: true,
-          data: summaryToStatusData(summary, opts.service, opts.label, undefined, true),
+          data: summaryToStatusData(
+            summary,
+            opts.service,
+            opts.label,
+            undefined,
+            true,
+            opts.maintenanceTimes,
+          ),
           raw: summary,
           duration: Date.now() - start,
         };

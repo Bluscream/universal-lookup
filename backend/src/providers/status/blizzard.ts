@@ -1,6 +1,12 @@
 import axios from 'axios';
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, StatusData } from '../../types/common.js';
+import type {
+  LookupType,
+  Provider,
+  ProviderResult,
+  StatusData,
+  MaintenanceWindow,
+} from '../../types/common.js';
 import { statusGet } from './http.js';
 import { type StatuspageSummary, summaryToStatusData } from './statuspage.js';
 
@@ -163,7 +169,10 @@ async function approximateSummary(): Promise<{ summary: StatuspageSummary; raw: 
     code = (e as { code?: string })?.code || 'error';
   }
   const ms = Date.now() - start;
-  return { summary: reachabilityToSummary(reachable, ms, slowMs), raw: { reachable, ms, code, approximate: true } };
+  return {
+    summary: reachabilityToSummary(reachable, ms, slowMs),
+    raw: { reachable, ms, code, approximate: true },
+  };
 }
 
 export const blizzardProvider: Provider = {
@@ -181,7 +190,9 @@ export const blizzardProvider: Provider = {
       return {
         provider: PROVIDER_NAME,
         success: true,
-        data: summaryToStatusData(summary, PROVIDER_NAME, 'Battle.net'),
+        data: summaryToStatusData(summary, PROVIDER_NAME, 'Battle.net', undefined, false, [
+          { utcDay: 2, utcHourStart: 14, utcHourEnd: 18 },
+        ]),
         raw,
         duration: Date.now() - start,
       };

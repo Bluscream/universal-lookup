@@ -5,11 +5,13 @@ import type {
   ProviderResult,
   StatusData,
   StatusIndicator,
+  MaintenanceWindow,
 } from '../../types/common.js';
 import { statusGet } from './http.js';
 import { serviceCategory, serviceIconUrl } from './icons.js';
 
 let _ignoredCache: { raw: string; set: Set<string> } | null = null;
+const _incidentFirstSeen = new Map<string, string>();
 
 /** Parsed STATUS_IGNORED list (lower-cased), memoized on the raw config string. */
 function ignoredIssues(): Set<string> {
@@ -61,7 +63,17 @@ export interface StatuspageSummary {
     started_at?: string | null;
     updated_at?: string | null;
   }>;
-  scheduled_maintenances?: unknown[];
+  scheduled_maintenances?: Array<{
+    name?: string;
+    status?: string | null;
+    impact?: string | null;
+    shortlink?: string | null;
+    created_at?: string | null;
+    started_at?: string | null;
+    updated_at?: string | null;
+    scheduled_for?: string | null;
+    scheduled_until?: string | null;
+  }>;
 }
 
 /** Statuspage indicators map 1:1 to our canonical indicators. */
@@ -102,19 +114,20 @@ export function normalizeStatusText(
   return activeIncidents > 1 ? 'Major Service Outage' : 'Minor Service Outage';
 }
 
-function isScheduledMaintenanceTime(service: string): boolean {
+function isScheduledMaintenanceTime(windows?: MaintenanceWindow[]): boolean {
+  if (!windows || windows.length === 0) return false;
   const now = new Date();
   const utcDay = now.getUTCDay(); // 0 = Sun, 1 = Mon, 2 = Tue, 3 = Wed, ...
   const utcHour = now.getUTCHours();
 
-  if (service === 'steam') {
-    // Tuesdays 22:00 UTC to Wednesdays 02:00 UTC
-    if (utcDay === 2 && utcHour >= 22) return true;
-    if (utcDay === 3 && utcHour < 2) return true;
-  }
-  if (service === 'battlenet' || service === 'blizzard') {
-    // Tuesdays 14:00 to 18:00 UTC
-    if (utcDay === 2 && utcHour >= 14 && utcHour < 18) return true;
+  for (const w of windows) {
+    // If the window spans past midnight (e.g. 22 to 2)
+    if (w.utcHourStart > w.utcHourEnd) {
+      if (utcDay === w.utcDay && utcHour >= w.utcHourStart) return true;
+      if (utcDay === (w.utcDay + 1) % 7 && utcHour < w.utcHourEnd) return true;
+    } else {
+      if (utcDay === w.utcDay && utcHour >= w.utcHourStart && utcHour < w.utcHourEnd) return true;
+    }
   }
   return false;
 }
@@ -138,12 +151,23 @@ export function summaryToStatusData(
    * Under Maintenance" set so the UI reads uniformly.
    */
   verbatim: boolean = false,
+  maintenanceTimes?: MaintenanceWindow[],
 ): StatusData {
   let indicator = normalizeIndicator(summary.status?.indicator);
 
+  const allIncidents = [
+    ...(summary.incidents || []),
+    ...(summary.scheduled_maintenances || []).map((m) => ({
+      ...m,
+      impact: m.impact || 'maintenance',
+    })),
+  ];
+
   // Only surface incidents that are not yet resolved.
-  const unresolved = (summary.incidents || []).filter(
-    (i) => (i.status || '').toLowerCase() !== 'resolved',
+  const unresolved = allIncidents.filter(
+    (i) =>
+      (i.status || '').toLowerCase() !== 'resolved' &&
+      (i.status || '').toLowerCase() !== 'completed',
   );
   // Drop ignored incidents (STATUS_IGNORED).
   const activeIncidents = unresolved.filter((i) => !isIgnored(i.name || '', ignored));
@@ -154,46 +178,79 @@ export function summaryToStatusData(
 
   const operational = indicator === 'none';
 
-  const mappedIncidents = activeIncidents.map((i) => ({
-    service,
-    name: i.name || 'Incident',
-    impact: i.impact || null,
-    status: i.status || null,
-    url: i.shortlink || null,
-    started_at: i.started_at || i.created_at || null,
-    updated_at: i.updated_at || null,
-  }));
-
   const uniqueIncidents: typeof mappedIncidents = [];
   const seenKeys = new Set<string>();
+
+  const mappedIncidents = activeIncidents.map((i) => {
+    const key = JSON.stringify([service, i.name || 'Incident']);
+    // Prefer scheduled_for (the actual time a maintenance starts) over started_at (often just the post creation time).
+    let started = (i as any).scheduled_for || i.started_at || i.created_at || null;
+
+    // For stateless feeds (Steam, Blizzard), assign a started_at the first time we see it
+    if (!started) {
+      if (_incidentFirstSeen.has(key)) {
+        started = _incidentFirstSeen.get(key)!;
+      } else {
+        started = new Date().toISOString();
+        _incidentFirstSeen.set(key, started);
+      }
+    }
+
+    return {
+      service,
+      name: i.name || 'Incident',
+      impact: i.impact || null,
+      status: i.status || null,
+      url: i.shortlink || null,
+      started_at: started,
+      updated_at: i.updated_at || null,
+      scheduled_until: (i as any).scheduled_until || null,
+    };
+  });
+
+  const now = Date.now();
   for (const inc of mappedIncidents) {
-    const key = JSON.stringify([
-      inc.service,
-      inc.name,
-      inc.impact,
-      inc.status,
-      inc.url,
-      inc.started_at,
-      inc.updated_at,
-    ]);
+    const startMs = inc.started_at ? new Date(inc.started_at).getTime() : 0;
+    // Hide future scheduled events unless they're already marked as in-progress.
+    // Add a 5 minute grace period for clock skew.
+    if (startMs > now + 5 * 60000 && inc.status !== 'in_progress') {
+      continue;
+    }
+
+    const key = JSON.stringify([inc.service, inc.name]);
     if (!seenKeys.has(key)) {
       seenKeys.add(key);
       uniqueIncidents.push(inc);
     }
   }
 
-  const status = normalizeStatusText(indicator, uniqueIncidents.length, summary.status?.description, verbatim);
+  // Clean up resolved incidents from the tracking map for this service
+  for (const k of _incidentFirstSeen.keys()) {
+    try {
+      const parsed = JSON.parse(k);
+      if (parsed[0] === service && !seenKeys.has(k)) {
+        _incidentFirstSeen.delete(k);
+      }
+    } catch {}
+  }
+
+  const status = normalizeStatusText(
+    indicator,
+    uniqueIncidents.length,
+    summary.status?.description,
+    verbatim,
+  );
 
   const isMaint =
     indicator === 'maintenance' ||
     /mainten/i.test(status) ||
     /mainten/i.test(label) ||
-    isScheduledMaintenanceTime(service) ||
+    isScheduledMaintenanceTime(maintenanceTimes) ||
     uniqueIncidents.some(
       (inc) =>
         inc.impact === 'maintenance' ||
         (inc.name && /mainten/i.test(inc.name)) ||
-        (inc.status && /mainten/i.test(inc.status))
+        (inc.status && /mainten/i.test(inc.status)),
     );
 
   return {
@@ -224,6 +281,8 @@ export interface StatuspageProviderOptions {
   label: string;
   /** The `summary.json` endpoint. */
   url: string;
+  /** Optional recurring maintenance windows */
+  maintenanceTimes?: MaintenanceWindow[];
 }
 
 /**
@@ -247,7 +306,14 @@ export function makeStatuspageProvider(opts: StatuspageProviderOptions): Provide
         return {
           provider: opts.service,
           success: true,
-          data: summaryToStatusData(summary, opts.service, opts.label, undefined, true),
+          data: summaryToStatusData(
+            summary,
+            opts.service,
+            opts.label,
+            undefined,
+            true,
+            opts.maintenanceTimes,
+          ),
           raw: summary,
           duration: Date.now() - start,
         };
@@ -284,15 +350,27 @@ export const STATUSPAGE_SERVICES: StatuspageProviderOptions[] = [
     label: 'DigitalOcean',
     url: 'https://status.digitalocean.com/api/v2/summary.json',
   },
-  { service: 'netlify', label: 'Netlify', url: 'https://www.netlifystatus.com/api/v2/summary.json' },
+  {
+    service: 'netlify',
+    label: 'Netlify',
+    url: 'https://www.netlifystatus.com/api/v2/summary.json',
+  },
   { service: 'mongodb', label: 'MongoDB', url: 'https://status.mongodb.com/api/v2/summary.json' },
   // Dev tools / web / social (Atlassian Statuspage)
   { service: 'sentry', label: 'Sentry', url: 'https://status.sentry.io/api/v2/summary.json' },
   // Bluesky's custom status domain doesn't serve the API; use its Statuspage id.
-  { service: 'bluesky', label: 'Bluesky', url: 'https://zp3d53cvflx3.statuspage.io/api/v2/summary.json' },
+  {
+    service: 'bluesky',
+    label: 'Bluesky',
+    url: 'https://zp3d53cvflx3.statuspage.io/api/v2/summary.json',
+  },
   // AI providers (Atlassian Statuspage)
   { service: 'openai', label: 'OpenAI', url: 'https://status.openai.com/api/v2/summary.json' },
   { service: 'claude', label: 'Claude', url: 'https://status.claude.com/api/v2/summary.json' },
-  { service: 'windsurf', label: 'Windsurf', url: 'https://status.windsurf.com/api/v2/summary.json' },
+  {
+    service: 'windsurf',
+    label: 'Windsurf',
+    url: 'https://status.windsurf.com/api/v2/summary.json',
+  },
   { service: 'devin', label: 'Devin', url: 'https://www.devinstatus.com/api/v2/summary.json' },
 ];

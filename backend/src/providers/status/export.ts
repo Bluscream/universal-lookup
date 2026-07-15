@@ -1,4 +1,9 @@
-import type { StatusData, StatusIncident, StatusIndicator, StatusServiceEntry } from '../../types/common.js';
+import type {
+  StatusData,
+  StatusIncident,
+  StatusIndicator,
+  StatusServiceEntry,
+} from '../../types/common.js';
 
 /**
  * Export the unified {@link StatusData} as a single Atlassian Statuspage v2
@@ -54,7 +59,12 @@ export interface StatuspageIncidentUpdate {
   created_at: string;
   updated_at: string;
   display_at: string;
-  affected_components: Array<{ code: string; name: string; old_status: string; new_status: string }>;
+  affected_components: Array<{
+    code: string;
+    name: string;
+    old_status: string;
+    new_status: string;
+  }>;
   deliver_notifications: boolean;
   custom_tweet: string | null;
   tweet_id: string | null;

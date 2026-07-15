@@ -16,13 +16,7 @@ export type LookupType =
   | 'status'
   | 'auto';
 
-export type StatusIndicator =
-  | 'none'
-  | 'minor'
-  | 'major'
-  | 'critical'
-  | 'maintenance'
-  | 'unknown';
+export type StatusIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance' | 'unknown';
 
 export interface StatusServiceEntry {
   service: string;
@@ -47,6 +41,7 @@ export interface StatusIncident {
   url?: string | null;
   started_at?: string | null;
   updated_at?: string | null;
+  scheduled_until?: string | null;
 }
 
 export interface LookupRequest {

@@ -40,6 +40,14 @@ function entryName(e: NintendoEntry): string {
   );
 }
 
+function parseNintendoDate(d?: string): string | null {
+  if (!d) return null;
+  // Nintendo sometimes includes spaces around colons, e.g. "10 :55 PM"
+  const cleaned = d.replace(/\s*:\s*/g, ':');
+  const parsed = new Date(cleaned);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
 /** Convert the Nintendo netinfo feed into a canonical StatuspageSummary. */
 export function nintendoToSummary(body: NintendoStatus): StatuspageSummary {
   const outages = body.operational_statuses || [];
@@ -61,16 +69,17 @@ export function nintendoToSummary(body: NintendoStatus): StatuspageSummary {
         impact: 'major',
         status: 'identified',
         shortlink: pageUrl(),
-        started_at: e.begin || null,
-        updated_at: e.begin || null,
+        started_at: parseNintendoDate(e.begin),
+        updated_at: parseNintendoDate(e.begin),
       })),
       ...maintenances.map((e) => ({
         name: `${entryName(e)} (maintenance)`,
         impact: 'maintenance',
         status: 'scheduled',
         shortlink: pageUrl(),
-        started_at: e.begin || null,
-        updated_at: e.begin || null,
+        started_at: parseNintendoDate(e.begin),
+        updated_at: parseNintendoDate(e.begin),
+        scheduled_until: parseNintendoDate(e.end),
       })),
     ],
   };

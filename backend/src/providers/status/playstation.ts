@@ -50,7 +50,10 @@ function activeKind(entry: PsnStatusEntry, now: number): 'outage' | 'maintenance
 }
 
 /** Worst active disruption across a status array. */
-function worstKind(entries: PsnStatusEntry[] | undefined, now: number): 'outage' | 'maintenance' | null {
+function worstKind(
+  entries: PsnStatusEntry[] | undefined,
+  now: number,
+): 'outage' | 'maintenance' | null {
   let kind: 'outage' | 'maintenance' | null = null;
   for (const e of entries || []) {
     const k = activeKind(e, now);
@@ -103,7 +106,11 @@ export function psnToSummary(
   const incidents = [...seen.values()].map((r) => {
     const list = [...r.countries];
     const where =
-      list.length === 0 ? '' : list.length <= 4 ? ` (${list.join(', ')})` : ` (${list.length} countries)`;
+      list.length === 0
+        ? ''
+        : list.length <= 4
+          ? ` (${list.join(', ')})`
+          : ` (${list.length} countries)`;
     return {
       name: `${r.name}${where}`,
       impact: r.outage ? 'major' : 'maintenance',
@@ -135,7 +142,10 @@ export function psnToSummary(
     const meIssue = myCountryKind || myImpacted.length > 0;
     indicator = meOutage ? 'major' : meIssue ? 'maintenance' : 'none';
 
-    const myLabels = myImpacted.map((x) => x.service.serviceName).filter(Boolean).join(', ');
+    const myLabels = myImpacted
+      .map((x) => x.service.serviceName)
+      .filter(Boolean)
+      .join(', ');
     if (indicator === 'major') description = `Issues affecting: ${myLabels || 'PSN services'}`;
     else if (indicator === 'maintenance')
       description = `Maintenance affecting: ${myLabels || 'PSN services'}`;
@@ -153,7 +163,9 @@ export function psnToSummary(
 
 /** Find the country entry matching a country code across all region bodies. */
 function target(bodies: PsnRegion[], cc: string) {
-  return bodies.flatMap((b) => b.countries || []).find((c) => (c.countryCode || '').toUpperCase() === cc);
+  return bodies
+    .flatMap((b) => b.countries || [])
+    .find((c) => (c.countryCode || '').toUpperCase() === cc);
 }
 
 export const playstationProvider: Provider = {
@@ -170,7 +182,10 @@ export const playstationProvider: Provider = {
     const regions =
       cfg.toLowerCase() === 'all'
         ? ['SCEA', 'SCEE', 'SCEJ']
-        : cfg.split(',').map((r) => r.trim()).filter(Boolean);
+        : cfg
+            .split(',')
+            .map((r) => r.trim())
+            .filter(Boolean);
     try {
       const bodies: PsnRegion[] = [];
       for (const r of regions) {

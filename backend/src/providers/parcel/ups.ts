@@ -125,9 +125,7 @@ export const ups: Provider = {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
-        error:
-          apiMessage ||
-          (error instanceof Error ? error.message : String(error)),
+        error: apiMessage || (error instanceof Error ? error.message : String(error)),
         duration: Date.now() - start,
       };
     }

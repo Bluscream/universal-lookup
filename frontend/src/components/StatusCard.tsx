@@ -20,7 +20,7 @@ function isMaintenance(
   statusText?: string | null,
   name?: string | null,
   indicator?: string | null,
-  impact?: string | null
+  impact?: string | null,
 ): boolean {
   if (indicator === 'maintenance' || impact === 'maintenance') return true;
   const matchPattern = /mainten/i;
@@ -35,6 +35,52 @@ function IndicatorIcon({ indicator }: { indicator: StatusIndicator }) {
   if (indicator === 'maintenance') return <Wrench size={18} color={color} />;
   if (indicator === 'unknown') return <CircleDashed size={18} color={color} />;
   return <AlertTriangle size={18} color={color} />;
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const ms = d.getTime() - now.getTime();
+  const absMs = Math.abs(ms);
+  const m = Math.floor(absMs / 60000);
+  const h = Math.floor(m / 60);
+  const days = Math.floor(h / 24);
+
+  let str = '';
+  if (days > 0) str += `${days}d `;
+  if (h % 24 > 0) str += `${h % 24}h `;
+  str += `${m % 60}m`;
+  str = str.trim();
+
+  if (str === '0m') return 'just now';
+  return ms > 0 ? `in ${str}` : `${str} ago`;
+}
+
+function IncidentStatus({ inc }: { inc: StatusIncident }) {
+  const hasTimestamp = inc.scheduled_until || inc.started_at || inc.updated_at;
+  if (!inc.status && !hasTimestamp) return null;
+
+  let text = inc.status || 'Active';
+  let tooltip: string | undefined = undefined;
+
+  if (inc.scheduled_until) {
+    const d = new Date(inc.scheduled_until);
+    text = `${text} until ${d.toLocaleString()}`;
+    tooltip = formatRelativeTime(inc.scheduled_until);
+  } else {
+    const start = inc.started_at || inc.updated_at;
+    if (start) {
+      const d = new Date(start);
+      text = `${text} since ${d.toLocaleString()}`;
+      tooltip = formatRelativeTime(start);
+    }
+  }
+
+  return (
+    <span style={{ fontSize: '0.75rem', opacity: 0.7, whiteSpace: 'nowrap' }} title={tooltip}>
+      {text}
+    </span>
+  );
 }
 
 function ServiceTile({ s }: { s: StatusServiceEntry }) {
@@ -82,7 +128,12 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
   );
 
   return s.page_url ? (
-    <a href={s.page_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+    <a
+      href={s.page_url}
+      target="_blank"
+      rel="noreferrer"
+      style={{ textDecoration: 'none', color: 'inherit' }}
+    >
       {tile}
     </a>
   ) : (
@@ -124,7 +175,12 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
     <div className="result-card full-width" style={{ flexDirection: 'column', gap: '1rem' }}>
       {/* Header / rollup */}
       <div
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+        }}
       >
         <div className="card-label">Service Status</div>
         <div
@@ -178,7 +234,9 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
               .sort((a, b) => a.service.localeCompare(b.service))
               .map((inc) => {
                 const isMaint = isMaintenance(inc.status, inc.name, null, inc.impact);
-                const color = isMaint ? INDICATOR_META.maintenance.color : INDICATOR_META.major.color;
+                const color = isMaint
+                  ? INDICATOR_META.maintenance.color
+                  : INDICATOR_META.major.color;
                 const bg = isMaint ? 'rgba(59,130,246,0.06)' : 'rgba(249,115,22,0.06)';
                 return (
                   <a
@@ -209,15 +267,15 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      {isMaint ? <Wrench size={13} color={color} /> : <ServiceLogo service={inc.service} size={13} />}
+                      {isMaint ? (
+                        <Wrench size={13} color={color} />
+                      ) : (
+                        <ServiceLogo service={inc.service} size={13} />
+                      )}
                       {inc.service}
                     </span>
                     <span style={{ flex: 1 }}>{inc.name}</span>
-                    {inc.status && (
-                      <span style={{ fontSize: '0.75rem', opacity: 0.7, whiteSpace: 'nowrap' }}>
-                        {inc.status}
-                      </span>
-                    )}
+                    <IncidentStatus inc={inc} />
                   </a>
                 );
               })}

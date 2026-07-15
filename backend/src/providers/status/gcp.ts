@@ -22,7 +22,10 @@ interface GcpIncident {
 }
 
 /** Convert the GCP incidents feed into a canonical StatuspageSummary. */
-export function gcpToSummary(incidents: GcpIncident[], now: number = Date.now()): StatuspageSummary {
+export function gcpToSummary(
+  incidents: GcpIncident[],
+  now: number = Date.now(),
+): StatuspageSummary {
   const active = (incidents || []).filter((i) => {
     const end = i.end ? Date.parse(i.end) : Number.NaN;
     return Number.isNaN(end) || end > now; // no end, or ends in the future = ongoing
@@ -43,7 +46,9 @@ export function gcpToSummary(incidents: GcpIncident[], now: number = Date.now())
       name: `${i.service_name ? `${i.service_name}: ` : ''}${i.external_desc || 'Incident'}`,
       impact: (i.severity || '').toLowerCase() === 'high' ? 'major' : 'minor',
       status: 'identified',
-      shortlink: i.uri ? `${PAGE_URL.replace(/\/$/, '')}${i.uri.startsWith('/') ? '' : '/'}${i.uri}` : PAGE_URL,
+      shortlink: i.uri
+        ? `${PAGE_URL.replace(/\/$/, '')}${i.uri.startsWith('/') ? '' : '/'}${i.uri}`
+        : PAGE_URL,
       started_at: i.begin || null,
     })),
   };

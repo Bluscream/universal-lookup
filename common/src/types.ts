@@ -306,13 +306,7 @@ export interface WebData {
 }
 
 /** Canonical health indicator across all status providers. */
-export type StatusIndicator =
-  | 'none'
-  | 'minor'
-  | 'major'
-  | 'critical'
-  | 'maintenance'
-  | 'unknown';
+export type StatusIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance' | 'unknown';
 
 /** One service's current health, contributed by a single status provider. */
 export interface StatusServiceEntry {
@@ -341,6 +335,7 @@ export interface StatusIncident {
   url?: string | null;
   started_at?: string | null;
   updated_at?: string | null;
+  scheduled_until?: string | null;
 }
 
 /**
@@ -377,6 +372,12 @@ export interface LookupResponse {
     type: LookupType;
     query: string;
   };
+}
+
+export interface MaintenanceWindow {
+  utcDay: number; // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  utcHourStart: number;
+  utcHourEnd: number;
 }
 
 /** Provider function interface */

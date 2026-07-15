@@ -1,5 +1,11 @@
 import { config } from '../../config.js';
-import type { LookupType, Provider, ProviderResult, StatusData } from '../../types/common.js';
+import type {
+  LookupType,
+  Provider,
+  ProviderResult,
+  StatusData,
+  MaintenanceWindow,
+} from '../../types/common.js';
 import { statusGet } from './http.js';
 import { type StatuspageSummary, summaryToStatusData } from './statuspage.js';
 
@@ -131,7 +137,17 @@ export const steamProvider: Provider = {
       const raw: Record<string, unknown> = {};
       for (const g of GROUPS) {
         const summary = steamGroupSummary(services, g.members, g.label);
-        const data = summaryToStatusData(summary, g.service, g.label);
+        const steamMaintenanceTimes: MaintenanceWindow[] = [
+          { utcDay: 2, utcHourStart: 22, utcHourEnd: 2 },
+        ];
+        const data = summaryToStatusData(
+          summary,
+          g.service,
+          g.label,
+          undefined,
+          false,
+          g.service === 'steam' ? steamMaintenanceTimes : undefined,
+        );
         mergedServices.push(...(data.services || []));
         mergedIncidents.push(...(data.incidents || []));
         raw[g.service] = summary;
