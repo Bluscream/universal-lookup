@@ -166,13 +166,13 @@ if (-not $SkipDocker) {
     if ($hasBuildx) {
         Write-Host "Using Docker Buildx for multi-arch support (linux/amd64, linux/arm64)..." -ForegroundColor Magenta
 
-        # Reuse the builder if it already exists, otherwise create it. Calling
-        # `create` on an existing builder errors ("no append mode"), so prefer
-        # `use` first and only create when that fails.
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
         docker buildx use universal-builder 2>$null
         if ($LASTEXITCODE -ne 0) {
             docker buildx create --use --name universal-builder 2>$null
         }
+        $ErrorActionPreference = $prevEap
 
         # Build an argument array so each -t is a separate token (a single
         # interpolated string is treated as one invalid tag reference).
