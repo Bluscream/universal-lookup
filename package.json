@@ -67,7 +67,7 @@
     "google-play-scraper": "^10.1.2",
     "ping": "^1.0.0",
     "pkge-client": "^0.1.0",
-    "puppeteer": "^24.43.0",
+    "puppeteer": "^25.3.0",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "request-promise-core": "^1.1.4",

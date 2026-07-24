@@ -27,7 +27,7 @@
     "google-play-scraper": "^10.1.2",
     "ping": "^1.0.0",
     "pkge-client": "^0.1.0",
-    "puppeteer": "^24.43.0",
+    "puppeteer": "^25.3.0",
     "sql.js": "^1.14.1",
     "whois": "^2.16.1",
     "zod": "^4.4.3",
