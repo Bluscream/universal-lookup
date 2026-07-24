@@ -268,6 +268,31 @@ export function normalizeIndicator(indicator?: string): StatusIndicator {
  * label is normalized: maintenance -> "Under Maintenance", a single active
  * incident -> "Minor Service Outage", more than one -> "Major Service Outage".
  */
+/**
+ * The one-line label implied by a severity on its own.
+ *
+ * {@link normalizeStatusText} escalates on the *number* of active incidents,
+ * which is the right call for feeds that list every affected component but
+ * wrong for sources that report a single verdict (crowd reports, maintenance
+ * windows) — those would always read "Minor" no matter how bad it is.
+ */
+export function statusTextForIndicator(indicator: StatusIndicator): string {
+  switch (indicator) {
+    case 'none':
+      return 'All Systems Operational';
+    case 'maintenance':
+      return 'Under Maintenance';
+    case 'minor':
+      return 'Minor Service Outage';
+    case 'major':
+      return 'Major Service Outage';
+    case 'critical':
+      return 'Total Service Outage';
+    default:
+      return 'Status Unknown';
+  }
+}
+
 export function normalizeStatusText(
   indicator: StatusIndicator,
   activeIncidents: number,

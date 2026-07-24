@@ -6,7 +6,14 @@ import {
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
 import { activisionProvider } from './activision.js';
+import {
+  ALLESTOERUNGEN_SERVICES,
+  crowdEnricher,
+  makeAllestoerungenProvider,
+} from './allestoerungen.js';
 import { awsProvider } from './aws.js';
+import { type StatusEnricher, withEnrichersAll } from './enrich.js';
+import { maintenanceEnricher } from './maintenance.js';
 import { azureProvider } from './azure.js';
 import { blizzardProvider } from './blizzard.js';
 import { gcpProvider } from './gcp.js';
@@ -25,11 +32,13 @@ const ALL_KEYWORDS = new Set(['', 'all', 'status', 'services', 'everything', 'an
  * All service-health/uptime providers.
  * Generic Statuspage-backed services plus custom adapters for platforms that
  * don't expose a Statuspage feed (Xbox = XML, PlayStation = region JSON,
- * Activision/Steam/Ubisoft = bespoke APIs, EA = Instatus).
+ * Activision/Steam/Ubisoft = bespoke APIs, EA = Instatus), plus any
+ * crowd-sourced allestörungen services configured via env.
  */
-const ALL_STATUS_PROVIDERS: Provider[] = [
+const BASE_STATUS_PROVIDERS: Provider[] = [
   ...STATUSPAGE_SERVICES.map(makeStatuspageProvider),
   ...INSTATUS_SERVICES.map(makeInstatusProvider),
+  ...ALLESTOERUNGEN_SERVICES.map(makeAllestoerungenProvider),
   xboxProvider,
   playstationProvider,
   activisionProvider,
@@ -41,6 +50,38 @@ const ALL_STATUS_PROVIDERS: Provider[] = [
   awsProvider,
   azureProvider,
 ];
+
+/**
+ * Secondary signals folded into the providers above. Enrichers can only ever
+ * escalate a service (see enrich.ts), so they add early warning and planned
+ * downtime without being able to contradict an operator's own feed.
+ */
+const STATUS_ENRICHERS: StatusEnricher[] = [maintenanceEnricher, crowdEnricher];
+
+const ALL_STATUS_PROVIDERS: Provider[] = withEnrichersAll(
+  BASE_STATUS_PROVIDERS,
+  STATUS_ENRICHERS,
+);
+
+/**
+ * The effective PROVIDERS_STATUS list.
+ *
+ * Services configured through STATUS_ALLESTOERUNGEN_SERVICES are appended
+ * automatically, so enabling one only takes a single env var instead of having
+ * to remember to also add it here.
+ */
+function enabledProviderNames(): string {
+  const base = config.providersStatus.trim();
+  if (!base) return base; // empty = "everything", nothing to append to
+  const listed = new Set(
+    base
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const extra = ALLESTOERUNGEN_SERVICES.map((s) => s.service).filter((s) => !listed.has(s));
+  return extra.length > 0 ? `${base},${extra.join(',')}` : base;
+}
 
 /**
  * Orchestrated service-status lookup.
@@ -55,7 +96,7 @@ export function lookupStatus(
   type?: LookupType,
   originalQuery?: string,
 ): DualPromiseResult {
-  let providers = filterAndSortProviders(ALL_STATUS_PROVIDERS, config.providersStatus);
+  let providers = filterAndSortProviders(ALL_STATUS_PROVIDERS, enabledProviderNames());
 
   const q = (query || '').trim().toLowerCase();
   if (!ALL_KEYWORDS.has(q)) {

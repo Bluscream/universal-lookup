@@ -5,9 +5,11 @@ import {
   siClaude,
   siCloudflare,
   siCounterstrike,
+  siDeutschetelekom,
   siDigitalocean,
   siDiscord,
   siEa,
+  siO2,
   siEpicgames,
   siGithub,
   siGooglecloud,
@@ -20,6 +22,7 @@ import {
   siTwitch,
   siUbisoft,
   siVercel,
+  siVodafone,
   siVrchat,
   siWindsurf,
 } from 'simple-icons';
@@ -77,14 +80,31 @@ const LOGOS: Record<string, Icon> = {
   azure: { title: 'Microsoft Azure', path: MDI_AZURE, hex: '' },
   openai: { title: 'OpenAI', path: IC_OPENAI, hex: '' },
   devin: { title: 'Devin', path: MDI_ROBOT, hex: '' },
+  // German ISPs. Only these three are in Simple Icons; the rest fall back to the
+  // logo URL the API supplies (see below).
+  'deutsche-telekom': siDeutschetelekom,
+  vodafone: siVodafone,
+  o2: siO2,
 };
 
 /**
- * Brand logo for a status provider. Renders the Simple Icons SVG in the current
- * text colour (so it doesn't fight the status colouring); falls back to an emoji
- * for services without a logo, and a globe for anything unknown.
+ * Brand logo for a status provider.
+ *
+ * Prefers the inline Simple Icons SVG, rendered in the current text colour so it
+ * doesn't fight the status colouring. Services we have no inline path for — the
+ * crowd-sourced ones are drawn from a catalogue of hundreds, so hard-coding them
+ * all isn't practical — fall back to the logo URL the API hands us, and finally
+ * to a globe.
  */
-export function ServiceLogo({ service, size = 16 }: { service: string; size?: number }) {
+export function ServiceLogo({
+  service,
+  size = 16,
+  iconUrl,
+}: {
+  service: string;
+  size?: number;
+  iconUrl?: string | null;
+}) {
   const key = service.toLowerCase();
   const icon = LOGOS[key];
   if (icon) {
@@ -100,6 +120,27 @@ export function ServiceLogo({ service, size = 16 }: { service: string; size?: nu
         <title>{icon.title}</title>
         <path d={icon.path} />
       </svg>
+    );
+  }
+  if (iconUrl) {
+    return (
+      <img
+        alt=""
+        aria-hidden
+        src={iconUrl}
+        width={size}
+        height={size}
+        loading="lazy"
+        style={{
+          flexShrink: 0,
+          verticalAlign: '-0.15em',
+          objectFit: 'contain',
+          // These are full-colour raster logos, so give them a light backdrop —
+          // several are dark artwork that would vanish against a dark theme.
+          background: 'rgba(255,255,255,0.9)',
+          borderRadius: '2px',
+        }}
+      />
     );
   }
   return (

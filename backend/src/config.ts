@@ -151,6 +151,55 @@ export const config = {
 
   // Nintendo netinfo locale (en_US, en_GB, ja_JP, …)
   statusNintendoLocale: env('STATUS_NINTENDO_LOCALE', 'en_US'),
+
+  // allestörungen / Downdetector (crowd-sourced outage reports).
+  //
+  // Services that already have a provider are *enriched* with the crowd signal
+  // (see CROWD_SLUGS) rather than duplicated. This list is for the ones nothing
+  // else covers — German ISPs, banks, individual games. Comma-separated slugs
+  // taken from the URL /en/status/<slug>/, each optionally `slug=Label=icon`.
+  statusAllestoerungenServices: env(
+    'STATUS_ALLESTOERUNGEN_SERVICES',
+    // Fields are slug=Label=icon=Category. Telekom/Vodafone/o2 get Simple Icons
+    // brand marks (matching the other providers); the rest aren't in Simple
+    // Icons, so they fall back to the site's own logo automatically. congstar
+    // carries no category upstream, so its category is pinned; the rest
+    // normalize to "Internet" via CATEGORY_SLUGS.
+    'deutsche-telekom=Telekom=deutschetelekom,vodafone=Vodafone=vodafone,o2=o2=o2,1-und-1=1&1,deutsche-glasfaser=Deutsche Glasfaser,pyur=PYUR,netcologne=NetCologne,congstar=congstar==Internet',
+  ),
+  // Override or disable the built-in service -> slug enrichment map, e.g.
+  // "steam=steam,discord=" (an empty slug turns that service's enrichment off).
+  statusAllestoerungenMap: env('STATUS_ALLESTOERUNGEN_MAP', ''),
+  // The site flags a lot of services "warning" over a handful of reports, so by
+  // default only a "danger" reading escalates an existing provider.
+  statusAllestoerungenEscalateOnWarning: envBool(
+    'STATUS_ALLESTOERUNGEN_ESCALATE_ON_WARNING',
+    false,
+  ),
+  // Site to read from — any Downdetector locale works (downdetector.com,
+  // downdetector.co.uk, …). Default is the German allestörungen.de (punycode).
+  statusAllestoerungenDomain: env('STATUS_ALLESTOERUNGEN_DOMAIN', 'xn--allestrungen-9ib.de'),
+  statusAllestoerungenLocale: env('STATUS_ALLESTOERUNGEN_LOCALE', 'en'),
+  // Cloudflare challenges bursts, so requests are serialized with this gap and
+  // cached for this long. The site itself only re-times every ~15 min.
+  statusAllestoerungenMinGapMs: envInt('STATUS_ALLESTOERUNGEN_MIN_GAP_MS', 1500),
+  statusAllestoerungenTtl: envInt('STATUS_ALLESTOERUNGEN_TTL', 300), // 5 min
+  // Crowd-sourced noise floor: ignore an outage flag below this many reports,
+  // and treat reports as elevated only above baseline * factor.
+  statusAllestoerungenMinReports: envInt('STATUS_ALLESTOERUNGEN_MIN_REPORTS', 10),
+  statusAllestoerungenFactor: envInt('STATUS_ALLESTOERUNGEN_FACTOR', 2),
+  // Cloudflare rejects obvious bot agents outright.
+  statusAllestoerungenUserAgent: env(
+    'STATUS_ALLESTOERUNGEN_USER_AGENT',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  ),
+  // Escalate to cloudscraper/headless Chromium when plain HTTP is challenged.
+  // Turn off on deployments without Chromium available.
+  statusAllestoerungenUseBrowser: envBool('STATUS_ALLESTOERUNGEN_USE_BROWSER', true),
+  // Recurring maintenance windows injected as incidents while they're open.
+  // Comma-separated `service:day:startHour-endHour[:Name]`, day 0=Sunday, hours
+  // UTC — e.g. "steam:2:23-24:Weekly maintenance".
+  statusMaintenanceWindows: env('STATUS_MAINTENANCE_WINDOWS', ''),
   // Semicolon-separated list of incident names to ignore across all status
   // providers (case-insensitive substring match). If every listed incident for a
   // service is ignored, that service is reported operational. Default hides some

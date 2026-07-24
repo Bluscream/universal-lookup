@@ -82,6 +82,32 @@ export async function getBrowser(): Promise<Browser> {
   return browser;
 }
 
+/**
+ * Fetch a page with headless Chromium, skipping the cloudscraper attempt.
+ *
+ * Worth calling directly for hosts behind a Cloudflare *managed* challenge:
+ * cloudscraper can't solve those (it just returns the "Just a moment..." 403),
+ * so trying it first only costs a round trip.
+ */
+export async function scrapeWithBrowser(url: string, waitSelector?: string): Promise<string> {
+  const b = await getBrowser();
+  const page = await b.newPage();
+  try {
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    );
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: config.puppeteerTimeout });
+
+    if (waitSelector) {
+      await page.waitForSelector(waitSelector, { timeout: 5000 }).catch(() => {});
+    }
+
+    return await page.content();
+  } finally {
+    await page.close();
+  }
+}
+
 export async function scrapeWithPuppeteer(url: string, waitSelector?: string): Promise<string> {
   // 1. Try cloudscraper first
   try {
@@ -113,21 +139,5 @@ export async function scrapeWithPuppeteer(url: string, waitSelector?: string): P
   }
 
   // 2. Fallback to Puppeteer
-  const b = await getBrowser();
-  const page = await b.newPage();
-  try {
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    );
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: config.puppeteerTimeout });
-
-    if (waitSelector) {
-      await page.waitForSelector(waitSelector, { timeout: 5000 }).catch(() => {});
-    }
-
-    const content = await page.content();
-    return content;
-  } finally {
-    await page.close();
-  }
+  return scrapeWithBrowser(url, waitSelector);
 }

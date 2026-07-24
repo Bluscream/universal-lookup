@@ -113,7 +113,7 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
           }}
         >
           <span style={{ color: s.service_color || 'inherit', display: 'inline-flex', alignItems: 'center' }}>
-            <ServiceLogo service={s.service} />
+            <ServiceLogo service={s.service} iconUrl={s.icon} />
           </span>
           <span>{s.name}</span>
         </div>
@@ -147,7 +147,7 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
   );
 }
 
-const CATEGORY_ORDER = ['AI', 'Cloud', 'Games', 'Web', 'Other'];
+const CATEGORY_ORDER = ['AI', 'Cloud', 'Internet', 'Games', 'Web', 'Other'];
 
 /** Group services by category, categories in preferred order, services A–Z within. */
 function groupByCategory(services: StatusServiceEntry[]): Array<[string, StatusServiceEntry[]]> {
