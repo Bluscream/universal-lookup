@@ -113,7 +113,7 @@ export const config = {
     'PROVIDERS_STEAM',
     'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat,steam-db',
   ),
-  providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,urlscan,virustotal'),
+  providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,semonto,urlscan,virustotal'),
   providersOrder: env('PROVIDERS_ORDER', 'amazon,aliexpress'),
   providersStatus: env(
     'PROVIDERS_STATUS',
