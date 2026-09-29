@@ -94,22 +94,28 @@ export const phoneblock: Provider = {
 
       const rating = typeof raw.rating === 'string' ? raw.rating : undefined;
       const data: TelData = {
+        // Shared fields, so they merge with whatever other providers found.
         phone_formatted: raw.label ?? undefined,
+        caller_type: rating && isRatingCode(rating) ? RATING_LABELS[rating] : undefined,
+        spam_score: raw.spamConfidence,
+        blocklisted: raw.blackListed,
+        whitelisted: raw.whiteListed,
+        first_report: toIsoDate(raw.dateAdded),
+        last_report: toIsoDate(raw.lastUpdate),
+        calls_count: raw.calls,
+        user_comment: raw.userComment ?? undefined,
+        // Documented as city or region, but the API returns the carrier in
+        // practice, so it is not safe to merge into either `city` or `provider`.
+        phoneblock_location: raw.location ?? undefined,
+        // PhoneBlock's own scales, which no other provider shares — the raw
+        // A_LEGITIMATE..G_FRAUD code, a decay-weighted vote equivalent with a
+        // four-month half-life, the same for the surrounding number range, and
+        // a reports-per-day rate. Kept under the provider's name for the same
+        // reason tellows_score is.
         phoneblock_rating: rating,
-        // An unrecognized code still reaches the caller above; only the label is dropped.
-        phoneblock_rating_label: rating && isRatingCode(rating) ? RATING_LABELS[rating] : undefined,
         phoneblock_votes: raw.votes,
         phoneblock_votes_wildcard: raw.votesWildcard,
-        phoneblock_spam_confidence: raw.spamConfidence,
         phoneblock_heat: raw.heat,
-        phoneblock_calls: raw.calls,
-        phoneblock_whitelisted: raw.whiteListed,
-        phoneblock_blacklisted: raw.blackListed,
-        phoneblock_date_added: toIsoDate(raw.dateAdded),
-        phoneblock_last_update: toIsoDate(raw.lastUpdate),
-        phoneblock_user_comment: raw.userComment ?? undefined,
-        // Documented as city/region, but the API returns the carrier in practice.
-        phoneblock_location: raw.location ?? undefined,
       };
 
       return {

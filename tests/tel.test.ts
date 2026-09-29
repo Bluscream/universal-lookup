@@ -67,12 +67,15 @@ describe('PhoneBlock Provider', () => {
     const result = await phoneblock.lookup('004917650642602');
 
     expect(result.success).toBe(true);
-    expect(result.data.phoneblock_rating).toBe('C_PING');
-    expect(result.data.phoneblock_rating_label).toBe('Ping call');
-    expect(result.data.phoneblock_spam_confidence).toBe(99);
-    expect(result.data.phoneblock_votes).toBe(1010);
+    // Shared fields, so a merged response reads the same whichever provider filled it.
+    expect(result.data.spam_score).toBe(99);
+    expect(result.data.caller_type).toBe('Ping call');
     expect(result.data.phone_formatted).toBe('(DE) 017650642602');
-    expect(result.data.phoneblock_calls).toBe(4);
+    expect(result.data.calls_count).toBe(4);
+    expect(result.data.blocklisted).toBe(false);
+    // PhoneBlock's own scales stay under its name.
+    expect(result.data.phoneblock_rating).toBe('C_PING');
+    expect(result.data.phoneblock_votes).toBe(1010);
   });
 
   it('queries the number endpoint with the normalized 00-prefixed number', async () => {
@@ -89,8 +92,8 @@ describe('PhoneBlock Provider', () => {
 
     const result = await phoneblock.lookup('004917650642602');
 
-    expect(result.data.phoneblock_date_added).toBeUndefined();
-    expect(result.data.phoneblock_last_update).toBe(new Date(1790690162744).toISOString());
+    expect(result.data.first_report).toBeUndefined();
+    expect(result.data.last_report).toBe(new Date(1790690162744).toISOString());
   });
 
   it('passes an unrecognized rating code through without a label', async () => {
@@ -101,7 +104,7 @@ describe('PhoneBlock Provider', () => {
 
     expect(result.success).toBe(true);
     expect(result.data.phoneblock_rating).toBe('C_POLL');
-    expect(result.data.phoneblock_rating_label).toBeUndefined();
+    expect(result.data.caller_type).toBeUndefined();
   });
 
   it('reports a malformed number as a failure rather than throwing', async () => {

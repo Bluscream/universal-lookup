@@ -56,24 +56,31 @@ export interface TelData {
   provider?: string | null;
   comments?: Array<{ text: string; date?: string; score?: number; author?: string }> | null;
   street?: string | null;
-  /** PhoneBlock community rating code, ordered A_LEGITIMATE (best) to G_FRAUD (worst). */
+  /**
+   * Normalized 0-100 confidence that the number is spam, so providers using
+   * different native scales still compare. PhoneBlock reports this directly;
+   * tellows' 1-9 score is mapped onto it.
+   */
+  spam_score?: number | null;
+  /** On the requesting user's personal block / allow list. */
+  blocklisted?: boolean | null;
+  whitelisted?: boolean | null;
+  /** When the number was first and last reported (ISO 8601). */
+  first_report?: string | null;
+  last_report?: string | null;
+  /** Calls from this number the provider has seen; a lifetime counter. */
+  calls_count?: number | null;
+  /** The requesting user's own note about the number, if they left one. */
+  user_comment?: string | null;
+  /** PhoneBlock rating code, A_LEGITIMATE (best) through G_FRAUD (worst). */
   phoneblock_rating?: string | null;
-  phoneblock_rating_label?: string | null;
-  /** Decay-aware spam-vote equivalent (~4 month half-life), not a raw vote count. */
+  /** Decay-aware spam-vote equivalent, ~4 month half-life. Not a raw count. */
   phoneblock_votes?: number | null;
-  /** Decay-aware spam votes for the surrounding number range. */
+  /** The same, for the surrounding number range. */
   phoneblock_votes_wildcard?: number | null;
-  /** Confidence 0-100 that the number is spam; the intended spam-or-not signal. */
-  phoneblock_spam_confidence?: number | null;
-  /** Recent-activity rate in reports per day (~2 week half-life). */
+  /** Recent-activity rate in reports per day, ~2 week half-life. */
   phoneblock_heat?: number | null;
-  /** Lifetime count of intercepted calls; does not decay. */
-  phoneblock_calls?: number | null;
-  phoneblock_whitelisted?: boolean | null;
-  phoneblock_blacklisted?: boolean | null;
-  phoneblock_date_added?: string | null;
-  phoneblock_last_update?: string | null;
-  phoneblock_user_comment?: string | null;
+  /** Documented as city or region; in practice usually the carrier. */
   phoneblock_location?: string | null;
   [key: string]: unknown;
 }

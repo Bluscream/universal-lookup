@@ -5,6 +5,16 @@ import type { LookupType, Provider, ProviderResult, TelData } from '../../types/
 
 const PROVIDER_NAME = 'tellows';
 
+/**
+ * tellows scores 1-9, where 1-4 is trustworthy, 5-6 unknown and 7-9 spam.
+ * Mapped onto the shared 0-100 confidence so it lines up with other providers.
+ */
+function toSpamScore(tellowsScore: number | undefined): number | undefined {
+  if (tellowsScore === undefined || Number.isNaN(tellowsScore)) return undefined;
+  const clamped = Math.min(9, Math.max(1, tellowsScore));
+  return Math.round(((clamped - 1) / 8) * 100);
+}
+
 export const tellows: Provider = {
   name: PROVIDER_NAME,
   isAvailable() {
@@ -55,6 +65,7 @@ async function lookupApi(num: string, start: number): Promise<ProviderResult> {
     success: true,
     data: {
       tellows_score: tel.score ? parseInt(tel.score, 10) : undefined,
+      spam_score: toSpamScore(tel.score ? parseInt(tel.score, 10) : undefined),
       tellows_score_color: tel.scoreColor,
       caller_type: tel.callerType?.name,
       caller_type_id: tel.callerType?.id,
@@ -92,6 +103,10 @@ async function lookupScrape(num: string, start: number): Promise<ProviderResult>
     const srcMatch = src.match(/s(\d+)\.jpg/);
     if (altMatch) data.tellows_score = parseInt(altMatch[1], 10);
     else if (srcMatch) data.tellows_score = parseInt(srcMatch[1], 10);
+  }
+
+  if (data.tellows_score !== undefined && data.tellows_score !== null) {
+    data.spam_score = toSpamScore(data.tellows_score);
   }
 
   // --- Caller Name (from h1 or .callerId) ---

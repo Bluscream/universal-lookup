@@ -11,6 +11,25 @@ const CHROMIUM_CANDIDATES = [
 
 let browser: Browser | null = null;
 let resolvedExecutablePath: string | undefined;
+let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+/**
+ * Shut the browser down once nothing has used it for a while.
+ *
+ * The singleton used to live for the lifetime of the process. In a memory-capped
+ * container that meant a headless Chromium sitting there indefinitely after one
+ * scrape — observed burning a steady half core and ~110 MB for an hour after the
+ * request that started it had long finished.
+ */
+function scheduleIdleClose(): void {
+  if (idleTimer) clearTimeout(idleTimer);
+  if (config.puppeteerIdleTimeout <= 0) return;
+  idleTimer = setTimeout(() => {
+    void closeBrowser();
+  }, config.puppeteerIdleTimeout);
+  // Must not be the reason the process stays alive.
+  idleTimer.unref?.();
+}
 
 /**
  * Resolve Chromium binary. Unraid templates often set PUPPETEER_EXECUTABLE_PATH=""
@@ -47,6 +66,10 @@ export function resolvePuppeteerExecutablePath(): string | undefined {
 
 /** Close the shared browser, if one was ever launched. */
 export async function closeBrowser(): Promise<void> {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = undefined;
+  }
   if (!browser) return;
   const b = browser;
   browser = null;
@@ -59,6 +82,7 @@ export async function closeBrowser(): Promise<void> {
 
 export async function getBrowser(): Promise<Browser> {
   if (browser?.connected) {
+    scheduleIdleClose();
     return browser;
   }
 
@@ -97,6 +121,7 @@ export async function getBrowser(): Promise<Browser> {
     args: defaultArgs,
   });
 
+  scheduleIdleClose();
   return browser;
 }
 

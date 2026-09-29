@@ -87,6 +87,9 @@ export const config = {
   puppeteerSkipDownload: envBool('PUPPETEER_SKIP_DOWNLOAD', false),
   puppeteerExecutablePath: env('PUPPETEER_EXECUTABLE_PATH'),
   puppeteerArgs: env('PUPPETEER_ARGS'),
+  // Close the shared Chromium after this long with no use. 0 disables it and
+  // keeps the old behaviour of one browser for the lifetime of the process.
+  puppeteerIdleTimeout: envInt('PUPPETEER_IDLE_TIMEOUT', 120000),
 
   // Providers configuration
   providersTel: env(
