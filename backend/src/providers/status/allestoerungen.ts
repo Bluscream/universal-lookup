@@ -360,7 +360,7 @@ function isUsable(html: string): boolean {
 /**
  * Fetch a status page, escalating only as far as needed:
  *   1. plain HTTP with a browser UA — cheap, and enough most of the time;
- *   2. cloudscraper, then headless Chromium — for when Cloudflare challenges us.
+ *   2. headless Chromium — for when Cloudflare challenges us.
  *
  * Step 2 is imported lazily so the puppeteer dependency never loads on the happy
  * path (or on deployments without Chromium installed).
@@ -386,9 +386,8 @@ async function fetchPage(url: string): Promise<string> {
 
   if (!config.statusAllestoerungenUseBrowser) throw firstError;
 
-  // Straight to Chromium: this host serves a Cloudflare *managed* challenge,
-  // which cloudscraper cannot solve (it returns the "Just a moment..." 403), so
-  // going through scrapeWithPuppeteer would only add a wasted round trip.
+  // This host serves a Cloudflare *managed* challenge, which only a real
+  // browser clears.
   const { scrapeWithBrowser } = await import('../../lib/puppeteer.js');
   const html = await scrapeWithBrowser(url);
   if (!isUsable(html)) {

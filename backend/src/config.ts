@@ -202,7 +202,7 @@ export const config = {
     'STATUS_ALLESTOERUNGEN_USER_AGENT',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   ),
-  // Escalate to cloudscraper/headless Chromium when plain HTTP is challenged.
+  // Escalate to headless Chromium when plain HTTP is challenged.
   // Turn off on deployments without Chromium available.
   statusAllestoerungenUseBrowser: envBool('STATUS_ALLESTOERUNGEN_USE_BROWSER', true),
   // Recurring maintenance windows injected as incidents while they're open.

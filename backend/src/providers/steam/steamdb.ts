@@ -1,11 +1,14 @@
-import { cloudscraperGet } from '../../lib/cloudscraper-fetch.js';
+import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
 import type { LookupType, Provider, ProviderResult, SteamData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'steam-db';
 
 /**
- * steam-db — Scraping SteamDB calculator details using cloudscraper.
- * Attempts to bypass Cloudflare protection and parse library value, total games, and playtime.
+ * steam-db — scrapes the SteamDB calculator for library value, total games and playtime.
+ *
+ * SteamDB sits behind a Cloudflare interactive challenge and publishes no API,
+ * so this is best-effort and frequently returns nothing. Prefer the official
+ * Steam Web API providers for anything that must be reliable.
  */
 export const steamDbProvider: Provider = {
   name: PROVIDER_NAME,
@@ -20,14 +23,7 @@ export const steamDbProvider: Provider = {
     const url = `https://steamdb.info/calculator/${steamId}/?cc=us`;
 
     try {
-      // Use cloudscraper to attempt Cloudflare IUAM bypass
-      const html = await cloudscraperGet({
-        url,
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-      });
+      const html = await scrapeWithPuppeteer(url);
 
       // Parse values using resilient regexes
       const priceTodayMatch =

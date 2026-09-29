@@ -1,7 +1,6 @@
 import { existsSync } from 'node:fs';
 import puppeteer, { type Browser } from 'puppeteer';
 import { config } from '../config.js';
-import { cloudscraperGet } from './cloudscraper-fetch.js';
 
 /** Common system Chromium paths (Docker / Unraid). */
 const CHROMIUM_CANDIDATES = [
@@ -94,13 +93,7 @@ export async function getBrowser(): Promise<Browser> {
   return browser;
 }
 
-/**
- * Fetch a page with headless Chromium, skipping the cloudscraper attempt.
- *
- * Worth calling directly for hosts behind a Cloudflare *managed* challenge:
- * cloudscraper can't solve those (it just returns the "Just a moment..." 403),
- * so trying it first only costs a round trip.
- */
+/** Fetch a page with headless Chromium. */
 export async function scrapeWithBrowser(url: string, waitSelector?: string): Promise<string> {
   const b = await getBrowser();
   const page = await b.newPage();
@@ -121,35 +114,10 @@ export async function scrapeWithBrowser(url: string, waitSelector?: string): Pro
 }
 
 export async function scrapeWithPuppeteer(url: string, waitSelector?: string): Promise<string> {
-  // 1. Try cloudscraper first
-  try {
-    const html = await cloudscraperGet({
-      url,
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
-
-    if (html && html.trim().length > 0) {
-      // Basic sanity check to make sure we didn't get an empty page or a Cloudflare blocker page
-      const lowerHtml = html.toLowerCase();
-      if (
-        !lowerHtml.includes('cf-challenge') &&
-        !lowerHtml.includes('attention required!') &&
-        !lowerHtml.includes('cloudflare') &&
-        !lowerHtml.includes('ddg-captcha')
-      ) {
-        return html;
-      }
-    }
-  } catch (err) {
-    console.warn(
-      `[Cloudscraper] Failed to fetch ${url}, falling back to Puppeteer:`,
-      err instanceof Error ? err.message : err,
-    );
-  }
-
-  // 2. Fallback to Puppeteer
+  // Previously this tried cloudscraper first and fell back to a real browser.
+  // cloudscraper is unmaintained and answers 403 on exactly the Cloudflare
+  // challenges it existed to clear, so the fast path only ever added a failed
+  // request — and it dragged in `request`, which carries an unfixable SSRF
+  // advisory. The browser is the path that actually works.
   return scrapeWithBrowser(url, waitSelector);
 }
