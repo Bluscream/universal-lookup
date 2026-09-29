@@ -13,8 +13,8 @@
 *.yml  text eol=lf
 *.yaml text eol=lf
 
-# PowerShell is edited on Windows; keep it CRLF.
-*.ps1 text eol=crlf
+# LF here too — the scripts in this repo are stored LF and PowerShell reads both.
+*.ps1 text eol=lf
 
 # Unraid templates are consumed verbatim by dockerMan — leave their bytes alone.
 *.xml -text

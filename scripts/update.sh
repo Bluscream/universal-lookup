@@ -1,44 +1,67 @@
 #!/usr/bin/env bash
-set -e
+# Build, verify, publish and tag a release.
+#
+# Usage: scripts/update.sh [commit message]
+set -euo pipefail
 
-echo "=== Universal Lookup Linux Update Script ==="
+cd "$(dirname "$0")/.."
 
-echo "[1/4] Linting and Building..."
-npm run format
-npm run build
+MESSAGE="${1:-}"
 
-echo "[2/4] Bumping Version..."
+echo "=== Universal Lookup release ==="
+
+echo "[1/5] Verifying (format, lint, typecheck, build, tests)..."
+# The whole gate, not just a build. Nothing is published if any step fails.
+npm run verify
+
+echo "[2/5] Bumping version..."
 npm version patch --no-git-tag-version
 VERSION=$(node -p "require('./package.json').version")
 echo "Bumped to $VERSION"
 
-echo "[3/4] Committing to Git..."
-git add .
-git commit -m "chore: update to v$VERSION (statuspage refactor)" || true
-git push
+echo "[3/5] Committing..."
+git add -u
+git commit -m "chore: release v$VERSION${MESSAGE:+ — $MESSAGE}" || true
 
-echo "[4/4] Building and Pushing Docker Images..."
-# Use buildx if docker is available, otherwise podman
-if command -v docker &> /dev/null && docker buildx version &> /dev/null; then
-    docker buildx use universal-builder 2>/dev/null || docker buildx create --use --name universal-builder
-    docker buildx build --platform linux/amd64,linux/arm64 \
-      -t ghcr.io/bluscream/universal-lookup:latest \
-      -t ghcr.io/bluscream/universal-lookup:$VERSION \
-      -t bluscream1/universal-lookup:latest \
-      -t bluscream1/universal-lookup:$VERSION \
-      --push .
-elif command -v podman &> /dev/null; then
-    podman manifest rm universal-lookup:$VERSION 2>/dev/null || true
-    podman manifest create universal-lookup:$VERSION
-    podman build --platform linux/amd64,linux/arm64 --manifest universal-lookup:$VERSION .
-    
-    podman manifest push universal-lookup:$VERSION docker://ghcr.io/bluscream/universal-lookup:latest
-    podman manifest push universal-lookup:$VERSION docker://ghcr.io/bluscream/universal-lookup:$VERSION
-    podman manifest push universal-lookup:$VERSION docker://docker.io/bluscream1/universal-lookup:latest
-    podman manifest push universal-lookup:$VERSION docker://docker.io/bluscream1/universal-lookup:$VERSION
+echo "[4/5] Building and pushing images..."
+# Push images BEFORE pushing the commit: a failed build otherwise leaves a
+# release commit on the remote that no image corresponds to.
+TAGS=(
+  "ghcr.io/bluscream/universal-lookup:latest"
+  "ghcr.io/bluscream/universal-lookup:$VERSION"
+  "docker.io/bluscream1/universal-lookup:latest"
+  "docker.io/bluscream1/universal-lookup:$VERSION"
+)
+
+if command -v docker &>/dev/null && docker buildx version &>/dev/null; then
+  docker buildx use universal-builder 2>/dev/null || docker buildx create --use --name universal-builder
+  docker buildx build --platform linux/amd64,linux/arm64 \
+    "${TAGS[@]/#/--tag=}" \
+    --push .
+elif command -v podman &>/dev/null; then
+  podman manifest rm "universal-lookup:$VERSION" 2>/dev/null || true
+  podman manifest create "universal-lookup:$VERSION"
+  podman build --platform linux/amd64,linux/arm64 --manifest "universal-lookup:$VERSION" .
+  for tag in "${TAGS[@]}"; do
+    podman manifest push --all "universal-lookup:$VERSION" "docker://$tag"
+  done
 else
-    echo "Neither Docker Buildx nor Podman found! Cannot build container images."
-    exit 1
+  echo "Neither Docker Buildx nor Podman found; cannot build container images." >&2
+  exit 1
 fi
 
-echo "=== Deployment Complete! ==="
+echo "[5/5] Pushing commit..."
+git push
+
+cat <<EOF
+
+=== Published v$VERSION ===
+
+The NAS does NOT pull on rebuild. To deploy:
+
+  ssh root@nas "docker pull bluscream1/universal-lookup:latest && \\
+    /usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container universal-lookup"
+
+Without the pull, rebuild_container recreates the container from the cached
+image and silently keeps running the old build.
+EOF
