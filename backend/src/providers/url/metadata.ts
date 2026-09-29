@@ -218,10 +218,17 @@ export const metadataProvider: Provider = {
         meta: Object.keys(meta).length > 0 ? meta : null,
       };
 
+      // An error status is not a successful lookup. This used to report
+      // success: true for any response that did not throw, so a 4xx — an
+      // upstream block, a proxy error page — came back as a success whose
+      // `meta` was null, and callers reading `data.meta.title` crashed on it.
+      const ok = finalResponse.status >= 200 && finalResponse.status < 400;
+
       return {
         provider: PROVIDER_NAME,
-        success: true,
+        success: ok,
         data,
+        error: ok ? undefined : `HTTP ${finalResponse.status}`,
         raw: {
           headers: finalResponse.headers,
           status: finalResponse.status,

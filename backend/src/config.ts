@@ -45,6 +45,9 @@ export const config = {
   clientTimeout: envInt('CLIENT_TIMEOUT', 5000),
   serverTimeout: envInt('SERVER_TIMEOUT', 30000),
   puppeteerTimeout: envInt('PUPPETEER_TIMEOUT', 10000),
+  // Per-record ceiling for the DNS provider. Node's resolver has no deadline of
+  // its own, so one record type that never answers used to hang the lookup.
+  dnsTimeout: envInt('DNS_TIMEOUT', 5000),
 
   // API Keys
   ipApiComKey: env('IP_API_COM_KEY'),

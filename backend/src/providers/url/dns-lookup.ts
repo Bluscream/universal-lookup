@@ -1,7 +1,29 @@
 import { promises as dns } from 'node:dns';
+import { config } from '../../config.js';
 import type { LookupType, Provider, ProviderResult, UrlData } from '../../types/common.js';
 
 const PROVIDER_NAME = 'dns-lookup';
+
+/**
+ * Bound one DNS query.
+ *
+ * `Promise.allSettled` waits for every entry, so a single record type that
+ * never answers held the whole lookup open — there was no timeout anywhere in
+ * this provider, and a resolver that blackholes one query type (common for
+ * AAAA or SOA behind a restrictive network) could hang the request past any
+ * caller's patience. Each query now fails on its own, and the rest still land.
+ */
+function limit<T>(promise: Promise<T>, record: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${record} query timed out after ${config.dnsTimeout}ms`)),
+      config.dnsTimeout,
+    );
+    timer.unref?.();
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer)) as Promise<T>;
+}
 
 /**
  * dns-lookup — Resolves DNS records for a URL's hostname.
@@ -24,36 +46,35 @@ export const dnsLookupProvider: Provider = {
       const raw: Record<string, unknown> = {};
 
       const _results = await Promise.allSettled([
-        dns.resolve4(hostname).then((r) => {
+        limit(dns.resolve4(hostname), 'A').then((r) => {
           raw.A = r;
           data.dns_a = r;
         }),
-        dns.resolve6(hostname).then((r) => {
+        limit(dns.resolve6(hostname), 'AAAA').then((r) => {
           raw.AAAA = r;
           data.dns_aaaa = r;
         }),
-        dns.resolveMx(hostname).then((r) => {
+        limit(dns.resolveMx(hostname), 'MX').then((r) => {
           raw.MX = r;
           data.dns_mx = r
             .sort((a, b) => a.priority - b.priority)
             .map((m) => `${m.priority} ${m.exchange}`);
         }),
-        dns.resolveTxt(hostname).then((r) => {
+        limit(dns.resolveTxt(hostname), 'TXT').then((r) => {
           raw.TXT = r;
           data.dns_txt = r.map((t) => t.join(''));
         }),
-        dns.resolveNs(hostname).then((r) => {
+        limit(dns.resolveNs(hostname), 'NS').then((r) => {
           raw.NS = r;
           data.dns_ns = r;
         }),
-        dns
-          .resolveCname(hostname)
+        limit(dns.resolveCname(hostname), 'CNAME')
           .then((r) => {
             raw.CNAME = r;
             data.dns_cname = r;
           })
           .catch(() => {}),
-        dns.resolveSoa(hostname).then((r) => {
+        limit(dns.resolveSoa(hostname), 'SOA').then((r) => {
           raw.SOA = r;
           data.dns_soa = {
             primary_ns: r.nsname,
