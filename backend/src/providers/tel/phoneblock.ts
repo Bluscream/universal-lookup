@@ -64,13 +64,20 @@ export const phoneblock: Provider = {
       // international format without needing the '+' percent-encoded.
       const url = `${API_BASE}/num/${encodeURIComponent(query)}`;
       const headers: Record<string, string> = { Accept: 'application/json' };
+      // An API key is the provider's preferred scheme; username/password is
+      // deprecated upstream, so it is only used when no key is configured.
       if (config.phoneblockApiKey) {
         headers.Authorization = `Bearer ${config.phoneblockApiKey}`;
       }
+      const basicAuth =
+        !config.phoneblockApiKey && config.phoneblockUser && config.phoneblockPassword
+          ? { username: config.phoneblockUser, password: config.phoneblockPassword }
+          : undefined;
 
       const resp = await axios.get<PhoneBlockInfo>(url, {
         timeout: config.serverTimeout,
         headers,
+        ...(basicAuth ? { auth: basicAuth } : {}),
       });
       const raw = resp.data;
 

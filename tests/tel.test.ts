@@ -13,8 +13,26 @@ vi.mock('axios', () => {
   };
 });
 
+// Credentials are read off config at call time, so the real .env must not decide
+// which auth scheme these assertions see.
+vi.mock('../backend/src/config.js', () => ({
+  config: {
+    serverTimeout: 30000,
+    phoneblockApiKey: '',
+    phoneblockUser: '',
+    phoneblockPassword: '',
+  },
+}));
+
 const axios = (await import('axios')).default;
+const { config } = await import('../backend/src/config.js');
 const { phoneblock } = await import('../backend/src/providers/tel/phoneblock.js');
+
+function setCredentials(creds: { apiKey?: string; user?: string; password?: string }) {
+  config.phoneblockApiKey = creds.apiKey ?? '';
+  config.phoneblockUser = creds.user ?? '';
+  config.phoneblockPassword = creds.password ?? '';
+}
 
 const SPAM_RESPONSE = {
   phone: '+4917650642602',
@@ -36,6 +54,7 @@ const SPAM_RESPONSE = {
 describe('PhoneBlock Provider', () => {
   beforeEach(() => {
     vi.mocked(axios.get).mockReset();
+    setCredentials({});
   });
 
   it('is always available, since the number endpoint needs no credentials', () => {
@@ -105,5 +124,60 @@ describe('PhoneBlock Provider', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('socket hang up');
+  });
+
+  describe('authentication', () => {
+    it('sends no credentials when none are configured', async () => {
+      vi.mocked(axios.get).mockResolvedValue({ data: SPAM_RESPONSE });
+
+      await phoneblock.lookup('004917650642602');
+
+      const [, options] = vi.mocked(axios.get).mock.calls[0];
+      expect(options?.headers?.Authorization).toBeUndefined();
+      expect(options?.auth).toBeUndefined();
+    });
+
+    it('sends the API key as a bearer token', async () => {
+      setCredentials({ apiKey: 'test-key' });
+      vi.mocked(axios.get).mockResolvedValue({ data: SPAM_RESPONSE });
+
+      await phoneblock.lookup('004917650642602');
+
+      const [, options] = vi.mocked(axios.get).mock.calls[0];
+      expect(options?.headers?.Authorization).toBe('Bearer test-key');
+      expect(options?.auth).toBeUndefined();
+    });
+
+    it('falls back to basic auth when only user and password are set', async () => {
+      setCredentials({ user: 'u', password: 'p' });
+      vi.mocked(axios.get).mockResolvedValue({ data: SPAM_RESPONSE });
+
+      await phoneblock.lookup('004917650642602');
+
+      const [, options] = vi.mocked(axios.get).mock.calls[0];
+      expect(options?.auth).toEqual({ username: 'u', password: 'p' });
+      expect(options?.headers?.Authorization).toBeUndefined();
+    });
+
+    it('prefers the API key over the deprecated username and password', async () => {
+      setCredentials({ apiKey: 'test-key', user: 'u', password: 'p' });
+      vi.mocked(axios.get).mockResolvedValue({ data: SPAM_RESPONSE });
+
+      await phoneblock.lookup('004917650642602');
+
+      const [, options] = vi.mocked(axios.get).mock.calls[0];
+      expect(options?.headers?.Authorization).toBe('Bearer test-key');
+      expect(options?.auth).toBeUndefined();
+    });
+
+    it('ignores a username with no password', async () => {
+      setCredentials({ user: 'u' });
+      vi.mocked(axios.get).mockResolvedValue({ data: SPAM_RESPONSE });
+
+      await phoneblock.lookup('004917650642602');
+
+      const [, options] = vi.mocked(axios.get).mock.calls[0];
+      expect(options?.auth).toBeUndefined();
+    });
   });
 });

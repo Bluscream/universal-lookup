@@ -47,6 +47,8 @@ export const config = {
   ipApiIoKey: env('IP_API_IO_KEY'),
   tellowsApiKey: env('TELLOWS_API_KEY'),
   phoneblockApiKey: env('PHONEBLOCK_API_KEY'),
+  phoneblockUser: env('PHONEBLOCK_USER'),
+  phoneblockPassword: env('PHONEBLOCK_PASSWORD'),
   maxmindLicenseKey: env('MAXMIND_LICENSE_KEY'),
   maxmindDbPath: env('MAXMIND_DB_PATH', './data/maxmind'),
   googleApiKey: env('GOOGLE_API_KEY'),
