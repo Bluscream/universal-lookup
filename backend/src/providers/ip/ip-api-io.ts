@@ -33,7 +33,7 @@ export const ipApiIo: Provider = {
         };
       }
 
-      const url = `https://ip-api.io/api/json?ip=${encodeURIComponent(query)}&api_key=${config.ipApiIoKey}`;
+      const url = `https://ip-api.io/api/v1/ip/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`;
 
       const response = await axios.get(url, {
         timeout: config.serverTimeout,

@@ -36,19 +36,26 @@ COPY package*.json ./
 COPY common/package*.json ./common/
 COPY backend/package*.json ./backend/
 COPY frontend/package*.json ./frontend/
-RUN npm install --ignore-scripts
+# Runtime needs only production dependencies. The previous `npm install` pulled
+# every devDependency into the final image — biome (107 MB), typescript (24 MB),
+# vitest, tsx, and the whole frontend build chain (rolldown, esbuild, babel,
+# lightningcss) — none of which run in production. `--ignore-scripts` still
+# matters: puppeteer must not download its own Chromium, the system one is used.
+RUN npm ci --omit=dev --ignore-scripts
 
 COPY --from=builder /app/common/dist ./common/dist
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/frontend/dist ./frontend/dist
-COPY frontend/vite.config.ts ./frontend/
 COPY scripts/ ./scripts/
 
 RUN mkdir -p /app/backend/data/maxmind
 
-ENV PORT=24010
+# One server, one port. The backend already serves the built SPA through
+# @fastify/static with an SPA fallback, so the separate `vite preview` process
+# that used to hold 24010 was serving a byte-identical page from a dev tool —
+# and it was the only reason vite had to exist in the runtime image.
+ENV PORT=24011
 ENV HOST=0.0.0.0
-ENV VITE_BACKEND_URL=http://localhost:24011
 ENV DB_PATH=/app/backend/data/cache.db
 ENV MAXMIND_DB_PATH=/app/backend/data/maxmind
 ENV AMAZON_COOKIES_FILE=/app/backend/data/amazon-cookies.json
@@ -56,6 +63,6 @@ ENV AMAZON_SESSION_DIR=/app/backend/data/amazon-session
 ENV ALIEXPRESS_COOKIES_FILE=/app/backend/data/aliexpress-cookies.json
 ENV LOG_LEVEL=info
 
-EXPOSE 24010 24011
+EXPOSE 24011
 
-CMD ["node", "scripts/start-all.js"]
+CMD ["node", "backend/dist/index.js"]

@@ -25,7 +25,7 @@ export const ipApiIoEmail: Provider = {
         };
 
       const resp = await axios.get(
-        `https://ip-api.io/api/v1/email/validate/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`,
+        `https://ip-api.io/api/v1/email/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`,
         {
           timeout: config.serverTimeout,
         },

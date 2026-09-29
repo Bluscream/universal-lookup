@@ -32,11 +32,23 @@ export const tellows: Provider = {
       }
       return await lookupScrape(num, start);
     } catch (error) {
+      // The keyless path scrapes the site, and tellows now answers 403 to it.
+      // A bare "Request failed with status code 403" gives no idea that the
+      // remedy is a key, so say so — this provider is otherwise silently dead.
+      const status =
+        typeof error === 'object' && error !== null
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined;
+      const blocked = status === 403 || status === 429;
+      const message = error instanceof Error ? error.message : String(error);
       return {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
-        error: error instanceof Error ? error.message : String(error),
+        error:
+          blocked && !config.tellowsApiKey
+            ? `tellows blocked the keyless scrape (HTTP ${status}) — set TELLOWS_API_KEY to use its API instead`
+            : message,
         duration: Date.now() - start,
       };
     }

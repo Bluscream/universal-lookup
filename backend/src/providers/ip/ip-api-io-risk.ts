@@ -33,7 +33,7 @@ export const ipApiIoRisk: Provider = {
         };
       }
 
-      const url = `https://ip-api.io/api/v1/risk/ip/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`;
+      const url = `https://ip-api.io/api/v1/risk-score/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`;
 
       const response = await axios.get(url, {
         timeout: config.serverTimeout,

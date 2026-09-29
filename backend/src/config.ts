@@ -84,6 +84,16 @@ export const config = {
   fritzboxHost: env('FRITZBOX_HOST', 'fritz.box'),
   fritzboxUser: env('FRITZBOX_USER'),
   fritzboxPass: env('FRITZBOX_PASS'),
+  // Phonebooks to skip entirely, by name (comma-separated, case-insensitive
+  // substring). A FRITZ!Box exposes its call-barring and spam-score lists as
+  // phonebooks alongside real contacts, and they dominate the download while
+  // holding nothing worth resolving a caller against — on one box the barring
+  // list alone was 315 KB of a 360 KB total. Skipped before the book is
+  // fetched, so the bytes are never transferred. Set to empty to fetch all.
+  fritzboxSkipPhonebooks: env(
+    'FRITZBOX_SKIP_PHONEBOOKS',
+    'Blocklist,Call locks,Sperrliste,Tellows',
+  ),
   phoneCountryPrefix: env('PHONE_COUNTRY_PREFIX', '0049'),
   phoneLocalPrefix: env('PHONE_LOCAL_PREFIX'), // e.g. 6131
   get phoneLocalPrefixFull(): string {

@@ -12,6 +12,30 @@ const PROVIDER_NAME = 'fritzbox';
 // In-memory cache for phonebook XML
 const phonebookCache: Record<number, { data: string; timestamp: number }> = {};
 const PHONEBOOK_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+/** Which phonebook IDs the box reports, cached on the same TTL as their contents. */
+let phonebookIdCache: { ids: number[]; timestamp: number } | null = null;
+
+/**
+ * Should this phonebook be left undownloaded?
+ *
+ * Matched on the book's name rather than its ID, because the IDs differ per box
+ * while AVM's names for these are stable. Comma-separated, case-insensitive
+ * substring match, so "blocklist" catches "Blocklist" and "SPAM Blocklist".
+ */
+function isSkippedPhonebook(name: string): boolean {
+  const needle = name.toLowerCase();
+  return config.fritzboxSkipPhonebooks
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+    .some((skip) => needle.includes(skip));
+}
+
+/** Reset the module caches. Tests, and anything that reconfigures the box. */
+export function clearFritzboxPhonebookCache(): void {
+  for (const key of Object.keys(phonebookCache)) delete phonebookCache[Number(key)];
+  phonebookIdCache = null;
+}
 
 export const fritzbox: Provider = {
   name: PROVIDER_NAME,
@@ -51,18 +75,29 @@ export const fritzbox: Provider = {
         rejectUnauthorized: false,
       });
 
-      const performSoapRequest = async (body: string, authHeader?: string) => {
+      const performSoapRequest = async (
+        body: string,
+        authHeader?: string,
+        action = 'GetPhonebook',
+      ) => {
         return axios.post(soapUrl, body, {
           timeout: config.serverTimeout,
           httpsAgent,
           headers: {
             'Content-Type': 'text/xml; charset="utf-8"',
-            SoapAction: 'urn:dslforum-org:service:X_AVM-DE_OnTel:1#GetPhonebook',
+            SoapAction: `urn:dslforum-org:service:X_AVM-DE_OnTel:1#${action}`,
             ...(authHeader ? { Authorization: authHeader } : {}),
           },
           validateStatus: (status) => status === 200 || status === 401,
         });
       };
+
+      const getListSoapBody = () => `<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/envelope/">
+  <s:Body>
+    <u:GetPhonebookList xmlns:u="urn:dslforum-org:service:X_AVM-DE_OnTel:1" />
+  </s:Body>
+</s:Envelope>`;
 
       const getSoapBody = (id: number) => `<?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/envelope/">
@@ -105,11 +140,41 @@ export const fritzbox: Provider = {
         return undefined;
       };
 
-      // 2. Iterate through phonebooks (ID 0, 1, 2)
-      const phonebookIds = [0, 1, 2];
       const data: TelData = {};
       let rawMatch: string | undefined;
       let authHeader: string | undefined;
+
+      // 2. Ask the box which phonebooks exist, rather than assuming 0, 1, 2.
+      //
+      // The IDs are not a contiguous 0..2 range: a box syncing an online
+      // address book or holding a call-barring list gets extra books, and the
+      // hardcoded [0, 1, 2] silently missed everything above index 2. On the
+      // box this was tested against that meant skipping a Google-synced book of
+      // 43 contacts — about half the real contacts — while still paying for two
+      // books that hold almost none.
+      if (!authHeader) authHeader = await getAuth();
+      let phonebookIds: number[];
+      const cachedIds = phonebookIdCache;
+      if (cachedIds && Date.now() - cachedIds.timestamp < PHONEBOOK_CACHE_TTL) {
+        phonebookIds = cachedIds.ids;
+      } else {
+        const listResp = await performSoapRequest(
+          getListSoapBody(),
+          authHeader,
+          'GetPhonebookList',
+        );
+        const listMatch =
+          listResp.status === 200
+            ? listResp.data.match(/<NewPhonebookList>([^<]*)<\/NewPhonebookList>/)
+            : null;
+        phonebookIds = listMatch
+          ? listMatch[1]
+              .split(',')
+              .map((s: string) => Number.parseInt(s.trim(), 10))
+              .filter((n: number) => Number.isInteger(n))
+          : [0];
+        phonebookIdCache = { ids: phonebookIds, timestamp: Date.now() };
+      }
 
       for (const id of phonebookIds) {
         let pbData: string;
@@ -124,9 +189,21 @@ export const fritzbox: Provider = {
           const resp = await performSoapRequest(getSoapBody(id), authHeader);
           if (resp.status !== 200) continue;
 
+          // Skip a book by name *before* downloading it — the SOAP reply is a
+          // few hundred bytes while the book itself can be hundreds of KB. On
+          // the box this was tested against the call-barring list alone was
+          // 315 KB of a 360 KB total (~87%), and holds no contacts worth
+          // resolving a caller against.
+          const nameMatch = resp.data.match(/<NewPhonebookName>([^<]*)<\/NewPhonebookName>/);
+          const pbName = nameMatch ? nameMatch[1] : '';
+          if (pbName && isSkippedPhonebook(pbName)) continue;
+
           const urlMatch = resp.data.match(/<NewPhonebookURL>([^<]+)<\/NewPhonebookURL>/);
           if (!urlMatch) continue;
 
+          // Always the URL the box gave us: the TR-064 index is not the
+          // internal pbid, so a hand-built phonebook.lua?pbid=<index> can
+          // return an empty book with HTTP 200 and no error at all.
           const phonebookUrl = urlMatch[1].replace(/&amp;/g, '&');
           const pbResp = await axios.get(phonebookUrl, {
             timeout: config.serverTimeout,

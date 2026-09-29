@@ -25,7 +25,7 @@ export const ipApiIoEmailRisk: Provider = {
         };
 
       const resp = await axios.get(
-        `https://ip-api.io/api/v1/risk/email/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`,
+        `https://ip-api.io/api/v1/risk-score/email/${encodeURIComponent(query)}?api_key=${config.ipApiIoKey}`,
         {
           timeout: config.serverTimeout,
         },
