@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import puppeteer, { type Browser } from 'puppeteer';
 import { config } from '../config.js';
+import { type ProcHandle, procEnd, procStart } from './proc-log.js';
 
 /** Common system Chromium paths (Docker / Unraid). */
 const CHROMIUM_CANDIDATES = [
@@ -12,6 +13,10 @@ const CHROMIUM_CANDIDATES = [
 let browser: Browser | null = null;
 let resolvedExecutablePath: string | undefined;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
+/** Lifecycle record for the browser currently running, for the spawn log. */
+let browserProc: ProcHandle | undefined;
+/** Pages served by the current browser, reported when it closes. */
+let pagesThisBrowser = 0;
 
 /**
  * Shut the browser down once nothing has used it for a while.
@@ -25,7 +30,7 @@ function scheduleIdleClose(): void {
   if (idleTimer) clearTimeout(idleTimer);
   if (config.puppeteerIdleTimeout <= 0) return;
   idleTimer = setTimeout(() => {
-    void closeBrowser();
+    void closeBrowser('idle-timeout');
   }, config.puppeteerIdleTimeout);
   // Must not be the reason the process stays alive.
   idleTimer.unref?.();
@@ -64,8 +69,15 @@ export function resolvePuppeteerExecutablePath(): string | undefined {
   return undefined;
 }
 
-/** Close the shared browser, if one was ever launched. */
-export async function closeBrowser(): Promise<void> {
+/**
+ * Close the shared browser, if one was ever launched.
+ *
+ * `reason` is recorded in the spawn log, because which reason fired is the
+ * diagnostic: "idle-timeout" means the timer did its job, "shutdown" means the
+ * process is going away, and a fresh spawn with no close in between means
+ * something is holding the browser open.
+ */
+export async function closeBrowser(reason = 'explicit'): Promise<void> {
   if (idleTimer) {
     clearTimeout(idleTimer);
     idleTimer = undefined;
@@ -73,10 +85,21 @@ export async function closeBrowser(): Promise<void> {
   if (!browser) return;
   const b = browser;
   browser = null;
+  const proc = browserProc;
+  browserProc = undefined;
+  const pages = pagesThisBrowser;
+  pagesThisBrowser = 0;
   try {
     await b.close();
-  } catch {
-    // Already gone; nothing to release.
+    if (proc) procEnd(proc, reason, { pages });
+  } catch (error) {
+    // Already gone; nothing to release. Still worth recording, since a browser
+    // that died on its own is a different story from one we closed.
+    if (proc) {
+      procEnd(proc, `${reason} (close failed: ${error instanceof Error ? error.message : error})`, {
+        pages,
+      });
+    }
   }
 }
 
@@ -84,6 +107,15 @@ export async function getBrowser(): Promise<Browser> {
   if (browser?.connected) {
     scheduleIdleClose();
     return browser;
+  }
+
+  // Non-null but disconnected means it went away without us closing it — a
+  // crash or an OOM kill. Close the record out so the next spawn is not
+  // mistaken for the same browser still running.
+  if (browser && browserProc) {
+    procEnd(browserProc, 'died (disconnected)', { pages: pagesThisBrowser });
+    browserProc = undefined;
+    pagesThisBrowser = 0;
   }
 
   const executablePath = resolvePuppeteerExecutablePath();
@@ -120,6 +152,11 @@ export async function getBrowser(): Promise<Browser> {
     executablePath,
     args: defaultArgs,
   });
+  browserProc = procStart('browser', executablePath, {
+    pid: browser.process()?.pid,
+    idleTimeout: `${config.puppeteerIdleTimeout}ms`,
+  });
+  pagesThisBrowser = 0;
 
   scheduleIdleClose();
   return browser;
@@ -129,6 +166,11 @@ export async function getBrowser(): Promise<Browser> {
 export async function scrapeWithBrowser(url: string, waitSelector?: string): Promise<string> {
   const b = await getBrowser();
   const page = await b.newPage();
+  pagesThisBrowser++;
+  // One line per page is what exposes fan-out: a cold /api/status/all opens one
+  // page per configured status service, which is easy to miss from timings alone.
+  const proc = procStart('page', url);
+  let outcome = 'ok';
   try {
     await page.setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -140,8 +182,12 @@ export async function scrapeWithBrowser(url: string, waitSelector?: string): Pro
     }
 
     return await page.content();
+  } catch (error) {
+    outcome = `error: ${error instanceof Error ? error.message.split('\n')[0] : String(error)}`;
+    throw error;
   } finally {
-    await page.close();
+    await page.close().catch(() => {});
+    procEnd(proc, outcome);
   }
 }
 

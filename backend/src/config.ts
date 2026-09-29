@@ -30,6 +30,10 @@ export const config = {
   port: envInt('PORT', 24011),
   host: env('HOST', '0.0.0.0'),
   logLevel: env('LOG_LEVEL', 'info'),
+  // Record every external process this service starts (headless Chromium and
+  // its pages, ping, traceroute). On by default: these spawns are infrequent
+  // relative to requests, and an unlogged one cost a production incident.
+  logSpawns: envBool('LOG_SPAWNS', true),
 
   // Cache
   dbPath: env('DB_PATH', './data/cache.db'),

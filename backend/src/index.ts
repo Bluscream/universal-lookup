@@ -175,7 +175,7 @@ async function main() {
     console.log('\n🛑 Shutting down...');
     await app.close();
     // Chromium is a child process; without this it outlives SIGTERM.
-    await closeBrowser();
+    await closeBrowser('shutdown');
     closeDatabase();
     process.exit(0);
   };

@@ -3,6 +3,7 @@ import { platform } from 'node:os';
 import { promisify } from 'node:util';
 import { config } from '../../config.js';
 import { isValidHost } from '../../lib/normalizer.js';
+import { procEnd, procStart } from '../../lib/proc-log.js';
 import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const execFileAsync = promisify(execFile);
@@ -34,9 +35,17 @@ export const tracerouteProvider: Provider = {
         ? ['-d', '-h', String(maxHops), '-w', '1000', query]
         : ['-n', '-m', String(maxHops), '-w', '1', query];
 
-      const { stdout } = await execFileAsync(bin, args, {
-        timeout: Math.min(config.serverTimeout * 2, 30000),
-      });
+      const proc = procStart('exec', bin, { host: query, maxHops });
+      let stdout: string;
+      try {
+        ({ stdout } = await execFileAsync(bin, args, {
+          timeout: Math.min(config.serverTimeout * 2, 30000),
+        }));
+      } catch (error) {
+        procEnd(proc, `error: ${error instanceof Error ? error.message.split('\n')[0] : error}`);
+        throw error;
+      }
+      procEnd(proc, 'ok');
 
       const { hops, totalHops } = parseTraceroute(stdout, isWin);
       return {

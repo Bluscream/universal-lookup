@@ -3,6 +3,7 @@ import { platform } from 'node:os';
 import { promisify } from 'node:util';
 import { config } from '../../config.js';
 import { isValidHost } from '../../lib/normalizer.js';
+import { procEnd, procStart } from '../../lib/proc-log.js';
 import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
 const execFileAsync = promisify(execFile);
@@ -32,9 +33,17 @@ export const pingProvider: Provider = {
       const args = isWin
         ? ['-n', '3', '-w', String(t * 1000), query]
         : ['-c', '3', '-W', String(t), query];
-      const { stdout } = await execFileAsync('ping', args, {
-        timeout: config.serverTimeout + 2000,
-      });
+      const proc = procStart('exec', 'ping', { host: query });
+      let stdout: string;
+      try {
+        ({ stdout } = await execFileAsync('ping', args, {
+          timeout: config.serverTimeout + 2000,
+        }));
+      } catch (error) {
+        procEnd(proc, `error: ${error instanceof Error ? error.message.split('\n')[0] : error}`);
+        throw error;
+      }
+      procEnd(proc, 'ok');
       return {
         provider: PROVIDER_NAME,
         success: true,
