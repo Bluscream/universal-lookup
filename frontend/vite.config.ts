@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:24011';
 
@@ -43,4 +43,4 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
   },
-})
+});

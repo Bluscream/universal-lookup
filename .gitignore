@@ -3,10 +3,14 @@ node_modules/
 
 # Build output
 dist/
+*.tsbuildinfo
 
 # Environment (contains secrets)
 .env
 unraid/*.nas
+# scripts/update.ps1 writes an npm auth token here; its cleanup does not
+# survive a Ctrl-C, and the release script stages everything.
+.npmrc
 
 # Data (runtime caches, databases, MaxMind DBs)
 data/

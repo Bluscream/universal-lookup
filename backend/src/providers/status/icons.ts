@@ -50,7 +50,6 @@ export function serviceColor(service: string): string {
   return SERVICE_COLOR[service.toLowerCase()] ?? '#9ca3af';
 }
 
-
 /** Category a service belongs to, for grouping in the UI. */
 const SERVICE_CATEGORY: Record<string, string> = {
   // Cloud / hosting / infrastructure

@@ -2,12 +2,15 @@
   "name": "universal-lookup",
   "version": "1.7.33",
   "description": "Universal lookup service aggregating multiple APIs for phone, IP, email, location, and parcel lookups with smart caching and response merging",
-  "main": "dist/index.js",
+  "main": "backend/dist/index.js",
   "bin": {
-    "universal-lookup": "dist/index.js"
+    "universal-lookup": "backend/dist/index.js"
   },
   "files": [
-    "dist"
+    "backend/dist",
+    "common/dist",
+    "frontend/dist",
+    "scripts"
   ],
   "type": "module",
   "workspaces": [
@@ -26,9 +29,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit",
-    "lint": "biome lint backend/src/ frontend/src/ common/src/",
-    "format": "biome format --write backend/src/ frontend/src/ common/src/"
+    "typecheck": "tsc -b",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run build && npm test"
   },
   "keywords": [
     "lookup",

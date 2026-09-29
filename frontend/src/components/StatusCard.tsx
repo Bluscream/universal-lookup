@@ -112,7 +112,13 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
             gap: '0.4rem',
           }}
         >
-          <span style={{ color: s.service_color || 'inherit', display: 'inline-flex', alignItems: 'center' }}>
+          <span
+            style={{
+              color: s.service_color || 'inherit',
+              display: 'inline-flex',
+              alignItems: 'center',
+            }}
+          >
             <ServiceLogo service={s.service} iconUrl={s.icon} />
           </span>
           <span>{s.name}</span>

@@ -132,7 +132,9 @@ export const semontoProvider: Provider = {
                 response_time: toolResult.time_formatted || null,
                 ip_address: toolResult.ip_address || null,
                 ssl_valid: toolResult.ssl?.valid ?? null,
-                cert_days_remaining: toolResult.ssl?.cert?.days ? parseFloat(toolResult.ssl.cert.days) : null,
+                cert_days_remaining: toolResult.ssl?.cert?.days
+                  ? parseFloat(toolResult.ssl.cert.days)
+                  : null,
                 error: toolResult.error || null,
               };
             }

@@ -392,7 +392,9 @@ async function fetchPage(url: string): Promise<string> {
   const { scrapeWithBrowser } = await import('../../lib/puppeteer.js');
   const html = await scrapeWithBrowser(url);
   if (!isUsable(html)) {
-    throw new Error(`Blocked by Cloudflare and no status data in fallback fetch (${String(firstError)})`);
+    throw new Error(
+      `Blocked by Cloudflare and no status data in fallback fetch (${String(firstError)})`,
+    );
   }
   return html;
 }

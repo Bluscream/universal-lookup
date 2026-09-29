@@ -58,10 +58,7 @@ const BASE_STATUS_PROVIDERS: Provider[] = [
  */
 const STATUS_ENRICHERS: StatusEnricher[] = [maintenanceEnricher, crowdEnricher];
 
-const ALL_STATUS_PROVIDERS: Provider[] = withEnrichersAll(
-  BASE_STATUS_PROVIDERS,
-  STATUS_ENRICHERS,
-);
+const ALL_STATUS_PROVIDERS: Provider[] = withEnrichersAll(BASE_STATUS_PROVIDERS, STATUS_ENRICHERS);
 
 /**
  * The effective PROVIDERS_STATUS list.

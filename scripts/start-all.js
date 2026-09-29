@@ -5,14 +5,14 @@ console.log('🚀 Starting both backend and frontend services...');
 // Set environment for backend port explicitly
 process.env.PORT = '24011';
 
-const backend = spawn('node', ['backend/dist/index.js'], { 
-  stdio: 'inherit', 
-  shell: true 
+const backend = spawn('node', ['backend/dist/index.js'], {
+  stdio: 'inherit',
+  shell: true,
 });
 
-const frontend = spawn('npm', ['run', 'preview', '-w', 'frontend'], { 
-  stdio: 'inherit', 
-  shell: true 
+const frontend = spawn('npm', ['run', 'preview', '-w', 'frontend'], {
+  stdio: 'inherit',
+  shell: true,
 });
 
 const cleanup = (code) => {

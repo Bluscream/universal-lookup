@@ -60,7 +60,11 @@ describe('normalizeIndicator', () => {
 describe('summaryToStatusData (shared canonical mapper)', () => {
   it('maps an operational Statuspage summary', () => {
     const summary: StatuspageSummary = {
-      page: { name: 'Discord', url: 'https://discordstatus.com', updated_at: '2026-07-04T00:00:00Z' },
+      page: {
+        name: 'Discord',
+        url: 'https://discordstatus.com',
+        updated_at: '2026-07-04T00:00:00Z',
+      },
       status: { indicator: 'none', description: 'All Systems Operational' },
       incidents: [],
     };
@@ -92,7 +96,9 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
     const summary: StatuspageSummary = { status: { indicator: 'none', description: 'ok' } };
     expect(summaryToStatusData(summary, 'aws', 'AWS').services?.[0].category).toBe('Cloud');
     expect(summaryToStatusData(summary, 'steam', 'Steam').services?.[0].category).toBe('Games');
-    expect(summaryToStatusData(summary, 'playstation', 'PlayStation').services?.[0].category).toBe('Games');
+    expect(summaryToStatusData(summary, 'playstation', 'PlayStation').services?.[0].category).toBe(
+      'Games',
+    );
     expect(summaryToStatusData(summary, 'madeup', 'X').services?.[0].category).toBe('Other');
   });
 
@@ -107,7 +113,7 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
       undefined,
       'Custom Category',
       '#FF00FF',
-      'custom-icon'
+      'custom-icon',
     );
     expect(data.services?.[0].category).toBe('Custom Category');
     expect(data.services?.[0].service_color).toBe('#FF00FF');
@@ -140,7 +146,9 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
     const maint: StatuspageSummary = { status: { indicator: 'maintenance', description: 'x' } };
     expect(summaryToStatusData(maint, 'psn', 'PSN').services?.[0].status).toBe('Under Maintenance');
 
-    const ok: StatuspageSummary = { status: { indicator: 'none', description: 'All Systems Operational (240ms)' } };
+    const ok: StatuspageSummary = {
+      status: { indicator: 'none', description: 'All Systems Operational (240ms)' },
+    };
     expect(summaryToStatusData(ok, 'battlenet', 'Battle.net').services?.[0].status).toBe(
       'All Systems Operational',
     );
@@ -152,7 +160,8 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
       incidents: [{ name: 'x', status: 'identified', impact: 'major' }],
     };
     expect(
-      summaryToStatusData(summary, 'cloudflare', 'Cloudflare', undefined, true).services?.[0].status,
+      summaryToStatusData(summary, 'cloudflare', 'Cloudflare', undefined, true).services?.[0]
+        .status,
     ).toBe('Partial System Outage');
   });
 
@@ -225,7 +234,7 @@ describe('summaryToStatusData (shared canonical mapper)', () => {
     const summary: StatuspageSummary = {
       status: { indicator: 'none', description: 'All Systems Operational' },
     };
-    
+
     const steamData = summaryToStatusData(summary, 'steam', 'Steam', undefined, false, [
       { utcDay: 2, utcHourStart: 22, utcHourEnd: 2 },
     ]);
@@ -284,7 +293,9 @@ describe('psnToSummary', () => {
       {
         regionName: 'SCEA',
         status: [],
-        countries: [{ countryCode: 'US', status: [], services: [{ serviceName: 'PSN', status: [] }] }],
+        countries: [
+          { countryCode: 'US', status: [], services: [{ serviceName: 'PSN', status: [] }] },
+        ],
       },
       'US',
     );
@@ -329,7 +340,11 @@ describe('psnToSummary', () => {
         status: [outage], // region-level aggregate includes another country's outage
         countries: [
           { countryCode: 'DE', status: [], services: [{ serviceName: 'Store', status: [] }] },
-          { countryCode: 'RU', status: [outage], services: [{ serviceName: 'Store', status: [outage] }] },
+          {
+            countryCode: 'RU',
+            status: [outage],
+            services: [{ serviceName: 'Store', status: [outage] }],
+          },
         ],
       },
       'DE',
@@ -352,7 +367,11 @@ describe('psnToSummary', () => {
         status: [outage],
         countries: [
           { countryCode: 'DE', status: [], services: [{ serviceName: 'Store', status: [] }] },
-          { countryCode: 'RU', status: [outage], services: [{ serviceName: 'Store', status: [outage] }] },
+          {
+            countryCode: 'RU',
+            status: [outage],
+            services: [{ serviceName: 'Store', status: [outage] }],
+          },
         ],
       },
       'all',
@@ -380,7 +399,11 @@ describe('psnToSummary', () => {
               {
                 serviceName: 'Account Management',
                 status: [
-                  { statusType: 'Outage', startDate: '2026-07-01T00:00:00Z', endDate: '2026-07-02T00:00:00Z' },
+                  {
+                    statusType: 'Outage',
+                    startDate: '2026-07-01T00:00:00Z',
+                    endDate: '2026-07-02T00:00:00Z',
+                  },
                 ],
               },
               // Scheduled maintenance next week.
@@ -470,7 +493,11 @@ describe('steamGroupSummary (Steam / CS2 split)', () => {
   });
 
   it('Steam group is down when a core service is offline', () => {
-    const s = steamGroupSummary({ SessionsLogon: 'offline', SteamCommunity: 'normal' }, STEAM, 'Steam');
+    const s = steamGroupSummary(
+      { SessionsLogon: 'offline', SteamCommunity: 'normal' },
+      STEAM,
+      'Steam',
+    );
     expect(s.status?.indicator).toBe('major');
   });
 
@@ -563,14 +590,26 @@ describe('allestoerungen (crowd-sourced reports)', () => {
   });
 
   it('maps a green page to operational with no incidents', () => {
-    const summary = companyToSummary(company('success', [[2, 3], [1, 3]]), URL);
+    const summary = companyToSummary(
+      company('success', [
+        [2, 3],
+        [1, 3],
+      ]),
+      URL,
+    );
     expect(summary.status?.indicator).toBe('none');
     expect(summary.status?.description).toBe('All Systems Operational');
     expect(summary.incidents).toEqual([]);
   });
 
   it('maps danger to a major outage with a single stable incident', () => {
-    const summary = companyToSummary(company('danger', [[1, 1], [200, 1]]), URL);
+    const summary = companyToSummary(
+      company('danger', [
+        [1, 1],
+        [200, 1],
+      ]),
+      URL,
+    );
     expect(summary.status?.indicator).toBe('major');
     expect(summary.status?.description).toBe('Major Service Outage');
     expect(summary.incidents).toHaveLength(1);
@@ -581,34 +620,82 @@ describe('allestoerungen (crowd-sourced reports)', () => {
   });
 
   it('maps warning to a minor outage', () => {
-    expect(companyToSummary(company('warning', [[1, 1], [50, 1]]), URL).status?.indicator).toBe(
-      'minor',
-    );
+    expect(
+      companyToSummary(
+        company('warning', [
+          [1, 1],
+          [50, 1],
+        ]),
+        URL,
+      ).status?.indicator,
+    ).toBe('minor');
   });
 
   it('dates the incident from when reports first became elevated', () => {
     // Quiet, quiet, then three elevated buckets: the outage began at the first.
     const summary = companyToSummary(
-      company('danger', [[1, 1], [2, 1], [90, 1], [120, 1], [110, 1]]),
+      company('danger', [
+        [1, 1],
+        [2, 1],
+        [90, 1],
+        [120, 1],
+        [110, 1],
+      ]),
       URL,
     );
-    expect(summary.incidents?.[0]?.started_at).toBe(points([[0, 0], [0, 0], [0, 0]])[2].timestampUtc);
+    expect(summary.incidents?.[0]?.started_at).toBe(
+      points([
+        [0, 0],
+        [0, 0],
+        [0, 0],
+      ])[2].timestampUtc,
+    );
   });
 
   it('suppresses an outage flag that is below the noise floor', () => {
     // Flagged by the site, but only 3 reports — under the default minimum of 10.
-    const summary = companyToSummary(company('danger', [[1, 0], [3, 0]]), URL);
+    const summary = companyToSummary(
+      company('danger', [
+        [1, 0],
+        [3, 0],
+      ]),
+      URL,
+    );
     expect(summary.status?.indicator).toBe('none');
     expect(summary.incidents).toEqual([]);
   });
 
   it('falls back to the chart when the site reports no status', () => {
-    expect(companyToSummary(company('', [[1, 1], [400, 1]]), URL).status?.indicator).toBe('minor');
-    expect(companyToSummary(company('', [[1, 1], [1, 1]]), URL).status?.indicator).toBe('unknown');
+    expect(
+      companyToSummary(
+        company('', [
+          [1, 1],
+          [400, 1],
+        ]),
+        URL,
+      ).status?.indicator,
+    ).toBe('minor');
+    expect(
+      companyToSummary(
+        company('', [
+          [1, 1],
+          [1, 1],
+        ]),
+        URL,
+      ).status?.indicator,
+    ).toBe('unknown');
   });
 
   it('reports the current and peak volume for the window', () => {
-    expect(metricsOf(company('danger', [[5, 1], [900, 1], [210, 1]]))).toMatchObject({
+    expect(
+      metricsOf(
+        company('danger', [
+          [5, 1],
+          [900, 1],
+          [210, 1],
+        ]),
+      ),
+    ).toMatchObject({
       reports: 210,
       baseline: 1,
       peak: 900,
@@ -651,16 +738,13 @@ describe('enrichment (cross-provider signal injection)', () => {
   });
 
   it('escalates a service and appends the incident', async () => {
-    const wrapped = withEnrichers(
-      provider({ services: [entry()], incidents: [] }),
-      [
-        enricher({
-          indicator: 'major',
-          incidents: [{ service: 'steam', name: 'User reports indicate problems' }],
-          raw: { reports: 200 },
-        }),
-      ],
-    );
+    const wrapped = withEnrichers(provider({ services: [entry()], incidents: [] }), [
+      enricher({
+        indicator: 'major',
+        incidents: [{ service: 'steam', name: 'User reports indicate problems' }],
+        raw: { reports: 200 },
+      }),
+    ]);
 
     const result = await wrapped.lookup('steam');
     const svc = (result.data as { services: StatusServiceEntry[] }).services[0];
@@ -682,9 +766,8 @@ describe('enrichment (cross-provider signal injection)', () => {
       [enricher({ indicator: 'minor' })],
     );
 
-    const svc = (
-      (await wrapped.lookup('steam')).data as { services: StatusServiceEntry[] }
-    ).services[0];
+    const svc = ((await wrapped.lookup('steam')).data as { services: StatusServiceEntry[] })
+      .services[0];
     expect(svc.indicator).toBe('critical');
     expect(svc.status).toBe('Total Outage');
     expect(svc.operational).toBe(false);
@@ -783,7 +866,12 @@ describe('ubisoftToSummary', () => {
       gameStatuses: [
         { name: 'A - PC', status: 'online', isMaintenance: false, impactedFeatures: [] },
         { name: 'B - PC', status: 'online', isMaintenance: true, impactedFeatures: [] },
-        { name: 'C - PC', status: 'online', isMaintenance: false, impactedFeatures: ['Matchmaking'] },
+        {
+          name: 'C - PC',
+          status: 'online',
+          isMaintenance: false,
+          impactedFeatures: ['Matchmaking'],
+        },
         { name: 'D - PC', status: 'interrupted', isMaintenance: false, impactedFeatures: [] },
       ],
     });
@@ -791,7 +879,11 @@ describe('ubisoftToSummary', () => {
     expect(summary.status?.indicator).toBe('major');
     // 3 non-operational apps become incidents (maintenance, impacted, interrupted).
     expect(summary.incidents).toHaveLength(3);
-    expect(summary.incidents?.map((i) => i.name.split(':')[0])).toEqual(['B - PC', 'C - PC', 'D - PC']);
+    expect(summary.incidents?.map((i) => i.name.split(':')[0])).toEqual([
+      'B - PC',
+      'C - PC',
+      'D - PC',
+    ]);
   });
 });
 

@@ -171,7 +171,6 @@ export const STATUSPAGE_SERVICES: StatuspageProviderOptions[] = [
   },
 ];
 
-
 let _ignoredCache: { raw: string; set: Set<string> } | null = null;
 const _incidentFirstSeen = new Map<string, string>();
 
@@ -460,7 +459,7 @@ export function summaryToStatusData(
       inc.status,
       inc.url,
       inc.started_at,
-      inc.updated_at
+      inc.updated_at,
     ]);
     if (!seenKeys.has(key)) {
       seenKeys.add(key);
@@ -512,8 +511,6 @@ export function summaryToStatusData(
   };
 }
 
-
-
 /**
  * Build a status Provider backed by a native Atlassian Statuspage `summary.json`
  * endpoint. The body is already in canonical form, so it goes straight through
@@ -561,5 +558,3 @@ export function makeStatuspageProvider(opts: StatuspageProviderOptions): Provide
     },
   };
 }
-
-

@@ -1,0 +1,20 @@
+# biome.json sets lineEnding "lf", so everything it formats must be stored LF or
+# `biome format` reports every file as changed forever.
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.mjs  text eol=lf
+*.cjs  text eol=lf
+*.json text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# PowerShell is edited on Windows; keep it CRLF.
+*.ps1 text eol=crlf
+
+# Unraid templates are consumed verbatim by dockerMan — leave their bytes alone.
+*.xml -text
