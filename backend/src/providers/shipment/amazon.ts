@@ -483,9 +483,8 @@ export const amazon: Provider = {
               const descEl = row.querySelector('.tracking-event-message');
               const locEl = row.querySelector('.tracking-event-location');
 
-              if (descEl && descEl.textContent?.trim()) {
-                const timeText =
-                  timeEl && timeEl.textContent?.trim() ? ` ${timeEl.textContent.trim()}` : '';
+              if (descEl?.textContent?.trim()) {
+                const timeText = timeEl?.textContent?.trim() ? ` ${timeEl.textContent.trim()}` : '';
                 eventsList.push({
                   date: `${dateText}${timeText}`,
                   status: descEl.textContent.trim(),
@@ -517,7 +516,7 @@ export const amazon: Provider = {
                 ".a-color-secondary, .event-location, .tracking-event-location, span[class*='secondary']",
               );
 
-              if (descEl && descEl.textContent?.trim()) {
+              if (descEl?.textContent?.trim()) {
                 const timeText = timeEl ? ` ${timeEl.textContent.trim()}` : '';
                 eventsList.push({
                   date: `${dateText}${timeText}`,
@@ -557,7 +556,7 @@ export const amazon: Provider = {
         const trkMatch = pageText.match(
           /(?:Tracking\s*(?:ID|nummer|number)?|Sendungsnummer|Tracking-ID|Carrier\s*Tracking)\s*[:#-]?\s*([a-zA-Z0-9_-]{5,30})/i,
         );
-        if (trkMatch && trkMatch[1]) {
+        if (trkMatch?.[1]) {
           const rawId = trkMatch[1].trim();
           const rawIdClean = rawId.replace(
             /(?:Alle|Updates|Show|See|Details|Aktualisierungen).*$/i,

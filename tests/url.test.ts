@@ -24,7 +24,11 @@ describe('HTTP Metadata Scraper Provider', () => {
       return;
     }
     expect(result.success).toBe(true);
-    const data = result.data as any;
+    const data = result.data as {
+      landing_url?: string;
+      ssl?: { subject?: unknown };
+      meta?: { title?: string };
+    };
     expect(data.landing_url).toContain('github.com');
     expect(data.ssl).toBeDefined();
     expect(data.ssl.subject).toBeDefined();

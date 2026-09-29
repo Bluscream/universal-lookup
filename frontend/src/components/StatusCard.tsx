@@ -61,7 +61,7 @@ function IncidentStatus({ inc }: { inc: StatusIncident }) {
   if (!inc.status && !hasTimestamp) return null;
 
   let text = inc.status || 'Active';
-  let tooltip: string | undefined = undefined;
+  let tooltip: string | undefined;
 
   if (inc.scheduled_until) {
     const d = new Date(inc.scheduled_until);

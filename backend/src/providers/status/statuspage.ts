@@ -215,30 +215,25 @@ function isIgnored(name: string, ignored: Set<string>): boolean {
  * into a `StatuspageSummary` and then runs it through {@link summaryToStatusData},
  * so all providers emit an identical unified shape (and identical `raw`).
  */
+export interface StatuspageIncident {
+  name?: string;
+  status?: string | null;
+  impact?: string | null;
+  shortlink?: string | null;
+  created_at?: string | null;
+  started_at?: string | null;
+  updated_at?: string | null;
+  /** Set on scheduled maintenances only; absent on ordinary incidents. */
+  scheduled_for?: string | null;
+  scheduled_until?: string | null;
+}
+
 export interface StatuspageSummary {
   page?: { name?: string; url?: string; updated_at?: string | null };
   status?: { indicator?: string; description?: string };
   components?: unknown[];
-  incidents?: Array<{
-    name?: string;
-    status?: string | null;
-    impact?: string | null;
-    shortlink?: string | null;
-    created_at?: string | null;
-    started_at?: string | null;
-    updated_at?: string | null;
-  }>;
-  scheduled_maintenances?: Array<{
-    name?: string;
-    status?: string | null;
-    impact?: string | null;
-    shortlink?: string | null;
-    created_at?: string | null;
-    started_at?: string | null;
-    updated_at?: string | null;
-    scheduled_for?: string | null;
-    scheduled_until?: string | null;
-  }>;
+  incidents?: StatuspageIncident[];
+  scheduled_maintenances?: StatuspageIncident[];
 }
 
 /** Statuspage indicators map 1:1 to our canonical indicators. */
@@ -419,7 +414,7 @@ export function summaryToStatusData(
   const mappedIncidents = activeIncidents.map((i) => {
     const key = JSON.stringify([service, i.name || 'Incident']);
     // Prefer scheduled_for (the actual time a maintenance starts) over started_at (often just the post creation time).
-    let started = (i as any).scheduled_for || i.started_at || i.created_at || null;
+    let started = i.scheduled_for || i.started_at || i.created_at || null;
 
     // For stateless feeds (Steam, Blizzard), assign a started_at the first time we see it
     if (!started) {
@@ -439,7 +434,7 @@ export function summaryToStatusData(
       url: i.shortlink || null,
       started_at: started,
       updated_at: i.updated_at || null,
-      scheduled_until: (i as any).scheduled_until || null,
+      scheduled_until: i.scheduled_until || null,
     };
   });
 

@@ -202,7 +202,7 @@ export const amazon: Provider = {
 
     const orderNo = query.trim();
 
-    if (!orderNo || !orderNo.match(/^\d{3}-\d{7}-\d{6,7}$/)) {
+    if (!orderNo?.match(/^\d{3}-\d{7}-\d{6,7}$/)) {
       return {
         provider: PROVIDER_NAME,
         success: false,
@@ -392,7 +392,7 @@ export const amazon: Provider = {
 
         // Check if order exists
         const errorMsg = document.querySelector('.a-alert-heading');
-        if (errorMsg && errorMsg.textContent?.toLowerCase().includes('problem')) {
+        if (errorMsg?.textContent?.toLowerCase().includes('problem')) {
           const statusDescription = 'Order not found or access denied';
           return {
             itemsList,
@@ -471,7 +471,7 @@ export const amazon: Provider = {
         const statusEl = document.querySelector(
           ".js-shipment-info-container h1, .yohtmlc-order-status, .js-shipment-info-container h3, [class*='order-status']",
         );
-        if (statusEl && statusEl.textContent) {
+        if (statusEl?.textContent) {
           statusDescription = statusEl.textContent.trim();
           const lower = statusDescription.toLowerCase();
           if (lower.includes('zugestellt') || lower.includes('delivered')) {
@@ -494,7 +494,7 @@ export const amazon: Provider = {
         const addressBlock = document.querySelector(
           ".displayAddressDiv, [class*='shipping-address']",
         );
-        if (addressBlock && addressBlock.textContent) {
+        if (addressBlock?.textContent) {
           shippingAddress = addressBlock.textContent.replace(/\\s+/g, ' ').trim();
         }
 

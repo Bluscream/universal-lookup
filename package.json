@@ -30,7 +30,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -b",
-    "lint": "biome lint .",
+    "lint": "biome lint --error-on-warnings .",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run build && npm test"

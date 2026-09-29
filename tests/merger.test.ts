@@ -78,7 +78,7 @@ describe('mergeResponses', () => {
     ];
     const merged = mergeResponses(results);
     expect(merged.events).toBeDefined();
-    const events = merged.events as any[];
+    const events = merged.events as Array<{ status?: string; date?: string }>;
     expect(events.length).toBe(3);
     // Oldest-to-newest sorting
     expect(events[0].status).toBe('Picked Up');

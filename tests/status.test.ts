@@ -3,10 +3,8 @@ import { mergeResponses } from '../backend/src/lib/merger.js';
 import { activisionToSummary } from '../backend/src/providers/status/activision.js';
 import {
   companyToSummary,
-  extractCompanies,
   extractCompany,
   metricsOf,
-  parseCrowdMap,
   parseServiceSpecs,
 } from '../backend/src/providers/status/allestoerungen.js';
 import {

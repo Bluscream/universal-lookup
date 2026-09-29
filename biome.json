@@ -4,11 +4,11 @@
   "files": {
     "includes": [
       "**",
-      "!**/dist/**",
-      "!**/node_modules/**",
-      "!**/.references/**",
-      "!**/data/**",
-      "!**/.playwright-mcp/**"
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.references",
+      "!**/data",
+      "!**/.playwright-mcp"
     ]
   },
   "linter": {

@@ -9,8 +9,6 @@
  */
 const SI = (slug: string) => `https://cdn.simpleicons.org/${slug}`;
 const MDI = (name: string) => `https://api.iconify.design/mdi/${name}.svg`;
-/** Arbitrary Iconify icon, for brands not in Simple Icons (e.g. `ri/openai-fill`). */
-const IC = (path: string) => `https://api.iconify.design/${path}.svg`;
 
 const SERVICE_ICON_URL: Record<string, string> = {
   steam: SI('steam'),
