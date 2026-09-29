@@ -18,6 +18,7 @@ import { lookupTel } from '../providers/tel/index.js';
 import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
 import type { DualPromiseResult } from '../lib/providers.js';
+import { LOOKUP_TYPES } from '../types/common.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
 /** Signature shared by every `lookup<Type>()` orchestrator. */
@@ -252,8 +253,7 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
     return reply.type('text/html').send(html);
   };
 
-  const typePattern =
-    'tel|ip|domain|email|location|parcel|shipment|web|steam|url|apk|order|status|auto';
+  const typePattern = LOOKUP_TYPES.join('|');
 
   app.get<{
     Params: { type: string; query: string };

@@ -14,6 +14,7 @@ import { ensureMaxmindDbs } from './lib/maxmind-downloader.js';
 import { resolvePuppeteerExecutablePath } from './lib/puppeteer.js';
 import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
 import { registerDocsRoutes } from './routes/docs.js';
+import { LOOKUP_TYPES } from './types/common.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -67,16 +68,25 @@ async function main() {
     allowList: ['127.0.0.1', '::1'],
   });
 
-  // Auth hook — if REQUIRE_TOKEN is set, validate token on /api/v1/* routes
+  // Every lookup route, under whichever prefix it was reached by.
+  const PROTECTED_ROUTES = ['/lookup', ...LOOKUP_TYPES.map((t) => `/${t}`)];
+
+  // Auth hook — if REQUIRE_TOKEN is set, validate the token on every lookup route
   if (config.requireToken) {
     app.addHook('onRequest', async (request, reply) => {
-      const path = request.url;
-      // Only protect /api/v1/* routes (not /docs, / frontend, etc.)
-      if (
-        !path.startsWith(`${API_PREFIX}/`) ||
-        path.startsWith(`${API_PREFIX}/health`) ||
-        path.startsWith(`${API_PREFIX}/types`)
-      ) {
+      // The lookup routes are registered under three prefixes (/api/v1, /api and
+      // bare), so matching on /api/v1 alone left the other two wide open. Strip
+      // whichever prefix is present and judge the remaining route.
+      const path = request.url.split('?')[0];
+      const route = path.startsWith(`${API_PREFIX}/`)
+        ? path.slice(API_PREFIX.length)
+        : path.startsWith('/api/')
+          ? path.slice('/api'.length)
+          : path;
+
+      // Leaves the frontend, /docs, /health and /types alone — none of them are
+      // lookup routes, so none of them match.
+      if (!PROTECTED_ROUTES.some((r) => route === r || route.startsWith(`${r}/`))) {
         return;
       }
 
@@ -85,7 +95,7 @@ async function main() {
         request.headers.authorization?.replace(/^Bearer\s+/i, '');
 
       if (token !== config.requireToken) {
-        reply.code(401).send({
+        return reply.code(401).send({
           success: false,
           error: 'Unauthorized — provide a valid token via ?token= or Authorization: Bearer header',
         });

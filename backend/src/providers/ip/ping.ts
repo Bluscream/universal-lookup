@@ -1,10 +1,11 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { platform } from 'node:os';
 import { promisify } from 'node:util';
 import { config } from '../../config.js';
+import { isValidHost } from '../../lib/normalizer.js';
 import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const PROVIDER_NAME = 'ping';
 
 export const pingProvider: Provider = {
@@ -16,10 +17,24 @@ export const pingProvider: Provider = {
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult<IpData>> {
     const start = Date.now();
     try {
+      if (!isValidHost(query)) {
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: { ping_alive: false },
+          error: 'Invalid host',
+          duration: Date.now() - start,
+        };
+      }
       const isWin = platform() === 'win32';
       const t = Math.max(1, Math.floor(config.serverTimeout / 1000));
-      const cmd = isWin ? `ping -n 3 -w ${t * 1000} ${query}` : `ping -c 3 -W ${t} ${query}`;
-      const { stdout } = await execAsync(cmd, { timeout: config.serverTimeout + 2000 });
+      // argv array, never a shell string: the host must not be able to reach /bin/sh.
+      const args = isWin
+        ? ['-n', '3', '-w', String(t * 1000), query]
+        : ['-c', '3', '-W', String(t), query];
+      const { stdout } = await execFileAsync('ping', args, {
+        timeout: config.serverTimeout + 2000,
+      });
       return {
         provider: PROVIDER_NAME,
         success: true,

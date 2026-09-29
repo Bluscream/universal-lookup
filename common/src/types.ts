@@ -1,19 +1,26 @@
-/** Supported lookup types */
-export type LookupType =
-  | 'tel'
-  | 'ip'
-  | 'domain'
-  | 'email'
-  | 'location'
-  | 'parcel'
-  | 'shipment'
-  | 'web'
-  | 'steam'
-  | 'url'
-  | 'apk'
-  | 'order'
-  | 'status'
-  | 'auto';
+/**
+ * Supported lookup types. Single source of truth: the route matcher and the auth
+ * hook both derive from this, so a new type cannot be added to one and missed by
+ * the other.
+ */
+export const LOOKUP_TYPES = [
+  'tel',
+  'ip',
+  'domain',
+  'email',
+  'location',
+  'parcel',
+  'shipment',
+  'web',
+  'steam',
+  'url',
+  'apk',
+  'order',
+  'status',
+  'auto',
+] as const;
+
+export type LookupType = (typeof LOOKUP_TYPES)[number];
 
 export interface SearchResult {
   title: string;

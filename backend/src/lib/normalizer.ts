@@ -85,6 +85,24 @@ export async function normalizeIp(input: string): Promise<string> {
   return cleaned;
 }
 
+/** Longest legal DNS name, per RFC 1035. */
+const MAX_HOSTNAME_LENGTH = 253;
+const HOSTNAME_PATTERN =
+  /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\.?$/i;
+
+/**
+ * Whether a value is safe to hand to a network tool as a target host.
+ *
+ * `normalizeIp` deliberately passes through anything it cannot resolve, so its
+ * output can still carry arbitrary characters. Any caller that puts the value on
+ * a command line must gate on this first.
+ */
+export function isValidHost(value: string): boolean {
+  if (!value || value.length > MAX_HOSTNAME_LENGTH) return false;
+  if (isIP(value)) return true;
+  return HOSTNAME_PATTERN.test(value);
+}
+
 /**
  * Normalize an email address.
  */

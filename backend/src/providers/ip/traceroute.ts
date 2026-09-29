@@ -1,10 +1,11 @@
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { platform } from 'node:os';
 import { promisify } from 'node:util';
 import { config } from '../../config.js';
+import { isValidHost } from '../../lib/normalizer.js';
 import type { IpData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const PROVIDER_NAME = 'traceroute';
 
 export const tracerouteProvider: Provider = {
@@ -16,13 +17,24 @@ export const tracerouteProvider: Provider = {
   async lookup(query: string, _type?: LookupType): Promise<ProviderResult<IpData>> {
     const start = Date.now();
     try {
+      if (!isValidHost(query)) {
+        return {
+          provider: PROVIDER_NAME,
+          success: false,
+          data: {},
+          error: 'Invalid host',
+          duration: Date.now() - start,
+        };
+      }
       const isWin = platform() === 'win32';
       const maxHops = 15;
-      const cmd = isWin
-        ? `tracert -d -h ${maxHops} -w 1000 ${query}`
-        : `traceroute -n -m ${maxHops} -w 1 ${query}`;
+      // argv array, never a shell string: the host must not be able to reach /bin/sh.
+      const bin = isWin ? 'tracert' : 'traceroute';
+      const args = isWin
+        ? ['-d', '-h', String(maxHops), '-w', '1000', query]
+        : ['-n', '-m', String(maxHops), '-w', '1', query];
 
-      const { stdout } = await execAsync(cmd, {
+      const { stdout } = await execFileAsync(bin, args, {
         timeout: Math.min(config.serverTimeout * 2, 30000),
       });
 
