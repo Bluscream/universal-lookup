@@ -9,11 +9,73 @@ const PROVIDER_NAME = 'fritzbox';
  * Optional — requires FRITZBOX_HOST, FRITZBOX_USER, FRITZBOX_PASS.
  */
 
-// In-memory cache for phonebook XML
-const phonebookCache: Record<number, { data: string; timestamp: number }> = {};
-const PHONEBOOK_CACHE_TTL = 60 * 60 * 1000; // 1 hour
-/** Which phonebook IDs the box reports, cached on the same TTL as their contents. */
+/**
+ * A downloaded phonebook, kept with the box's own `<timestamp>` so it can be
+ * revalidated instead of re-downloaded, and with a number index so a lookup
+ * does not rescan the XML.
+ */
+interface CachedBook {
+  data: string;
+  fetchedAt: number;
+  /** The `<timestamp>` the box reported for this book — its version marker. */
+  bookTs: string;
+  index: Map<string, { xml: string; type: string }>;
+}
+const phonebookCache: Record<number, CachedBook> = {};
+/** Which phonebook IDs the box reports, cached on the phonebook TTL. */
 let phonebookIdCache: { ids: number[]; timestamp: number } | null = null;
+/**
+ * Book ID to name, so a skipped book can be skipped without even the SOAP call
+ * that would name it. Learned from the GetPhonebook reply, dropped with the ID
+ * cache.
+ */
+const bookNameCache: Record<number, string> = {};
+
+/**
+ * How many trailing digits identify a number.
+ *
+ * Phonebook entries are stored as a human typed them, and on the box this was
+ * tested against 40 of 82 external numbers carried dashes or spaces —
+ * `030-123-456789`, `01577 1234567` — so comparing the stored text against a
+ * normalized query found fewer than half of them. Reducing both sides to their
+ * trailing digits makes the comparison independent of punctuation and of
+ * whether the entry was written `+49…`, `0049…` or `0…`.
+ *
+ * Nine digits is long enough that two different subscribers colliding is not a
+ * practical concern, while still matching a national number against the same
+ * number written in international form.
+ */
+const SIGNIFICANT_DIGITS = 9;
+
+/** The comparison key for a phone number, in any notation. */
+function numberKey(raw: string): string {
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  return digits.length > SIGNIFICANT_DIGITS ? digits.slice(-SIGNIFICANT_DIGITS) : digits;
+}
+
+/**
+ * Index every number in a phonebook by its comparison key.
+ *
+ * Built once per download rather than per lookup: the previous scan compiled a
+ * fresh RegExp for every contact times every query spelling, on data that was
+ * already cached.
+ */
+function buildIndex(xml: string): Map<string, { xml: string; type: string }> {
+  const index = new Map<string, { xml: string; type: string }>();
+  for (const chunk of xml.split('</contact>')) {
+    const startIdx = chunk.indexOf('<contact>');
+    if (startIdx === -1) continue;
+    const contactXml = `${chunk.substring(startIdx)}</contact>`;
+    for (const m of contactXml.matchAll(/<number([^>]*)>([^<]*)<\/number>/g)) {
+      const key = numberKey(m[2]);
+      // First contact wins, matching the order the old sequential scan used.
+      if (!key || index.has(key)) continue;
+      index.set(key, { xml: contactXml, type: m[1].match(/type="([^"]*)"/)?.[1] || 'unknown' });
+    }
+  }
+  return index;
+}
 
 /**
  * Should this phonebook be left undownloaded?
@@ -34,6 +96,7 @@ function isSkippedPhonebook(name: string): boolean {
 /** Reset the module caches. Tests, and anything that reconfigures the box. */
 export function clearFritzboxPhonebookCache(): void {
   for (const key of Object.keys(phonebookCache)) delete phonebookCache[Number(key)];
+  for (const key of Object.keys(bookNameCache)) delete bookNameCache[Number(key)];
   phonebookIdCache = null;
 }
 
@@ -155,7 +218,7 @@ export const fritzbox: Provider = {
       if (!authHeader) authHeader = await getAuth();
       let phonebookIds: number[];
       const cachedIds = phonebookIdCache;
-      if (cachedIds && Date.now() - cachedIds.timestamp < PHONEBOOK_CACHE_TTL) {
+      if (cachedIds && Date.now() - cachedIds.timestamp < config.fritzboxPhonebookTtl * 1000) {
         phonebookIds = cachedIds.ids;
       } else {
         const listResp = await performSoapRequest(
@@ -176,101 +239,114 @@ export const fritzbox: Provider = {
         phonebookIdCache = { ids: phonebookIds, timestamp: Date.now() };
       }
 
-      for (const id of phonebookIds) {
-        let pbData: string;
-        const now = Date.now();
+      // The keys this query can match under, computed the same way the index
+      // was built so notation on either side is irrelevant.
+      const searchKeys = [numberKey(numClean)];
+      if (config.phoneLocalPrefix && numClean.startsWith(config.phoneLocalPrefix)) {
+        // A contact stored without the area code still has to be found.
+        const localKey = numberKey(numClean.substring(config.phoneLocalPrefix.length));
+        if (localKey) searchKeys.push(localKey);
+      }
 
-        // Check cache
-        if (phonebookCache[id] && now - phonebookCache[id].timestamp < PHONEBOOK_CACHE_TTL) {
-          pbData = phonebookCache[id].data;
+      for (const id of phonebookIds) {
+        const now = Date.now();
+        const cached = phonebookCache[id];
+        const age = cached ? now - cached.fetchedAt : Number.POSITIVE_INFINITY;
+        let book: CachedBook | undefined;
+
+        if (cached && age < config.fritzboxPhonebookRevalidate * 1000) {
+          book = cached;
+        } else if (bookNameCache[id] !== undefined && isSkippedPhonebook(bookNameCache[id])) {
+          // Already known to be a skipped book — no need to ask the box again.
+          continue;
         } else {
-          // Fetch URL
+          // A fresh GetPhonebook is needed regardless: the download URL carries
+          // a session id that expires. It also names the book.
           if (!authHeader) authHeader = await getAuth();
           const resp = await performSoapRequest(getSoapBody(id), authHeader);
-          if (resp.status !== 200) continue;
+          if (resp.status !== 200) {
+            // Serving a stale copy beats losing the book over one failed call.
+            if (!cached) continue;
+            book = cached;
+          } else {
+            // Skip a book by name *before* downloading it — the SOAP reply is a
+            // few hundred bytes while the book itself can be hundreds of KB. On
+            // the box this was tested against the call-barring list alone was
+            // 315 KB of a 360 KB total (~87%), and holds no contacts worth
+            // resolving a caller against.
+            const nameMatch = resp.data.match(/<NewPhonebookName>([^<]*)<\/NewPhonebookName>/);
+            const pbName = nameMatch ? nameMatch[1] : '';
+            if (pbName) bookNameCache[id] = pbName;
+            if (pbName && isSkippedPhonebook(pbName)) continue;
 
-          // Skip a book by name *before* downloading it — the SOAP reply is a
-          // few hundred bytes while the book itself can be hundreds of KB. On
-          // the box this was tested against the call-barring list alone was
-          // 315 KB of a 360 KB total (~87%), and holds no contacts worth
-          // resolving a caller against.
-          const nameMatch = resp.data.match(/<NewPhonebookName>([^<]*)<\/NewPhonebookName>/);
-          const pbName = nameMatch ? nameMatch[1] : '';
-          if (pbName && isSkippedPhonebook(pbName)) continue;
+            const urlMatch = resp.data.match(/<NewPhonebookURL>([^<]+)<\/NewPhonebookURL>/);
+            if (!urlMatch) {
+              if (!cached) continue;
+              book = cached;
+            } else {
+              // Always the URL the box gave us: the TR-064 index is not the
+              // internal pbid, so a hand-built phonebook.lua?pbid=<index> can
+              // return an empty book with HTTP 200 and no error at all.
+              const phonebookUrl = urlMatch[1].replace(/&amp;/g, '&');
 
-          const urlMatch = resp.data.match(/<NewPhonebookURL>([^<]+)<\/NewPhonebookURL>/);
-          if (!urlMatch) continue;
+              // Revalidate rather than re-download. phonebook.lua takes a
+              // `timestamp` parameter and answers an unchanged book with just
+              // its header — measured at ~220 bytes against 16–315 KB for the
+              // book itself, 1,076 bytes to prove all five are current. Past
+              // the TTL, download unconditionally as a safety net.
+              const conditional = !!cached?.bookTs && age < config.fritzboxPhonebookTtl * 1000;
+              const sep = phonebookUrl.includes('?') ? '&' : '?';
+              const fetchUrl = conditional
+                ? `${phonebookUrl}${sep}timestamp=${cached?.bookTs}`
+                : phonebookUrl;
 
-          // Always the URL the box gave us: the TR-064 index is not the
-          // internal pbid, so a hand-built phonebook.lua?pbid=<index> can
-          // return an empty book with HTTP 200 and no error at all.
-          const phonebookUrl = urlMatch[1].replace(/&amp;/g, '&');
-          const pbResp = await axios.get(phonebookUrl, {
-            timeout: config.serverTimeout,
-            httpsAgent,
-          });
-          pbData = pbResp.data as string;
+              const pbResp = await axios.get(fetchUrl, {
+                timeout: config.serverTimeout,
+                httpsAgent,
+                // The book is XML to be matched as text, so keep it as sent
+                // rather than letting axios guess at a parse.
+                responseType: 'text',
+                transformResponse: [(d) => d],
+              });
+              const pbData = pbResp.data as string;
+              const bookTs = pbData.match(/<timestamp>(\d+)<\/timestamp>/)?.[1] ?? '';
 
-          // Save to cache
-          phonebookCache[id] = { data: pbData, timestamp: now };
-        }
-
-        // Precise search
-        const contacts = pbData.split('</contact>');
-        const searchTerms = [
-          numClean,
-          numClean.replace(/^00/, '+'),
-          numClean.replace(/^0049/, '0'),
-          numClean.replace(/^0049/, ''),
-        ];
-
-        // Add local version if prefix is configured
-        if (config.phoneLocalPrefix && numClean.startsWith(config.phoneLocalPrefix)) {
-          const localNum = numClean.substring(config.phoneLocalPrefix.length);
-          if (localNum) searchTerms.push(localNum);
-        }
-
-        for (let contactXml of contacts) {
-          const startIdx = contactXml.indexOf('<contact>');
-          if (startIdx === -1) continue;
-          contactXml = `${contactXml.substring(startIdx)}</contact>`;
-
-          for (const term of searchTerms) {
-            const termEscaped = term.replace('+', '\\+');
-            // Regex to match the number and capture its type attribute
-            const numberRegex = new RegExp(
-              `<number[^>]*type="([^"]*)"[^>]*>${termEscaped}<\\/number>`,
-              'i',
-            );
-            const match = contactXml.match(numberRegex);
-
-            if (match) {
-              const type = match[1] || 'unknown';
-
-              // 1. Basic Info
-              const nameMatch = contactXml.match(/<realName>([^<]+)<\/realName>/);
-              if (nameMatch) data.name = nameMatch[1];
-
-              data.number_type = type;
-
-              // 2. Emails
-              const emailMatches = [...contactXml.matchAll(/<email[^>]*>([^<]+)<\/email>/g)];
-              if (emailMatches.length > 0) {
-                data.emails = emailMatches.map((m) => m[1]);
+              // "Unchanged" is the box echoing our timestamp back with no
+              // contacts. Requiring both means a book that was genuinely
+              // emptied still refreshes, since emptying it moves the timestamp.
+              if (conditional && bookTs === cached?.bookTs && !pbData.includes('<contact>')) {
+                cached.fetchedAt = now;
+                book = cached;
+              } else {
+                book = { data: pbData, fetchedAt: now, bookTs, index: buildIndex(pbData) };
+                phonebookCache[id] = book;
               }
-
-              // 3. Photo
-              const photoMatch = contactXml.match(/<imageURL>([^<]+)<\/imageURL>/);
-              if (photoMatch) {
-                const url = photoMatch[1];
-                data.photo_url = url.startsWith('/') ? `${baseUrl}${url}` : url;
-              }
-
-              rawMatch = contactXml;
-              break;
             }
           }
-          if (data.name) break;
+        }
+
+        for (const key of searchKeys) {
+          const hit = book.index.get(key);
+          if (!hit) continue;
+
+          const nameMatch = hit.xml.match(/<realName>([^<]+)<\/realName>/);
+          if (nameMatch) data.name = nameMatch[1];
+
+          data.number_type = hit.type;
+
+          const emailMatches = [...hit.xml.matchAll(/<email[^>]*>([^<]+)<\/email>/g)];
+          if (emailMatches.length > 0) {
+            data.emails = emailMatches.map((m) => m[1]);
+          }
+
+          const photoMatch = hit.xml.match(/<imageURL>([^<]+)<\/imageURL>/);
+          if (photoMatch) {
+            const url = photoMatch[1];
+            data.photo_url = url.startsWith('/') ? `${baseUrl}${url}` : url;
+          }
+
+          rawMatch = hit.xml;
+          break;
         }
         if (data.name) break;
       }

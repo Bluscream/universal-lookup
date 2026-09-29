@@ -94,6 +94,15 @@ export const config = {
     'FRITZBOX_SKIP_PHONEBOOKS',
     'Blocklist,Call locks,Sperrliste,Tellows',
   ),
+  // How long a downloaded phonebook is trusted without asking the box at all.
+  // Kept short because revalidating is nearly free: phonebook.lua honours a
+  // `timestamp` query parameter and answers an unchanged book with ~220 bytes
+  // instead of the whole thing, so a new contact shows up within a minute
+  // rather than within an hour.
+  fritzboxPhonebookRevalidate: envInt('FRITZBOX_PHONEBOOK_REVALIDATE', 60),
+  // Safety net: after this long a book is downloaded unconditionally, in case a
+  // box ever reports a timestamp that does not move when its contents do.
+  fritzboxPhonebookTtl: envInt('FRITZBOX_PHONEBOOK_TTL', 3600),
   phoneCountryPrefix: env('PHONE_COUNTRY_PREFIX', '0049'),
   phoneLocalPrefix: env('PHONE_LOCAL_PREFIX'), // e.g. 6131
   get phoneLocalPrefixFull(): string {
