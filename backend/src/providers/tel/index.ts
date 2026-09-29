@@ -11,12 +11,14 @@ import { dasoertliche } from './dasoertliche.js';
 import { dastelefonbuch } from './dastelefonbuch.js';
 import { emergencyProvider } from './emergency.js';
 import { fritzbox } from './fritzbox.js';
+import { phoneblock } from './phoneblock.js';
 import { tellows } from './tellows.js';
 
 const ALL_PROVIDERS: Provider[] = [
   emergencyProvider,
   fritzbox,
   tellows,
+  phoneblock,
   dastelefonbuch,
   provider11880,
   dasoertliche,

@@ -49,6 +49,25 @@ export interface TelData {
   provider?: string | null;
   comments?: Array<{ text: string; date?: string; score?: number; author?: string }> | null;
   street?: string | null;
+  /** PhoneBlock community rating code, ordered A_LEGITIMATE (best) to G_FRAUD (worst). */
+  phoneblock_rating?: string | null;
+  phoneblock_rating_label?: string | null;
+  /** Decay-aware spam-vote equivalent (~4 month half-life), not a raw vote count. */
+  phoneblock_votes?: number | null;
+  /** Decay-aware spam votes for the surrounding number range. */
+  phoneblock_votes_wildcard?: number | null;
+  /** Confidence 0-100 that the number is spam; the intended spam-or-not signal. */
+  phoneblock_spam_confidence?: number | null;
+  /** Recent-activity rate in reports per day (~2 week half-life). */
+  phoneblock_heat?: number | null;
+  /** Lifetime count of intercepted calls; does not decay. */
+  phoneblock_calls?: number | null;
+  phoneblock_whitelisted?: boolean | null;
+  phoneblock_blacklisted?: boolean | null;
+  phoneblock_date_added?: string | null;
+  phoneblock_last_update?: string | null;
+  phoneblock_user_comment?: string | null;
+  phoneblock_location?: string | null;
   [key: string]: unknown;
 }
 

@@ -46,6 +46,7 @@ export const config = {
   ipApiComKey: env('IP_API_COM_KEY'),
   ipApiIoKey: env('IP_API_IO_KEY'),
   tellowsApiKey: env('TELLOWS_API_KEY'),
+  phoneblockApiKey: env('PHONEBLOCK_API_KEY'),
   maxmindLicenseKey: env('MAXMIND_LICENSE_KEY'),
   maxmindDbPath: env('MAXMIND_DB_PATH', './data/maxmind'),
   googleApiKey: env('GOOGLE_API_KEY'),
@@ -88,7 +89,7 @@ export const config = {
   // Providers configuration
   providersTel: env(
     'PROVIDERS_TEL',
-    'emergency,fritzbox,tellows,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo',
+    'emergency,fritzbox,tellows,phoneblock,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo',
   ),
   providersIp: env(
     'PROVIDERS_IP',
