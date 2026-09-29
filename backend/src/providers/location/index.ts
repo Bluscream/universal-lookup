@@ -24,5 +24,8 @@ export function lookupLocation(query: string, type?: LookupType): DualPromiseRes
   return executeProvidersBackground(providers, query, type);
 }
 
+/** Every provider registered for this lookup type, in registry order. */
+export const PROVIDERS = ALL_PROVIDERS;
+
 /** Names of every provider registered for this lookup type. */
-export const PROVIDER_NAMES: string[] = ALL_PROVIDERS.map((p) => p.name);
+export const PROVIDER_NAMES: string[] = PROVIDERS.map((p) => p.name);
