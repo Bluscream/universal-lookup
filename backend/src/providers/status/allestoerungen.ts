@@ -1,4 +1,5 @@
 import { config } from '../../config.js';
+import { CircuitBreaker } from '../../lib/circuit-breaker.js';
 import type {
   LookupType,
   Provider,
@@ -314,6 +315,17 @@ interface CacheEntry {
   company: AllestoerungenCompany;
 }
 
+/**
+ * Guards the headless-Chromium escalation below. Every fetch was failing with a
+ * navigation timeout and nothing remembered it, so each request paid ~a minute
+ * of browser CPU again.
+ */
+const BREAKER_KEY = 'browser';
+const browserBreaker = new CircuitBreaker('allestörungen', {
+  threshold: config.statusAllestoerungenBreakerThreshold,
+  cooldownMs: config.statusAllestoerungenBreakerCooldown * 1000,
+});
+
 const pageCache = new Map<string, CacheEntry>();
 let snapshot: { at: number; companies: Map<string, AllestoerungenCompany> } | null = null;
 let snapshotInFlight: Promise<Map<string, AllestoerungenCompany>> | null = null;
@@ -325,6 +337,7 @@ export function clearAllestoerungenCache(): void {
   snapshot = null;
   snapshotInFlight = null;
   lastRequestAt = 0;
+  browserBreaker.reset();
 }
 
 export function statusPageUrl(slug: string): string {
@@ -386,15 +399,37 @@ async function fetchPage(url: string): Promise<string> {
 
   if (!config.statusAllestoerungenUseBrowser) throw firstError;
 
+  // The browser escalation is by far the most expensive thing this service
+  // does, and when it fails it tends to fail for every page — a site-wide
+  // block or a navigation that never settles. One key for the whole host, so
+  // three failures stop it rather than three per URL.
+  if (browserBreaker.isOpen(BREAKER_KEY)) {
+    throw new Error(
+      `Browser fallback skipped: ${Math.round(browserBreaker.retryInMs(BREAKER_KEY) / 1000)}s` +
+        ` left of cooldown after repeated failures (${String(firstError)})`,
+    );
+  }
+
   // This host serves a Cloudflare *managed* challenge, which only a real
   // browser clears.
   const { scrapeWithBrowser } = await import('../../lib/puppeteer.js');
-  const html = await scrapeWithBrowser(url);
+  let html: string;
+  try {
+    html = await scrapeWithBrowser(url);
+  } catch (error) {
+    browserBreaker.recordFailure(
+      BREAKER_KEY,
+      error instanceof Error ? error.message.split('\n')[0] : String(error),
+    );
+    throw error;
+  }
   if (!isUsable(html)) {
+    browserBreaker.recordFailure(BREAKER_KEY, 'no status data in browser fetch');
     throw new Error(
       `Blocked by Cloudflare and no status data in fallback fetch (${String(firstError)})`,
     );
   }
+  browserBreaker.recordSuccess(BREAKER_KEY);
   return html;
 }
 

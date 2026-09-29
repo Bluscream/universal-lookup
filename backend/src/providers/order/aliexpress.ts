@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import puppeteer, { type Browser, type CookieParam, type Page } from 'puppeteer';
+import type { Browser, CookieParam, Page } from 'puppeteer';
 import { config } from '../../config.js';
-import { resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
+import { launchDedicatedBrowser, resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
 import type { LookupType, OrderData, Provider, ProviderResult } from '../../types/common.js';
 
 function base32Decode(base32: string): Buffer {
@@ -90,7 +90,7 @@ function loadCookies(): CookieParam[] | null {
 
 async function launchBrowser(userDataDir?: string): Promise<Browser> {
   const executablePath = resolvePuppeteerExecutablePath();
-  return puppeteer.launch({
+  return launchDedicatedBrowser('chromium (order/aliexpress)', {
     headless: true,
     executablePath,
     userDataDir,

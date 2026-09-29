@@ -94,6 +94,15 @@ export const config = {
   // Close the shared Chromium after this long with no use. 0 disables it and
   // keeps the old behaviour of one browser for the lifetime of the process.
   puppeteerIdleTimeout: envInt('PUPPETEER_IDLE_TIMEOUT', 120000),
+  // When a navigation is considered done. 'networkidle2' waits for the network
+  // to go quiet, which never happens on a page with ads, analytics or polling —
+  // every allestörungen fetch timed out on it. Anything rendered after
+  // DOMContentLoaded should be awaited with a selector instead.
+  puppeteerWaitUntil: env('PUPPETEER_WAIT_UNTIL', 'domcontentloaded') as
+    | 'load'
+    | 'domcontentloaded'
+    | 'networkidle0'
+    | 'networkidle2',
 
   // Providers configuration
   providersTel: env(
@@ -212,6 +221,11 @@ export const config = {
   // Escalate to headless Chromium when plain HTTP is challenged.
   // Turn off on deployments without Chromium available.
   statusAllestoerungenUseBrowser: envBool('STATUS_ALLESTOERUNGEN_USE_BROWSER', true),
+  // The browser escalation is the most expensive path in the service. When it
+  // fails it fails for every page, so stop launching browsers after this many
+  // consecutive failures and retry only after the cooldown.
+  statusAllestoerungenBreakerThreshold: envInt('STATUS_ALLESTOERUNGEN_BREAKER_THRESHOLD', 3),
+  statusAllestoerungenBreakerCooldown: envInt('STATUS_ALLESTOERUNGEN_BREAKER_COOLDOWN', 900), // 15 min
   // Recurring maintenance windows injected as incidents while they're open.
   // Comma-separated `service:day:startHour-endHour[:Name]`, day 0=Sunday, hours
   // UTC — e.g. "steam:2:23-24:Weekly maintenance".

@@ -1,9 +1,9 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import puppeteer, { type Browser, type Cookie, type CookieParam, type Page } from 'puppeteer';
+import type { Browser, Cookie, CookieParam, Page } from 'puppeteer';
 import { config } from '../../config.js';
-import { resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
+import { launchDedicatedBrowser, resolvePuppeteerExecutablePath } from '../../lib/puppeteer.js';
 import type { LookupType, ParcelData, Provider, ProviderResult } from '../../types/common.js';
 
 const PROVIDER_NAME = 'amazon';
@@ -233,7 +233,7 @@ export const amazon: Provider = {
         fs.mkdirSync(userDataDir, { recursive: true });
       }
 
-      browser = await puppeteer.launch({
+      browser = await launchDedicatedBrowser('chromium (shipment/amazon)', {
         userDataDir,
         headless: true,
         executablePath: resolvePuppeteerExecutablePath(),
