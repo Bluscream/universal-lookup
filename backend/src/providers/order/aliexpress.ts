@@ -144,7 +144,7 @@ async function doLogin(page: Page, username: string, password: string): Promise<
   // Email input (cosmos design system)
   const emailInput = await page.$('.cosmos-input');
   if (!emailInput) throw new Error('AliExpress login: email input (.cosmos-input) not found');
-  await emailInput.click({ clickCount: 3 });
+  await emailInput.click({ count: 3 }); // triple-click to select any prefilled value
   await emailInput.type(username, { delay: 60 });
   await page.keyboard.press('Enter');
   await new Promise((r) => setTimeout(r, 2000));

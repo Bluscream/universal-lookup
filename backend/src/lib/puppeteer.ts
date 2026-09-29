@@ -22,9 +22,16 @@ export function resolvePuppeteerExecutablePath(): string | undefined {
   }
 
   const fromEnv = config.puppeteerExecutablePath.trim();
-  if (fromEnv) {
+  if (fromEnv && existsSync(fromEnv)) {
     resolvedExecutablePath = fromEnv;
     return fromEnv;
+  }
+  if (fromEnv) {
+    // Taking the configured path on faith produces "Browser was not found at the
+    // configured executablePath" at first use, long after the setting was made.
+    console.warn(
+      `⚠️  PUPPETEER_EXECUTABLE_PATH is set to ${fromEnv}, which does not exist — falling back to auto-detection`,
+    );
   }
 
   for (const candidate of CHROMIUM_CANDIDATES) {
