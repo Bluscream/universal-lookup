@@ -4,6 +4,12 @@ data/
 **/node_modules
 **/dist
 **/data
+# TypeScript incremental build state. It has to go wherever dist goes:
+# left in the context it arrives in the image while dist does not, so tsc
+# reads it, concludes the output is current, and emits nothing - and the
+# build then fails on the missing declarations. Git ignores these too, so a
+# build from a clean export never hit it; one from a working tree does.
+**/*.tsbuildinfo
 **/.scratch
 .env
 .env.*
