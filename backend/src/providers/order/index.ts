@@ -20,3 +20,6 @@ export function lookupOrder(
 
   return executeProvidersBackground(providers, query, type, originalQuery, options);
 }
+
+/** Names of every provider registered for this lookup type. */
+export const PROVIDER_NAMES: string[] = ALL_PROVIDERS.map((p) => p.name);

@@ -21,3 +21,6 @@ export function lookupShipment(query: string, type?: LookupType): DualPromiseRes
 
   return executeProvidersBackground(providers, query, type);
 }
+
+/** Names of every provider registered for this lookup type. */
+export const PROVIDER_NAMES: string[] = ALL_PROVIDERS.map((p) => p.name);

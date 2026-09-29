@@ -1,77 +1,52 @@
 import type { FastifyInstance } from 'fastify';
+import { PROVIDER_NAMES as apkNames } from '../providers/apk/index.js';
+import { PROVIDER_NAMES as domainNames } from '../providers/domain/index.js';
+import { PROVIDER_NAMES as emailNames } from '../providers/email/index.js';
+import { PROVIDER_NAMES as ipNames } from '../providers/ip/index.js';
+import { PROVIDER_NAMES as locationNames } from '../providers/location/index.js';
+import { PROVIDER_NAMES as orderNames } from '../providers/order/index.js';
+import { PROVIDER_NAMES as parcelNames } from '../providers/parcel/index.js';
+import { PROVIDER_NAMES as shipmentNames } from '../providers/shipment/index.js';
+import { PROVIDER_NAMES as statusNames } from '../providers/status/index.js';
+import { PROVIDER_NAMES as steamNames } from '../providers/steam/index.js';
+import { PROVIDER_NAMES as telNames } from '../providers/tel/index.js';
+import { PROVIDER_NAMES as urlNames } from '../providers/url/index.js';
+import { PROVIDER_NAMES as webNames } from '../providers/web/index.js';
 
-const PROVIDER_CATEGORIES: Record<string, string> = {
-  // tel
-  tellows: 'tel',
-  fritzbox: 'tel',
-  emergency: 'tel',
-  dastelefonbuch: 'tel',
-  dasoertliche: 'tel',
-  '11880': 'tel',
-
-  // ip
-  traceroute: 'ip',
-  portscan: 'ip',
-  ping: 'ip',
-  maxmind: 'ip',
-  'ip-api-io': 'ip',
-  'ip-api-io-risk': 'ip',
-  'ip-api.com': 'ip',
-  ipapicom: 'ip',
-  ipapiio: 'ip',
-
-  // domain
-  whois: 'domain',
-  subdomain: 'domain',
-  dns: 'domain',
-
-  // email
-  'ip-api-io-email-risk': 'email',
-  'ip-api-io-email': 'email',
-  'ip-api-io-adv-email': 'email',
-  'dns-email': 'email',
-
-  // location
-  nominatim: 'location',
-  'google-maps': 'location',
-  googlemaps: 'location',
-
-  // parcel
-  pkge: 'parcel',
-  parcelsapp: 'parcel',
-  dhl: 'parcel',
-  'dhl-web': 'parcel',
-  '17track': 'parcel',
-  seventeentrack: 'parcel',
-
-  // steam
-  steamdb: 'steam',
-  'steam-xml': 'steam',
-  'steam-inventory': 'steam',
-  'steam-api': 'steam',
-  playerdb: 'steam',
-  csfloat: 'steam',
-  'backpack-tf': 'steam',
-  backpacktf: 'steam',
-
-  // url
-  virustotal: 'url',
-  urlscan: 'url',
-  metadata: 'url',
-  'ip-info': 'url',
-  ipinfo: 'url',
-  'dns-lookup': 'url',
-  dnslookup: 'url',
-
-  // apk
-  apk: 'apk',
-
-  // web
-  google: 'web',
-  bing: 'web',
-  duckduckgo: 'web',
-  yahoo: 'web',
-};
+/**
+ * Provider name -> lookup type, built from the provider registries themselves.
+ * The previous hand-written map was a fourth copy of the registry and had
+ * drifted: it misspelled six providers (ip-api-io for ip-api.io, steamdb for
+ * steam-db) and omitted phoneblock, semonto, the Amazon providers and all ~30
+ * status providers, so none of those served a schema.
+ */
+const PROVIDER_CATEGORIES: Record<string, string> = (() => {
+  const byType: Array<[string, string[]]> = [
+    ['tel', telNames],
+    ['ip', ipNames],
+    ['domain', domainNames],
+    ['email', emailNames],
+    ['location', locationNames],
+    ['parcel', parcelNames],
+    ['shipment', shipmentNames],
+    ['steam', steamNames],
+    ['url', urlNames],
+    ['apk', apkNames],
+    ['order', orderNames],
+    ['status', statusNames],
+    ['web', webNames],
+  ];
+  const map: Record<string, string> = {};
+  for (const [type, names] of byType) {
+    for (const name of names) {
+      // First registry wins, so a provider shared with the web-search
+      // fallbacks keeps its own category rather than being relabelled "web".
+      const key = name.toLowerCase();
+      if (!(key in map)) map[key] = type;
+    }
+  }
+  return map;
+})();
 
 // JSON Schemas for each CategoryData model
 const CATEGORY_SCHEMAS: Record<string, Record<string, unknown>> = {

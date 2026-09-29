@@ -38,3 +38,6 @@ export function lookupSteam(
 
   return executeProvidersBackground(providers, query, type, originalQuery);
 }
+
+/** Names of every provider registered for this lookup type. */
+export const PROVIDER_NAMES: string[] = ALL_STEAM_PROVIDERS.map((p) => p.name);

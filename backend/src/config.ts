@@ -116,6 +116,12 @@ export const config = {
     'PROVIDERS_STEAM',
     'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat,steam-db',
   ),
+  // Download sources for the apk lookup. 'googleplay' is the metadata source
+  // and is always consulted; the rest are the mirrors that are fanned out to.
+  providersApk: env(
+    'PROVIDERS_APK',
+    'googleplay,aptoide,apkpure,apkmirror,evozi,apkcombo,apkpremier,apkdl,apksupport',
+  ),
   providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,semonto,urlscan,virustotal'),
   providersOrder: env('PROVIDERS_ORDER', 'amazon,aliexpress'),
   providersStatus: env(

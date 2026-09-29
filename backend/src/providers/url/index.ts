@@ -36,3 +36,6 @@ export function lookupUrl(
 
   return executeProvidersBackground(providers, query, type, originalQuery);
 }
+
+/** Names of every provider registered for this lookup type. */
+export const PROVIDER_NAMES: string[] = ALL_URL_PROVIDERS.map((p) => p.name);

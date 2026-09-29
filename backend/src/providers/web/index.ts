@@ -281,3 +281,11 @@ export function lookupWeb(query: string, type: LookupType = 'web'): DualPromiseR
 
   return executeProvidersBackground(providers, query, type);
 }
+
+/** Names of every provider registered for this lookup type. */
+export const PROVIDER_NAMES: string[] = [
+  googleProvider,
+  bingProvider,
+  duckduckgoProvider,
+  yahooProvider,
+].map((p) => p.name);

@@ -1,4 +1,4 @@
-import { getCacheTtl } from '../../config.js';
+import { config, getCacheTtl } from '../../config.js';
 import { getCached, setCache } from '../../db/cache.js';
 import {
   type DualPromiseResult,
@@ -65,16 +65,9 @@ export const apkProvider: Provider = {
         };
       }
 
-      const results = await Promise.allSettled([
-        getAptoideDownload(pkg),
-        getApkmirrorDownload(pkg),
-        getApkpureDownload(pkg),
-        getEvoziDownload(pkg),
-        getApkComboDownload(pkg),
-        getApkPremierDownload(pkg),
-        getApkDlDownload(pkg),
-        getApkSupportDownload(pkg),
-      ]);
+      const results = await Promise.allSettled(
+        selectedMirrors().map(([, fetchDownloads]) => fetchDownloads(pkg)),
+      );
 
       const downloads: ApkDownloadInfo[] = [];
 
@@ -187,6 +180,31 @@ export const apkProvider: Provider = {
   },
 };
 
+/**
+ * Download mirrors by their PROVIDERS_APK name. 'googleplay' is not here: it is
+ * the metadata source, consulted before any of these.
+ */
+const APK_MIRRORS: Array<[string, (pkg: string) => Promise<ApkDownloadInfo[]>]> = [
+  ['aptoide', getAptoideDownload],
+  ['apkmirror', getApkmirrorDownload],
+  ['apkpure', getApkpureDownload],
+  ['evozi', getEvoziDownload],
+  ['apkcombo', getApkComboDownload],
+  ['apkpremier', getApkPremierDownload],
+  ['apkdl', getApkDlDownload],
+  ['apksupport', getApkSupportDownload],
+];
+
+function selectedMirrors(): typeof APK_MIRRORS {
+  const requested = config.providersApk
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (requested.length === 0) return APK_MIRRORS;
+  // Keep the caller's order, so the first mirror listed is tried first.
+  return requested.flatMap((name) => APK_MIRRORS.filter(([id]) => id === name));
+}
+
 const ALL_PROVIDERS: Provider[] = [apkProvider];
 
 export function lookupApk(
@@ -197,3 +215,6 @@ export function lookupApk(
   const providers = filterAndSortProviders(ALL_PROVIDERS);
   return executeProvidersBackground(providers, query, type, originalQuery);
 }
+
+/** Names of every provider registered for this lookup type. */
+export const PROVIDER_NAMES: string[] = ALL_PROVIDERS.map((p) => p.name);
