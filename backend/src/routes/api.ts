@@ -330,14 +330,14 @@ async function handleLookup(
   // Handle special emergency numbers
   let specialInfo: { name: string; number_type: string } | null = null;
   if (resolvedType === 'tel') {
-    if (normalizedLower in SPECIAL_NUMBERS) {
+    if (Object.hasOwn(SPECIAL_NUMBERS, normalizedLower)) {
       specialInfo = SPECIAL_NUMBERS[normalizedLower];
     }
   }
 
   // Check cache (unless ?fresh=true)
   if (!forceFresh) {
-    const cached = getCached(type, normalizedQuery);
+    const cached = getCached(resolvedType, normalizedQuery);
     if (cached) {
       // Update request metadata for this specific request
       cached.request.time = new Date().toISOString();
@@ -439,7 +439,7 @@ async function handleLookup(
 
   // Cache the initial response (with full raw for potential future ?raw requests)
   const fullResponse = { ...response, raw: collectRaw(clientResults) };
-  setCache(type, normalizedQuery, fullResponse, getCacheTtl(type));
+  setCache(resolvedType, normalizedQuery, fullResponse, getCacheTtl(resolvedType));
 
   // Background caching: wait for server promise and update cache if needed
   if (serverPromise) {
@@ -467,7 +467,7 @@ async function handleLookup(
             query: normalizedQuery,
           },
         };
-        setCache(type, normalizedQuery, finalResponse, getCacheTtl(type));
+        setCache(resolvedType, normalizedQuery, finalResponse, getCacheTtl(resolvedType));
       })
       .catch(() => {
         // Ignore background errors

@@ -68,12 +68,17 @@ export function executeProvidersBackground(
 ): DualPromiseResult {
   // Wrap each provider execution in a promise that respects the SERVER_TIMEOUT
   const providerPromises = providers.map(async (provider) => {
+    // Losing the race does not cancel the timer, and a /status fan-out starts
+    // ~30 of these. Left uncleared they hold the event loop open for the full
+    // SERVER_TIMEOUT after the response has already been sent, which is why
+    // the process did not exit promptly on SIGTERM.
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const result = await Promise.race([
         provider.lookup(query, type, originalQuery, options),
-        new Promise<ProviderResult>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), config.serverTimeout),
-        ),
+        new Promise<ProviderResult>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Timeout')), config.serverTimeout);
+        }),
       ]);
       return result;
     } catch (error) {
@@ -84,29 +89,36 @@ export function executeProvidersBackground(
         error: error instanceof Error ? error.message : String(error),
         duration: config.serverTimeout,
       };
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
     }
   });
 
   // Client promise: Waits up to CLIENT_TIMEOUT for whatever has finished
   const clientPromise = Promise.all(
-    providerPromises.map((p, index) =>
-      Promise.race([
-        p,
-        new Promise<ProviderResult>((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                provider: providers[index].name,
-                success: false,
-                data: {},
-                error: 'Timeout (Background processing)',
-                duration: config.clientTimeout,
-              }),
-            config.clientTimeout,
-          ),
-        ),
-      ]),
-    ),
+    providerPromises.map(async (p, index) => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        return await Promise.race([
+          p,
+          new Promise<ProviderResult>((resolve) => {
+            timer = setTimeout(
+              () =>
+                resolve({
+                  provider: providers[index].name,
+                  success: false,
+                  data: {},
+                  error: 'Timeout (Background processing)',
+                  duration: config.clientTimeout,
+                }),
+              config.clientTimeout,
+            );
+          }),
+        ]);
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
+      }
+    }),
   );
 
   // Server promise: Waits up to SERVER_TIMEOUT for absolutely everything

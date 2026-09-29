@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   detectType,
   normalizeEmail,
+  normalizeIp,
   normalizeLocation,
   normalizeParcel,
   normalizeSteam,
@@ -151,5 +152,29 @@ describe('detectType', () => {
       'apk',
     );
     expect(detectType('com.google.android.apps.authenticator2')).toBe('apk');
+  });
+});
+
+describe('normalizeIp', () => {
+  it('returns IPv4 and IPv6 addresses untouched', () => {
+    expect(normalizeIp('8.8.8.8')).toBe('8.8.8.8');
+    // Regression: the port-stripping rule used to cut this down to "2606".
+    expect(normalizeIp('2606:4700:4700::1111')).toBe('2606:4700:4700::1111');
+    expect(normalizeIp('::1')).toBe('::1');
+  });
+
+  it('unwraps a bracketed IPv6 address, with or without a port', () => {
+    expect(normalizeIp('[::1]')).toBe('::1');
+    expect(normalizeIp('[2606:4700:4700::1111]:8080')).toBe('2606:4700:4700::1111');
+  });
+
+  it('strips scheme, path and port from a host', () => {
+    expect(normalizeIp('https://example.com/some/path')).toBe('example.com');
+    expect(normalizeIp('example.com:8080')).toBe('example.com');
+    expect(normalizeIp('  HTTP://Example.COM/  ')).toBe('example.com');
+  });
+
+  it('keeps a trailing colon-word that is not a port', () => {
+    expect(normalizeIp('example.com:notaport')).toBe('example.com:notaport');
   });
 });

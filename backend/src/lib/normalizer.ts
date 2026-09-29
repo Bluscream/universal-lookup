@@ -1,4 +1,3 @@
-import { resolve4 } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import { config } from '../config.js';
 import type { LookupType } from '../types/common.js';
@@ -20,8 +19,10 @@ export function normalizeTel(input: string): string {
   const trimmed = input.trim().replace(/[\s\-.()/]/g, '');
   if (!trimmed) return '';
 
-  // Skip normalization for special numbers
-  if (trimmed in SPECIAL_NUMBERS) {
+  // Skip normalization for special numbers.
+  // hasOwn, not `in`: `in` also matches Object.prototype keys, so "constructor"
+  // and "toString" would come back as emergency numbers.
+  if (Object.hasOwn(SPECIAL_NUMBERS, trimmed)) {
     return trimmed;
   }
 
@@ -55,34 +56,30 @@ export function normalizeTel(input: string): string {
 }
 
 /**
- * Normalize an IP address or domain.
- * Validates format, optionally resolves domains.
+ * Normalize an IP address or domain to a bare host.
+ *
+ * Returns whatever it was given when it cannot make sense of it, so callers that
+ * put the result on a command line must gate on {@link isValidHost} first.
  */
-export async function normalizeIp(input: string): Promise<string> {
+export function normalizeIp(input: string): string {
   const trimmed = input.trim().toLowerCase();
 
-  // Strip protocol if present
-  const cleaned = trimmed
-    .replace(/^https?:\/\//, '')
-    .replace(/\/.*$/, '')
-    .replace(/:.*$/, ''); // remove port
-
-  // If it's already a valid IP, return as-is
-  if (isIP(cleaned)) {
-    return cleaned;
+  // Before anything is stripped: an IPv6 address is all colons, and the port
+  // rule below would otherwise cut `2606:4700:4700::1111` down to `2606`.
+  if (isIP(trimmed)) {
+    return trimmed;
   }
 
-  // Try to resolve domain to IP
-  try {
-    const addresses = await resolve4(cleaned);
-    if (addresses.length > 0) {
-      return cleaned; // Return the domain - providers can resolve as needed
-    }
-  } catch {
-    // Not resolvable, return as-is and let providers handle it
+  // Bracketed IPv6, optionally with a port: [::1]:8080
+  const bracketed = trimmed.match(/^\[([0-9a-f:.]+)\](?::\d+)?$/);
+  if (bracketed?.[1] && isIP(bracketed[1])) {
+    return bracketed[1];
   }
 
-  return cleaned;
+  const withoutScheme = trimmed.replace(/^[a-z][a-z0-9+.-]*:\/\//, '').replace(/\/.*$/, '');
+
+  // Only strip a trailing :port — a numeric suffix after a single colon.
+  return withoutScheme.replace(/:\d+$/, '');
 }
 
 /** Longest legal DNS name, per RFC 1035. */

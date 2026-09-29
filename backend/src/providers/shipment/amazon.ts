@@ -41,7 +41,9 @@ function saveCookies(cookies: Cookie[]): void {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(p, JSON.stringify(cookies, null, 2), 'utf-8');
+    // These are live session cookies; 0644 would leave them readable to every
+    // other user and process on the host.
+    fs.writeFileSync(p, JSON.stringify(cookies, null, 2), { encoding: 'utf-8', mode: 0o600 });
   } catch (e) {
     console.error('[Amazon] Failed to save cookies:', e);
   }

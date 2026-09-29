@@ -11,7 +11,7 @@ import { API_PREFIX, config } from './config.js';
 import { cleanExpiredCache } from './db/cache.js';
 import { closeDatabase, initDatabase } from './db/migrations.js';
 import { ensureMaxmindDbs } from './lib/maxmind-downloader.js';
-import { resolvePuppeteerExecutablePath } from './lib/puppeteer.js';
+import { closeBrowser, resolvePuppeteerExecutablePath } from './lib/puppeteer.js';
 import { registerApiRoutes, registerShortcutRoutes } from './routes/api.js';
 import { registerDocsRoutes } from './routes/docs.js';
 import { LOOKUP_TYPES } from './types/common.js';
@@ -174,6 +174,8 @@ async function main() {
   const shutdown = async () => {
     console.log('\n🛑 Shutting down...');
     await app.close();
+    // Chromium is a child process; without this it outlives SIGTERM.
+    await closeBrowser();
     closeDatabase();
     process.exit(0);
   };
@@ -192,4 +194,7 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => {
+  console.error('Fatal: backend failed to start', err);
+  process.exit(1);
+});

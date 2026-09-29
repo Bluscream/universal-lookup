@@ -39,6 +39,18 @@ export function resolvePuppeteerExecutablePath(): string | undefined {
   return undefined;
 }
 
+/** Close the shared browser, if one was ever launched. */
+export async function closeBrowser(): Promise<void> {
+  if (!browser) return;
+  const b = browser;
+  browser = null;
+  try {
+    await b.close();
+  } catch {
+    // Already gone; nothing to release.
+  }
+}
+
 export async function getBrowser(): Promise<Browser> {
   if (browser?.connected) {
     return browser;

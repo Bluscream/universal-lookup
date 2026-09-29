@@ -38,8 +38,8 @@ describe('host validation', () => {
 describe('shell injection is not reachable through the network providers', () => {
   // normalizeIp passes unresolvable input straight through, so the provider is
   // the only thing standing between a hostile query and the command line.
-  it('normalizeIp still passes metacharacters through, so the guard must hold', async () => {
-    expect(await normalizeIp('127.0.0.1; echo marker')).toContain(';');
+  it('normalizeIp still passes metacharacters through, so the guard must hold', () => {
+    expect(normalizeIp('127.0.0.1; echo marker')).toContain(';');
   });
 
   it('ping refuses a query carrying a shell command', async () => {
