@@ -12,6 +12,7 @@ import {
   makeAllestoerungenProvider,
 } from './allestoerungen.js';
 import { awsProvider } from './aws.js';
+import { DOWNDETECTOR_SERVICES, makeDowndetectorProvider } from './downdetector.js';
 import { type StatusEnricher, withEnrichersAll } from './enrich.js';
 import { maintenanceEnricher } from './maintenance.js';
 import { azureProvider } from './azure.js';
@@ -29,16 +30,29 @@ import { xboxProvider } from './xbox.js';
 const ALL_KEYWORDS = new Set(['', 'all', 'status', 'services', 'everything', 'any', '*']);
 
 /**
+ * Crowd-sourced outage services.
+ *
+ * Downdetector and allestörungen are the same product — allestörungen is its
+ * German site — so the two never run together: whichever source is configured
+ * owns those slugs, and registering both would give the same service two
+ * providers fighting over one name. The API is preferred; the scrape is only
+ * reachable by explicitly setting STATUS_ALLESTOERUNGEN_ENABLED (see config).
+ */
+const CROWD_PROVIDERS: Provider[] = config.statusAllestoerungenEnabled
+  ? ALLESTOERUNGEN_SERVICES.map(makeAllestoerungenProvider)
+  : DOWNDETECTOR_SERVICES.map(makeDowndetectorProvider);
+
+/**
  * All service-health/uptime providers.
  * Generic Statuspage-backed services plus custom adapters for platforms that
  * don't expose a Statuspage feed (Xbox = XML, PlayStation = region JSON,
- * Activision/Steam/Ubisoft = bespoke APIs, EA = Instatus), plus any
- * crowd-sourced allestörungen services configured via env.
+ * Activision/Steam/Ubisoft = bespoke APIs, EA = Instatus), plus the
+ * crowd-sourced services configured via env.
  */
 const BASE_STATUS_PROVIDERS: Provider[] = [
   ...STATUSPAGE_SERVICES.map(makeStatuspageProvider),
   ...INSTATUS_SERVICES.map(makeInstatusProvider),
-  ...ALLESTOERUNGEN_SERVICES.map(makeAllestoerungenProvider),
+  ...CROWD_PROVIDERS,
   xboxProvider,
   playstationProvider,
   activisionProvider,
@@ -56,14 +70,21 @@ const BASE_STATUS_PROVIDERS: Provider[] = [
  * escalate a service (see enrich.ts), so they add early warning and planned
  * downtime without being able to contradict an operator's own feed.
  */
-const STATUS_ENRICHERS: StatusEnricher[] = [maintenanceEnricher, crowdEnricher];
+const STATUS_ENRICHERS: StatusEnricher[] = config.statusAllestoerungenEnabled
+  ? [maintenanceEnricher, crowdEnricher]
+  : // The crowd enricher reads the allestörungen scrape, so it goes quiet with
+    // it. It could only ever escalate a service, so dropping it loses early
+    // warning on services that already have an authoritative feed — never a
+    // reading itself.
+    [maintenanceEnricher];
 
 const ALL_STATUS_PROVIDERS: Provider[] = withEnrichersAll(BASE_STATUS_PROVIDERS, STATUS_ENRICHERS);
 
 /**
  * The effective PROVIDERS_STATUS list.
  *
- * Services configured through STATUS_ALLESTOERUNGEN_SERVICES are appended
+ * Crowd-sourced services (DOWNDETECTOR_SERVICES, or
+ * STATUS_ALLESTOERUNGEN_SERVICES when the scrape is enabled) are appended
  * automatically, so enabling one only takes a single env var instead of having
  * to remember to also add it here.
  */
@@ -76,7 +97,7 @@ function enabledProviderNames(): string {
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean),
   );
-  const extra = ALLESTOERUNGEN_SERVICES.map((s) => s.service).filter((s) => !listed.has(s));
+  const extra = CROWD_PROVIDERS.map((p) => p.name).filter((s) => !listed.has(s));
   return extra.length > 0 ? `${base},${extra.join(',')}` : base;
 }
 

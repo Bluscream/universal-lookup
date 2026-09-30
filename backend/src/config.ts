@@ -199,8 +199,19 @@ export const config = {
   // Nintendo netinfo locale (en_US, en_GB, ja_JP, …)
   statusNintendoLocale: env('STATUS_NINTENDO_LOCALE', 'en_US'),
 
-  // allestörungen / Downdetector (crowd-sourced outage reports).
+  // allestörungen (crowd-sourced outage reports, Downdetector's German site).
   //
+  // Off by default. Cloudflare serves every page on the Downdetector family of
+  // domains an active JS challenge (`cf-mitigated: challenge`), which a real
+  // headful browser was measured failing to clear — so neither the plain fetch
+  // nor the headless escalation can ever return data, and the escalation costs
+  // about a minute of Chromium CPU per service. On a container capped at 512 MB
+  // and one core, a cold /status/all starved every other provider and took all
+  // 37 down with it. The whole implementation is kept intact: set this to true
+  // to bring it back if the site ever becomes reachable again. The supported
+  // path is now the authenticated Downdetector API — see the block below.
+  statusAllestoerungenEnabled: envBool('STATUS_ALLESTOERUNGEN_ENABLED', false),
+
   // Services that already have a provider are *enriched* with the crowd signal
   // (see CROWD_SLUGS) rather than duplicated. This list is for the ones nothing
   // else covers — German ISPs, banks, individual games. Comma-separated slugs
@@ -241,13 +252,46 @@ export const config = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   ),
   // Escalate to headless Chromium when plain HTTP is challenged.
-  // Turn off on deployments without Chromium available.
-  statusAllestoerungenUseBrowser: envBool('STATUS_ALLESTOERUNGEN_USE_BROWSER', true),
+  // Off by default: the challenge is a JS interstitial that a real headful
+  // browser was measured failing to clear in 8s, so the escalation only ever
+  // burns CPU. Only worth enabling if the site's protection changes.
+  statusAllestoerungenUseBrowser: envBool('STATUS_ALLESTOERUNGEN_USE_BROWSER', false),
   // The browser escalation is the most expensive path in the service. When it
   // fails it fails for every page, so stop launching browsers after this many
   // consecutive failures and retry only after the cooldown.
   statusAllestoerungenBreakerThreshold: envInt('STATUS_ALLESTOERUNGEN_BREAKER_THRESHOLD', 3),
   statusAllestoerungenBreakerCooldown: envInt('STATUS_ALLESTOERUNGEN_BREAKER_COOLDOWN', 900), // 15 min
+  // Downdetector API v2 (https://downdetectorapi.com/v2/docs/raw.html).
+  //
+  // The supported replacement for the allestörungen scrape: the same data, from
+  // the vendor's own authenticated API, with no Cloudflare in the way. Requires
+  // client credentials (a commercial Downdetector subscription) — without them
+  // the provider reports itself unavailable and is skipped, exactly like every
+  // other credentialed provider.
+  downdetectorClientId: env('DOWNDETECTOR_CLIENT_ID', ''),
+  downdetectorClientSecret: env('DOWNDETECTOR_CLIENT_SECRET', ''),
+  downdetectorBaseUrl: env('DOWNDETECTOR_BASE_URL', 'https://downdetectorapi.com/v2'),
+  // Same `slug=Label=icon=Category` spec as STATUS_ALLESTOERUNGEN_SERVICES, so
+  // an existing service list can be moved across unchanged. Slugs are the ones
+  // in a Downdetector URL (/status/<slug>/).
+  downdetectorServices: env(
+    'DOWNDETECTOR_SERVICES',
+    'deutsche-telekom=Telekom=deutschetelekom,vodafone=Vodafone=vodafone,o2=o2=o2,1-und-1=1&1,deutsche-glasfaser=Deutsche Glasfaser,pyur=PYUR,netcologne=NetCologne,congstar=congstar==Internet',
+  ),
+  // Which Downdetector site the slugs belong to. Company ids are per-site, so
+  // this scopes the slug lookup; `de` is allestörungen.
+  downdetectorCountry: env('DOWNDETECTOR_COUNTRY', 'de'),
+  // Tokens are JWTs valid for one hour; the vendor suggests refreshing five
+  // minutes early, which is what this default does.
+  downdetectorTokenTtl: envInt('DOWNDETECTOR_TOKEN_TTL', 3300), // 55 min
+  // Company id and status caches. Ids effectively never change, so they are
+  // held far longer than readings; the upstream only re-times every ~15 min.
+  downdetectorCompanyTtl: envInt('DOWNDETECTOR_COMPANY_TTL', 86400), // 24 h
+  downdetectorTtl: envInt('DOWNDETECTOR_TTL', 300), // 5 min
+  // Reports in the last 15 minutes at or above which a service is called down,
+  // used only when the API's own threshold verdict is unavailable.
+  downdetectorMinReports: envInt('DOWNDETECTOR_MIN_REPORTS', 10),
+
   // Recurring maintenance windows injected as incidents while they're open.
   // Comma-separated `service:day:startHour-endHour[:Name]`, day 0=Sunday, hours
   // UTC — e.g. "steam:2:23-24:Weekly maintenance".
