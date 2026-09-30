@@ -29,6 +29,14 @@ interface PermaArchive {
  * provider reports itself unavailable without PERMA_CC_API_KEY, and when it is
  * configured it reads back that account's own links.
  *
+ * As of 2026-09-30 this provider probably cannot work from a server at all:
+ * api.perma.cc and perma.cc both answer `403` with `cf-mitigated: challenge`,
+ * a Cloudflare interactive challenge, before any API key is considered. That is
+ * not something to work around — see docs/archive-services-research.md. Left
+ * registered because a key still gates it, so it costs a configured operator one
+ * clear error rather than silently disappearing, and the block may be
+ * geographic or temporary. Nothing here has been verified against a real key.
+ *
  * A perma link is a durable citation, and a free account has a small monthly
  * quota — another reason saving is opt-in rather than something every lookup
  * does.
