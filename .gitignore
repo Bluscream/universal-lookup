@@ -46,3 +46,9 @@ coverage/
 tracking_page.html
 .scratch/
 .references/
+
+# Agent worktrees. The harness creates these *inside* the repo, so without this
+# a `git add -A` would commit an entire nested checkout. Biome and Vitest are
+# told to skip the directory too — both walk the tree and would otherwise lint
+# and run every worktree's copy of the suite alongside this one.
+.claude/
