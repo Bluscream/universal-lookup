@@ -25,6 +25,8 @@ const { archiveToday } = await import('../backend/src/providers/archive/archive-
 const { arquivoPt } = await import('../backend/src/providers/archive/arquivo.js');
 const { ghostarchive } = await import('../backend/src/providers/archive/ghostarchive.js');
 const { permaCc } = await import('../backend/src/providers/archive/perma-cc.js');
+const { veebiarhiiv } = await import('../backend/src/providers/archive/veebiarhiiv.js');
+const { vefsafn } = await import('../backend/src/providers/archive/vefsafn.js');
 const { wayback } = await import('../backend/src/providers/archive/wayback.js');
 const { PROVIDER_NAMES } = await import('../backend/src/providers/archive/index.js');
 const { config } = await import('../backend/src/config.js');
@@ -407,15 +409,136 @@ describe('perma.cc', () => {
   });
 });
 
+/**
+ * The RFC 7089 archives, which share one implementation.
+ *
+ * These two are national archives reached through `createMementoProvider`, so
+ * what is pinned here is the shared behaviour the shape of the answer depends
+ * on: an empty 404 is "not archived", anything else that goes wrong is an
+ * error, and neither one ever submits.
+ */
+describe('the memento archives', () => {
+  const EE_TIMEMAP = [
+    '<https://veebiarhiiv.digar.ee/a/timemap/link/https://example.com/>; rel="self"; type="application/link-format",',
+    '<https://veebiarhiiv.digar.ee/a/https://example.com/>; rel="timegate",',
+    '<https://example.com/>; rel="original",',
+    '<https://veebiarhiiv.digar.ee/a/20101023005003/http://example.com/>; rel="first memento"; datetime="Sat, 23 Oct 2010 00:50:03 GMT",',
+    '<https://veebiarhiiv.digar.ee/a/20240101120000/http://example.com/>; rel="memento"; datetime="Mon, 01 Jan 2024 12:00:00 GMT"',
+  ].join('\n');
+
+  /** Iceland emits the whole timemap on one line, comma-separated. */
+  const IS_TIMEMAP =
+    '<https://vefsafn.is/timemap/link/https://example.com/>; rel="self"; type="application/link-format", ' +
+    '<https://example.com/>; rel="original", ' +
+    '<https://vefsafn.is/20050304003536mp_/http://example.com/>; rel="first memento"; datetime="Fri, 04 Mar 2005 00:35:36 GMT", ' +
+    '<https://vefsafn.is/20260805201246mp_/https://www.example.com/>; rel="memento"; datetime="Wed, 05 Aug 2026 20:12:46 GMT"';
+
+  /** Answer with a given HTTP status, honouring the provider's validateStatus. */
+  function routeStatus(fragment: string, status: number, data: unknown): void {
+    mockedAxios.get.mockImplementation(async (url: string, cfg?: unknown) => {
+      if (!url.includes(fragment)) throw new Error(`unexpected GET ${url}`);
+      const validate = (cfg as { validateStatus?: (s: number) => boolean })?.validateStatus;
+      if (validate && !validate(status)) {
+        throw Object.assign(new Error('Request failed'), { response: { status } });
+      }
+      return { data, status } as never;
+    });
+  }
+
+  it('parses a line-separated timemap, newest first', async () => {
+    routeGet({ 'veebiarhiiv.digar.ee': EE_TIMEMAP });
+
+    const result = await veebiarhiiv.lookup(URL_UNDER_TEST, 'archive');
+
+    const snapshots = snapshotsOf(result.data);
+    expect(snapshots).toHaveLength(2);
+    expect(snapshots[0].service).toBe('veebiarhiiv-ee');
+    expect(snapshots[0].timestamp).toBe('2024-01-01T12:00:00.000Z');
+    expect(snapshots[1].timestamp).toBe('2010-10-23T00:50:03.000Z');
+    // self/timegate/original describe the timemap, not a capture.
+    expect(snapshots.some((s) => s.snapshot_url.includes('timegate'))).toBe(false);
+    expect(snapshots.some((s) => s.snapshot_url.includes('timemap'))).toBe(false);
+  });
+
+  it('parses a comma-separated timemap on a single line', async () => {
+    routeGet({ 'vefsafn.is': IS_TIMEMAP });
+
+    const result = await vefsafn.lookup(URL_UNDER_TEST, 'archive');
+
+    const snapshots = snapshotsOf(result.data);
+    expect(snapshots).toHaveLength(2);
+    // pywb's mp_ rewrite modifier is part of the URL that resolves, so it stays.
+    expect(snapshots[0].snapshot_url).toBe(
+      'https://vefsafn.is/20260805201246mp_/https://www.example.com/',
+    );
+    expect(snapshots[0].service).toBe('vefsafn-is');
+  });
+
+  it('treats an empty 404 as "not archived here", not as a failure', async () => {
+    routeStatus('veebiarhiiv.digar.ee', 404, '');
+
+    const result = await veebiarhiiv.lookup(URL_UNDER_TEST, 'archive');
+
+    expect(result.success).toBe(true);
+    expect(result.error).toBeUndefined();
+    expect(snapshotsOf(result.data)).toHaveLength(0);
+    expect(serviceOf(result.data)?.status).toBe('not-archived');
+    // The merger keeps the first non-empty value, so a provider that found
+    // nothing must not answer `archived` on every other provider's behalf.
+    expect((result.data as { archived?: boolean }).archived).toBeUndefined();
+  });
+
+  it('reports a bot-mitigation 403 as an error, not as an empty answer', async () => {
+    routeStatus('vefsafn.is', 403, '');
+
+    const result = await vefsafn.lookup(URL_UNDER_TEST, 'archive');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('403');
+    expect(result.error).toContain('Icelandic Web Archive');
+  });
+
+  it('reports a timeout as an error naming the service', async () => {
+    routeGet({
+      'vefsafn.is': Object.assign(new Error('timeout of 30000ms exceeded'), {
+        code: 'ECONNABORTED',
+      }),
+    });
+
+    const result = await vefsafn.lookup(URL_UNDER_TEST, 'archive');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Icelandic Web Archive');
+    expect(result.error).toContain('timeout');
+  });
+
+  it('never submits, and says why, when a save is requested', async () => {
+    routeGet({ 'veebiarhiiv.digar.ee': EE_TIMEMAP });
+
+    const result = await veebiarhiiv.lookup(URL_UNDER_TEST, 'archive', undefined, { save: true });
+
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    const service = serviceOf(result.data);
+    expect(service?.status).toBe('read-only');
+    expect(service?.note).toMatch(/no submission API/i);
+    // Still an answer, so what it does know about is not thrown away.
+    expect(result.success).toBe(true);
+    expect(snapshotsOf(result.data).length).toBeGreaterThan(0);
+  });
+});
+
 describe('the registry', () => {
-  it('registers the five services under names nothing else uses', () => {
+  it('registers every service under a name nothing else uses', () => {
     expect(PROVIDER_NAMES).toEqual([
       'wayback',
       'archive-today',
       'ghostarchive',
       'arquivo-pt',
+      'veebiarhiiv-ee',
+      'vefsafn-is',
       'perma-cc',
     ]);
+    expect(new Set(PROVIDER_NAMES).size).toBe(PROVIDER_NAMES.length);
   });
 
   it('a bare URL is still detected as a url lookup, never an archive one', async () => {

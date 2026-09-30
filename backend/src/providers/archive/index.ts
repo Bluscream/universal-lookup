@@ -29,9 +29,22 @@ import { archiveToday } from './archive-today.js';
 import { arquivoPt } from './arquivo.js';
 import { ghostarchive } from './ghostarchive.js';
 import { permaCc } from './perma-cc.js';
+import { veebiarhiiv } from './veebiarhiiv.js';
+import { vefsafn } from './vefsafn.js';
 import { wayback } from './wayback.js';
 
-const ALL_PROVIDERS: Provider[] = [wayback, archiveToday, ghostarchive, arquivoPt, permaCc];
+// Order is the order results are reported in: the broad, global archives
+// first, then the national ones, which hold far less but hold things the
+// global crawls never reached.
+const ALL_PROVIDERS: Provider[] = [
+  wayback,
+  archiveToday,
+  ghostarchive,
+  arquivoPt,
+  veebiarhiiv,
+  vefsafn,
+  permaCc,
+];
 
 export function lookupArchive(
   query: string,
