@@ -113,7 +113,7 @@ async function main() {
           'Aggregated lookup service for phone numbers, IP addresses, emails, locations, and parcel tracking. Merges results from multiple providers with smart caching.',
         version: '1.0.0',
         contact: { name: 'Bluscream', url: 'https://github.com/Bluscream/universal-lookup' },
-        license: { name: 'MIT', url: 'https://opensource.org/licenses/MIT' },
+        license: { name: 'Unlicense', url: 'https://unlicense.org/' },
       },
       servers: [
         { url: `http://localhost:${config.port}`, description: 'Local development' },

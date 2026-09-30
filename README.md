@@ -1,7 +1,7 @@
 # 🔍 Universal Lookup
 
 [![npm version](https://img.shields.io/npm/v/universal-lookup.svg)](https://www.npmjs.com/package/universal-lookup)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://unlicense.org/)
 [![Docker Image Version](https://img.shields.io/docker/v/bluscream1/universal-lookup?label=docker)](https://hub.docker.com/r/bluscream1/universal-lookup)
 [![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-blue)](https://github.com/Bluscream/universal-lookup)
 
@@ -139,7 +139,7 @@ The project includes a robust automation script for contributors:
 
 ## 📜 License
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Released into the **public domain** under the [Unlicense](https://unlicense.org/). See `LICENSE` for more information.
 
 ### Credits & Contributions
 - **Lead Developer**: [Bluscream](https://github.com/Bluscream)
