@@ -25,10 +25,24 @@ function envBool(key: string, fallback: boolean): boolean {
   return val.toLowerCase() === 'true' || val === '1';
 }
 
+/**
+ * Why BIND_HOST and not HOST.
+ *
+ * Unraid's Tailscale container hook does `HOST=$(tailscale status --json | jq -r
+ * '.Self.HostName')` and then execs the container's own command in that same
+ * shell. Because the image exported HOST, that assignment overwrites the
+ * *exported* value, so the app was handed `HOST=lookup` — a tailnet hostname.
+ * Node resolved it through MagicDNS to an address belonging to another node and
+ * the listen died with EADDRNOTAVAIL, which reads as an application crash with
+ * nothing pointing at the real cause.
+ *
+ * HOST is too generic a name to own: any wrapper, hook or supervisor in the
+ * process's ancestry may claim it. BIND_HOST is ours, so nothing else writes it.
+ */
 export const config = {
   // Server
   port: envInt('PORT', 24011),
-  host: env('HOST', '0.0.0.0'),
+  host: env('BIND_HOST', '0.0.0.0'),
   logLevel: env('LOG_LEVEL', 'info'),
   // Record every external process this service starts (headless Chromium and
   // its pages, ping, traceroute). On by default: these spawns are infrequent

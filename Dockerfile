@@ -55,7 +55,7 @@ RUN mkdir -p /app/backend/data/maxmind
 # that used to hold 24010 was serving a byte-identical page from a dev tool —
 # and it was the only reason vite had to exist in the runtime image.
 ENV PORT=24011
-ENV HOST=0.0.0.0
+ENV BIND_HOST=0.0.0.0
 ENV DB_PATH=/app/backend/data/cache.db
 ENV MAXMIND_DB_PATH=/app/backend/data/maxmind
 ENV AMAZON_COOKIES_FILE=/app/backend/data/amazon-cookies.json

@@ -18,6 +18,34 @@
   <DonateText/>
   <DonateLink/>
   <Requires/>
+  <!--
+    Tailscale hook settings. Two of these are not optional in practice:
+
+    TailscaleStateDir — the hook auto-detects a persistent directory only when the
+    container mounts /data or /config. This one mounts /app/backend/data, so
+    without an explicit state dir the hook aborts with "Couldn't detect persistent
+    Docker directory for .tailscale_state!" and the container never starts its
+    payload. It points inside the Data Path mount so the node identity survives a
+    recreate instead of re-authenticating as a new machine every time.
+
+    TailscaleServePort — the port INSIDE the container, which is 24011. The image
+    EXPOSEs only 24011 and the Fastify server serves both the API and the built
+    SPA from it; nothing ever listens on 24010, so serving 24010 gives a working
+    tunnel to a closed port.
+  -->
+  <TailscaleEnabled>true</TailscaleEnabled>
+  <TailscaleStateDir>/app/backend/data/.tailscale_state</TailscaleStateDir>
+  <TailscaleServePort>24011</TailscaleServePort>
+  <TailscaleServeTarget/>
+  <TailscaleHostname>lookup</TailscaleHostname>
+  <!-- "funnel" would publish this to the public internet; "serve" keeps it on the tailnet. -->
+  <TailscaleServe>serve</TailscaleServe>
+  <TailscaleWebUI>https://[hostname][magicdns]/</TailscaleWebUI>
+  <TailscaleSSH>false</TailscaleSSH>
+  <TailscaleIsExitNode>false</TailscaleIsExitNode>
+  <TailscaleUserspaceNetworking>false</TailscaleUserspaceNetworking>
+  <TailscaleLANAccess>false</TailscaleLANAccess>
+  <TailscaleAcceptRoutes>false</TailscaleAcceptRoutes>
 
   <!-- Ports & Paths -->
   <Config Name="Downdetector Client ID" Target="DOWNDETECTOR_CLIENT_ID" Default="" Mode="" Description="Downdetector API v2 client id. Crowd-sourced outage data comes from the vendor's authenticated API instead of scraping its site. Without credentials these services report themselves unavailable and are skipped." Type="Variable" Display="always" Required="false" Mask="false"></Config>
@@ -77,10 +105,15 @@
   <Config Name="FritzBox Phonebook TTL (s)" Target="FRITZBOX_PHONEBOOK_TTL" Default="3600" Mode="" Description="Seconds after which a phonebook is downloaded in full regardless - a safety net for a box whose reported timestamp fails to move when its contents do." Type="Variable" Display="advanced" Required="false" Mask="false">3600</Config>
   <Config Name="Google API Key" Target="GOOGLE_API_KEY" Default="" Mode="" Description="Google Maps &amp; Search API key (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="Google Search CX" Target="GOOGLE_SEARCH_CX" Default="" Mode="" Description="Google Custom Search Engine ID (optional)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
-  <Config Name="Host" Target="HOST" Default="0.0.0.0" Mode="" Description="Binding address" Type="Variable" Display="advanced" Required="false" Mask="false">0.0.0.0</Config>
+  <Config Name="Host" Target="BIND_HOST" Default="0.0.0.0" Mode="" Description="Binding address. Not HOST - the Unraid Tailscale hook overwrites that name with the tailnet hostname." Type="Variable" Display="advanced" Required="false" Mask="false">0.0.0.0</Config>
   <Config Name="ip-api.com Key" Target="IP_API_COM_KEY" Default="" Mode="" Description="API key for ip-api.com (optional, enables HTTPS + unlimited)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="ip-api.io Key" Target="IP_API_IO_KEY" Default="" Mode="" Description="API key for ip-api.io advanced features" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Logging level (error, warn, info, debug)" Type="Variable" Display="always" Required="false" Mask="false">info</Config>
+  <Config Name="Location Warnings Enabled" Target="LOCATION_WARNINGS_ENABLED" Default="true" Mode="" Description="Enable the DWD (severe weather) and NINA (civil protection, incl. official utility/water outages) warning providers. Germany only." Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="Location Weather Enabled" Target="LOCATION_WEATHER_ENABLED" Default="true" Mode="" Description="Enable current conditions from Open-Meteo. Worldwide, needs no API key." Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="Location Warnings German" Target="LOCATION_WARNINGS_GERMAN" Default="true" Mode="" Description="Prefer the German original where a warning carries both languages" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="Location NINA Detail Limit" Target="LOCATION_NINA_DETAIL_LIMIT" Default="5" Mode="" Description="How many NINA warnings to fetch full CAP detail for; each is one extra request" Type="Variable" Display="advanced" Required="false" Mask="false">5</Config>
+  <Config Name="Location Geocode TTL" Target="LOCATION_GEOCODE_TTL" Default="86400" Mode="" Description="Seconds to cache a geocode, shared by every location provider (keeps us inside Nominatim 1 req/s)" Type="Variable" Display="advanced" Required="false" Mask="false">86400</Config>
   <Config Name="MaxMind License Key" Target="MAXMIND_LICENSE_KEY" Default="" Mode="" Description="MaxMind GeoLite2 license key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="ParcelsApp API Key" Target="PARCELSAPP_API_KEY" Default="" Mode="" Description="ParcelsApp tracking API key" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="PhoneBlock API Key" Target="PHONEBLOCK_API_KEY" Default="" Mode="" Description="PhoneBlock API key (optional; the number lookup is public, a key only adds your personal block/allow list)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
@@ -88,6 +121,15 @@
   <Config Name="PhoneBlock User" Target="PHONEBLOCK_USER" Default="" Mode="" Description="PhoneBlock account user (deprecated upstream; only used when no API key is set)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Phone Country Prefix" Target="PHONE_COUNTRY_PREFIX" Default="0049" Mode="" Description="Country prefix for phone numbers" Type="Variable" Display="always" Required="false" Mask="false">0049</Config>
   <Config Name="Phone Local Prefix" Target="PHONE_LOCAL_PREFIX" Default="6131" Mode="" Description="Local prefix for phone numbers" Type="Variable" Display="always" Required="false" Mask="false">6131</Config>
+  <!--
+    The Unraid Tailscale hook takes over the image entrypoint and runs
+    `exec ${ORG_ENTRYPOINT} ${ORG_CMD} ${ORG_POSTARGS}` once Tailscale is up.
+    With all three unset it execs nothing and the container exits 0 after the
+    tunnel comes up - Tailscale working and the app never starting. This image
+    declares no ENTRYPOINT, so ORG_CMD alone carries its CMD.
+  -->
+  <Config Name="Original Entrypoint" Target="ORG_ENTRYPOINT" Default="" Mode="" Description="Image ENTRYPOINT for the Tailscale hook to hand off to. This image has none; leave empty." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Original Command" Target="ORG_CMD" Default="node backend/dist/index.js" Mode="" Description="Image CMD for the Tailscale hook to exec after connecting. Required whenever Tailscale is enabled, or the container exits as soon as the tunnel is up." Type="Variable" Display="advanced" Required="false" Mask="false">node backend/dist/index.js</Config>
   <Config Name="Providers Blacklist" Target="PROVIDERS_BLACKLIST" Default="" Mode="" Description="Comma-separated providers or whole lookup types to disable (e.g. web,steam-xml). Empty = everything runs." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
   <Config Name="Puppeteer Args" Target="PUPPETEER_ARGS" Default="" Mode="" Description="Extra Chromium launch arguments" Type="Variable" Display="advanced" Required="false" Mask="false"/>
   <Config Name="Puppeteer Executable Path" Target="PUPPETEER_EXECUTABLE_PATH" Default="/usr/bin/chromium" Mode="" Description="Path to Chromium (Docker/Unraid: /usr/bin/chromium)" Type="Variable" Display="advanced" Required="false" Mask="false">/usr/bin/chromium</Config>
