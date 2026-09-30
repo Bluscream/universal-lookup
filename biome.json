@@ -9,7 +9,7 @@
       "!**/.references",
       "!**/data",
       "!**/.playwright-mcp",
-      "!**/.claude"
+      "!.claude"
     ]
   },
   "linter": {

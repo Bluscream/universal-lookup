@@ -175,6 +175,24 @@ export const config = {
   // Empty (the default) means everything registered runs.
   providersBlacklist: env('PROVIDERS_BLACKLIST', ''),
 
+  // App (software) lookup
+  //
+  // GitHub's repository search allows 10 unauthenticated requests a minute for
+  // the whole host, which one busy /app/ lookup can exhaust. A token — any
+  // classic or fine-grained token, no scopes needed for public search — raises
+  // that to 30. Optional: without one the provider still runs and reports a rate
+  // limit as a failure rather than as an empty result.
+  githubToken: env('GITHUB_TOKEN', ''),
+  // NixOS publishes no open package search API. search.nixos.org queries an
+  // Elasticsearch cluster with a read-only account embedded in its frontend;
+  // borrowing someone else's embedded credentials is not this service's call, so
+  // point these at a cluster you are entitled to use. Empty (the default) makes
+  // the nixpkgs provider report itself unconfigured instead of failing.
+  // Example URL: https://search.nixos.org/backend/latest-43-nixos-unstable/_search
+  nixpkgsSearchUrl: env('NIXPKGS_SEARCH_URL', ''),
+  nixpkgsSearchUser: env('NIXPKGS_SEARCH_USER', ''),
+  nixpkgsSearchPassword: env('NIXPKGS_SEARCH_PASSWORD', ''),
+
   // Location providers
   //
   // The warning and weather providers geocode through Nominatim, whose usage

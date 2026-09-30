@@ -1431,3 +1431,42 @@ a:hover {
     align-items: flex-start;
   }
 }
+
+/* App (software) lookup: one row per source that carries the package. */
+.app-table-card {
+  margin-top: 1rem;
+}
+.app-table-scroll {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+.app-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.app-table th,
+.app-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+}
+.app-table th {
+  background: var(--bg-input);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.app-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.app-table .app-name {
+  font-weight: 600;
+}
+.app-table .app-id,
+.app-table .app-desc {
+  max-width: 22rem;
+  overflow-wrap: anywhere;
+}

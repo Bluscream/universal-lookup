@@ -4,6 +4,7 @@ import { getCached, setCache } from '../db/cache.js';
 import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/merger.js';
 import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.js';
 import { lookupApk } from '../providers/apk/index.js';
+import { lookupApp } from '../providers/app/index.js';
 import { lookupDomain } from '../providers/domain/index.js';
 import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
@@ -43,6 +44,7 @@ const VALID_TYPES = new Set<string>([
   'url',
   'shorten',
   'apk',
+  'app',
   'order',
   'status',
   'auto',
@@ -578,6 +580,8 @@ function getLookupFunction(type: LookupType): LookupFn {
       return lookupShorten;
     case 'apk':
       return lookupApk;
+    case 'app':
+      return lookupApp;
     case 'order':
       return lookupOrder;
     case 'status':

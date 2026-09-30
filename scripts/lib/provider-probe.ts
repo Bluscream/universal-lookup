@@ -21,6 +21,7 @@
 import { config, ensureDataDir } from '../../backend/src/config.js';
 import { initDatabase } from '../../backend/src/db/migrations.js';
 import { APK_MIRRORS, PROVIDERS as apk } from '../../backend/src/providers/apk/index.js';
+import { PROVIDERS as app } from '../../backend/src/providers/app/index.js';
 import { PROVIDERS as domain } from '../../backend/src/providers/domain/index.js';
 import { PROVIDERS as email } from '../../backend/src/providers/email/index.js';
 import { PROVIDERS as ip } from '../../backend/src/providers/ip/index.js';
@@ -57,6 +58,8 @@ export const QUERIES: Record<string, string> = {
   status: 'github',
   steam: '76561197960435530', // Valve's own well-known test account
   apk: 'com.android.chrome',
+  // Packaged by every source the app lookup knows about, under that exact name.
+  app: 'firefox',
   parcel: '1Z999AA10123456784', // UPS's documented sample tracking number
   // The shipment provider takes an order number, `orderId::trackingNumber`, or a
   // tracking URL — a bare TBA number was rejected as malformed, which is not a
@@ -77,6 +80,9 @@ export const QUERIES: Record<string, string> = {
  */
 export const PROVIDER_QUERIES: Record<string, string> = {
   'parcel/amazon-tba': 'TBA000000000000',
+  // IzzyOnDroid has no search at all — only exact application ids — so "firefox"
+  // would test its input check and nothing else. Obtainium is in that repo.
+  'app/izzyondroid': 'dev.imranr.obtainium',
   'order/aliexpress': '8000000000000000', // 16 digits, which is all it checks for
 };
 
@@ -97,6 +103,7 @@ export const REGISTRIES: Array<[string, Provider[]]> = [
   ['status', status],
   ['steam', steam],
   ['apk', apk],
+  ['app', app],
   ['parcel', parcel],
   ['shipment', shipment],
   ['order', order],

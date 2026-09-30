@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import type { LookupResponse, LookupType, ShortLink, WebResult } from '../types/api';
+import type { AppEntry, LookupResponse, LookupType, ShortLink, WebResult } from '../types/api';
 import { ApkCard } from './ApkCard';
+import { AppTable } from './AppTable';
 import { MapCard } from './MapCard';
 import { OrderCard } from './OrderCard';
 import { ParcelTimeline } from './ParcelTimeline';
@@ -133,6 +134,7 @@ export function LookupResult({ data }: LookupResultProps) {
   const isSteam = reqType === 'steam' || 'steam_id_64' in response;
   const isUrl = reqType === 'url' || 'landing_url' in response;
   const isApk = reqType === 'apk' || 'package_name' in response;
+  const appEntries = Array.isArray(response.apps) ? (response.apps as AppEntry[]) : [];
   const isParcel = reqType === 'parcel' || reqType === 'shipment' || 'tracking_number' in response;
   const isOrder = reqType === 'order' || 'order_id' in response;
   const isStatus = reqType === 'status' || 'services' in response;
@@ -317,6 +319,7 @@ export function LookupResult({ data }: LookupResultProps) {
         {isSteam && <SteamProfileCard response={response} />}
         {isUrl && <UrlMetadataCard response={response} />}
         {isApk && <ApkCard response={response} />}
+        {appEntries.length > 0 && <AppTable apps={appEntries} />}
         {isParcel && (
           <ParcelTimeline
             trackingNumber={(response.tracking_number as string) || 'Unknown'}
@@ -375,6 +378,7 @@ export function LookupResult({ data }: LookupResultProps) {
               !CARD_KEYS.includes(key) &&
               !excludedKeys.includes(key) &&
               key !== 'web' &&
+              key !== 'apps' &&
               key !== 'emails' &&
               value != null &&
               value !== '' &&

@@ -16,6 +16,7 @@ export const LOOKUP_TYPES = [
   'url',
   'shorten',
   'apk',
+  'app',
   'order',
   'status',
   'auto',
@@ -408,6 +409,51 @@ export interface ApkData {
     md5?: string;
     status?: number;
   }> | null;
+  [key: string]: unknown;
+}
+
+/**
+ * One software package, as one source knows it.
+ *
+ * The keys are deliberately shared across every source: a client asking "what
+ * versions of firefox exist, and where" should not have to know that winget
+ * calls it PackageIdentifier and Debian calls it a source package. Anything that
+ * is genuinely one ecosystem's own scale is namespaced instead (`play_score`),
+ * because merging it with another source's number would be meaningless.
+ */
+export interface AppEntry {
+  /** Human-readable name, as the source presents it. */
+  name: string;
+  /** Which source answered — 'winget', 'flathub', 'aur', … Always set. */
+  source: string;
+  /** The identifier you would install with, in that source's own namespace. */
+  id?: string | null;
+  /** Latest version the source offers, as a string — versions are not numbers. */
+  version?: string | null;
+  description?: string | null;
+  /** Canonical page for this package on the source. */
+  url?: string | null;
+  /** The software's own site, where the source records one. */
+  homepage?: string | null;
+  license?: string | null;
+  publisher?: string | null;
+  /** Last update, ISO 8601, when the source dates its packages. */
+  updated?: string | null;
+  icon?: string | null;
+  /** Ready-to-paste install command, where the source has one. */
+  install?: string | null;
+  /** windows | linux | android | macos | cross-platform */
+  platform?: string | null;
+  /** Google Play's own 0-5 star rating. Not comparable to anything else. */
+  play_score?: number | null;
+  /** Google Play's install-count band, e.g. "1,000,000,000+". */
+  play_installs?: string | null;
+  [key: string]: unknown;
+}
+
+/** The app lookup's response: one combined list, from every source that answered. */
+export interface AppData {
+  apps?: AppEntry[] | null;
   [key: string]: unknown;
 }
 

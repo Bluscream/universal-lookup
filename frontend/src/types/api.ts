@@ -13,6 +13,7 @@ export type LookupType =
   | 'url'
   | 'shorten'
   | 'apk'
+  | 'app'
   | 'order'
   | 'status'
   | 'auto';
@@ -189,6 +190,7 @@ export const PLACEHOLDERS: Record<LookupType, string> = {
   url: 'e.g. https://github.com or google.com',
   shorten: 'e.g. https://example.com/a/very/long/link — creates real short links',
   apk: 'e.g. com.google.android.youtube or Play Store URL',
+  app: 'e.g. firefox, vlc, obs-studio — searched across every software repository',
   order: 'e.g. 305-1827771-7197161',
   status: 'all, or e.g. discord,xbox,playstation',
   auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
@@ -207,7 +209,29 @@ export const LOOKUP_OPTIONS: { value: LookupType; label: string; icon: string }[
   { value: 'url', label: 'URL / Domain', icon: '🌐' },
   { value: 'shorten', label: 'Shorten URL', icon: '✂️' },
   { value: 'apk', label: 'App Package', icon: '📱' },
+  { value: 'app', label: 'Software', icon: '📦' },
   { value: 'order', label: 'Order', icon: '📦' },
   { value: 'status', label: 'Service Status', icon: '🚦' },
   { value: 'auto', label: 'Auto Detect', icon: '✨' },
 ];
+
+/**
+ * One software package as one source knows it. Mirrors AppEntry in common; the
+ * keys are shared across every source on purpose, so the table below does not
+ * have to know which one answered.
+ */
+export interface AppEntry {
+  name: string;
+  source: string;
+  id?: string | null;
+  version?: string | null;
+  description?: string | null;
+  url?: string | null;
+  homepage?: string | null;
+  license?: string | null;
+  publisher?: string | null;
+  updated?: string | null;
+  icon?: string | null;
+  install?: string | null;
+  platform?: string | null;
+}
