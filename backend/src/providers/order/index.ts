@@ -1,8 +1,7 @@
-import { config } from '../../config.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
 import { aliexpress } from './aliexpress.js';
@@ -16,7 +15,7 @@ export function lookupOrder(
   originalQuery?: string,
   options?: { postalCode?: string },
 ): DualPromiseResult {
-  const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersOrder);
+  const providers = filterProviders(ALL_PROVIDERS, 'order');
 
   return executeProvidersBackground(providers, query, type, originalQuery, options);
 }

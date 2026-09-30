@@ -1,14 +1,12 @@
-import { config } from '../../config.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
 import { dnsProvider } from '../domain/dns.js';
 import { subdomainProvider } from '../domain/subdomain.js';
 import { whois } from '../domain/whois.js';
-import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { ipApiCom } from './ip-api-com.js';
 import { ipApiIo } from './ip-api-io.js';
 import { ipApiIoRisk } from './ip-api-io-risk.js';
@@ -29,10 +27,6 @@ const ALL_PROVIDERS: Provider[] = [
   tracerouteProvider,
   portscanProvider,
   subdomainProvider,
-  googleProvider,
-  bingProvider,
-  duckduckgoProvider,
-  yahooProvider,
 ];
 
 /**
@@ -43,7 +37,7 @@ export function lookupIp(
   type?: LookupType,
   originalQuery?: string,
 ): DualPromiseResult {
-  const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersIp);
+  const providers = filterProviders(ALL_PROVIDERS, 'ip');
 
   return executeProvidersBackground(providers, query, type, originalQuery);
 }

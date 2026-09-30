@@ -1,11 +1,9 @@
-import { config } from '../../config.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
-import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { seventeenTrack } from './17track.js';
 import { amazonTba } from './amazon-tba.js';
 import { dhl } from './dhl.js';
@@ -26,10 +24,6 @@ const ALL_PROVIDERS: Provider[] = [
   parcelsapp,
   pkge,
   seventeenTrack,
-  googleProvider,
-  bingProvider,
-  duckduckgoProvider,
-  yahooProvider,
 ];
 
 export function lookupParcel(
@@ -38,7 +32,7 @@ export function lookupParcel(
   originalQuery?: string,
   options?: { postalCode?: string },
 ): DualPromiseResult {
-  const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersParcel);
+  const providers = filterProviders(ALL_PROVIDERS, 'parcel');
 
   return executeProvidersBackground(providers, query, type, originalQuery, options);
 }

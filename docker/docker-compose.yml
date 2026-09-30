@@ -23,8 +23,8 @@ services:
       - AMAZON_SESSION_DIR=/app/backend/data/amazon-session
       - ALIEXPRESS_COOKIES_FILE=/app/backend/data/aliexpress-cookies.json
       
-      # Additional default settings (if not in .env)
-      - PROVIDERS_APK=googleplay,aptoide,apkpure,apkmirror,evozi,apkcombo,apkpremier,apkdl,apksupport
+      # Providers or whole lookup types to disable; empty = everything runs.
+      - PROVIDERS_BLACKLIST=
 
   frontend:
     build:

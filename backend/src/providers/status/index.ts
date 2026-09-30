@@ -2,7 +2,7 @@ import { config } from '../../config.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
 import { activisionProvider } from './activision.js';
@@ -12,17 +12,17 @@ import {
   makeAllestoerungenProvider,
 } from './allestoerungen.js';
 import { awsProvider } from './aws.js';
-import { DOWNDETECTOR_SERVICES, makeDowndetectorProvider } from './downdetector.js';
-import { type StatusEnricher, withEnrichersAll } from './enrich.js';
-import { maintenanceEnricher } from './maintenance.js';
 import { azureProvider } from './azure.js';
 import { blizzardProvider } from './blizzard.js';
+import { DOWNDETECTOR_SERVICES, makeDowndetectorProvider } from './downdetector.js';
+import { type StatusEnricher, withEnrichersAll } from './enrich.js';
 import { gcpProvider } from './gcp.js';
 import { INSTATUS_SERVICES, makeInstatusProvider } from './instatus.js';
+import { maintenanceEnricher } from './maintenance.js';
 import { nintendoProvider } from './nintendo.js';
 import { playstationProvider } from './playstation.js';
-import { steamProvider } from './steam.js';
 import { makeStatuspageProvider, STATUSPAGE_SERVICES } from './statuspage.js';
+import { steamProvider } from './steam.js';
 import { ubisoftProvider } from './ubisoft.js';
 import { xboxProvider } from './xbox.js';
 
@@ -81,27 +81,6 @@ const STATUS_ENRICHERS: StatusEnricher[] = config.statusAllestoerungenEnabled
 const ALL_STATUS_PROVIDERS: Provider[] = withEnrichersAll(BASE_STATUS_PROVIDERS, STATUS_ENRICHERS);
 
 /**
- * The effective PROVIDERS_STATUS list.
- *
- * Crowd-sourced services (DOWNDETECTOR_SERVICES, or
- * STATUS_ALLESTOERUNGEN_SERVICES when the scrape is enabled) are appended
- * automatically, so enabling one only takes a single env var instead of having
- * to remember to also add it here.
- */
-function enabledProviderNames(): string {
-  const base = config.providersStatus.trim();
-  if (!base) return base; // empty = "everything", nothing to append to
-  const listed = new Set(
-    base
-      .split(',')
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean),
-  );
-  const extra = CROWD_PROVIDERS.map((p) => p.name).filter((s) => !listed.has(s));
-  return extra.length > 0 ? `${base},${extra.join(',')}` : base;
-}
-
-/**
  * Orchestrated service-status lookup.
  *
  * With no query (or "all"), fans out to every configured service and merges the
@@ -114,7 +93,7 @@ export function lookupStatus(
   type?: LookupType,
   originalQuery?: string,
 ): DualPromiseResult {
-  let providers = filterAndSortProviders(ALL_STATUS_PROVIDERS, enabledProviderNames());
+  let providers = filterProviders(ALL_STATUS_PROVIDERS, 'status');
 
   const q = (query || '').trim().toLowerCase();
   if (!ALL_KEYWORDS.has(q)) {

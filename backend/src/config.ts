@@ -127,45 +127,13 @@ export const config = {
     | 'networkidle2',
 
   // Providers configuration
-  providersTel: env(
-    'PROVIDERS_TEL',
-    'emergency,fritzbox,tellows,phoneblock,dastelefonbuch,11880,dasoertliche,google,bing,duckduckgo,yahoo',
-  ),
-  providersIp: env(
-    'PROVIDERS_IP',
-    'ip-api.com,ip-api.io,ip-api.io/risk,maxmind,whois,dns,ping,traceroute,portscan,subdomain,google,bing,duckduckgo,yahoo',
-  ),
-  providersDomain: env('PROVIDERS_DOMAIN', 'whois,dns,subdomain,google,bing,duckduckgo,yahoo'),
-  providersEmail: env(
-    'PROVIDERS_EMAIL',
-    'dns-email,ip-api.io/email,ip-api.io/email-advanced,ip-api.io/email-risk,google,bing,duckduckgo,yahoo',
-  ),
-  providersLocation: env(
-    'PROVIDERS_LOCATION',
-    'nominatim,google-maps,google,bing,duckduckgo,yahoo',
-  ),
-  providersParcel: env(
-    'PROVIDERS_PARCEL',
-    'dhl-web,dhl,amazon-tba,ups,usps,fedex,parcelsapp,pkge,17track,google,bing,duckduckgo,yahoo',
-  ),
-  providersShipment: env('PROVIDERS_SHIPMENT', 'amazon,google,bing,duckduckgo,yahoo'),
-  providersWeb: env('PROVIDERS_WEB', 'google,bing,duckduckgo,yahoo'),
-  providersSteam: env(
-    'PROVIDERS_STEAM',
-    'playerdb,steam-xml,steam-api,steam-inventory,backpack-tf,csfloat,steam-db',
-  ),
-  // Download sources for the apk lookup. 'googleplay' is the metadata source
-  // and is always consulted; the rest are the mirrors that are fanned out to.
-  providersApk: env(
-    'PROVIDERS_APK',
-    'googleplay,aptoide,apkpure,apkmirror,evozi,apkcombo,apkpremier,apkdl,apksupport',
-  ),
-  providersUrl: env('PROVIDERS_URL', 'dns-lookup,ip-info,metadata,semonto,urlscan,virustotal'),
-  providersOrder: env('PROVIDERS_ORDER', 'amazon,aliexpress'),
-  providersStatus: env(
-    'PROVIDERS_STATUS',
-    'discord,vrchat,cloudflare,github,epic,reddit,twitch,xbox,playstation,activision,steam,ea,ubisoft,battlenet,nintendo,vercel,digitalocean,netlify,gcp,aws,azure,mongodb,sentry,bluesky,openai,claude,windsurf,devin',
-  ),
+  //
+  // One blacklist instead of thirteen allowlists. Entries turn things off and
+  // are matched punctuation-insensitively; both levels live in the same list:
+  //   - a lookup type ("web", "apk") disables that whole endpoint, and
+  //   - a provider name ("steam-xml", "tellows") disables that one provider.
+  // Empty (the default) means everything registered runs.
+  providersBlacklist: env('PROVIDERS_BLACKLIST', ''),
 
   // Status providers
   statusUserAgent: env(

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { config } from '../backend/src/config.js';
 import {
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
+  isBlacklisted,
+  isTypeBlacklisted,
 } from '../backend/src/lib/providers.js';
 import type { Provider, ProviderResult } from '../backend/src/types/common.js';
 
@@ -16,37 +19,95 @@ function stub(name: string, opts: { available?: boolean; delayMs?: number } = {}
   };
 }
 
-describe('filterAndSortProviders', () => {
+describe('filterProviders', () => {
   const all = [stub('alpha'), stub('beta'), stub('gamma')];
 
-  it('returns every available provider when no selection is given', () => {
-    expect(filterAndSortProviders(all, '').map((p) => p.name)).toEqual(['alpha', 'beta', 'gamma']);
-    expect(filterAndSortProviders(all, undefined).map((p) => p.name)).toHaveLength(3);
+  /** Run `fn` with a given PROVIDERS_BLACKLIST, then restore it. */
+  function withBlacklist<T>(list: string, fn: () => T): T {
+    const original = config.providersBlacklist;
+    config.providersBlacklist = list;
+    try {
+      return fn();
+    } finally {
+      config.providersBlacklist = original;
+    }
+  }
+
+  it('returns every available provider when the blacklist is empty', () => {
+    withBlacklist('', () => {
+      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'beta', 'gamma']);
+    });
   });
 
   it('drops providers that report themselves unavailable', () => {
     const withMissing = [stub('alpha'), stub('beta', { available: false })];
-    expect(filterAndSortProviders(withMissing, '').map((p) => p.name)).toEqual(['alpha']);
-    // Even when explicitly requested.
-    expect(filterAndSortProviders(withMissing, 'beta,alpha').map((p) => p.name)).toEqual(['alpha']);
+    withBlacklist('', () => {
+      expect(filterProviders(withMissing, 'tel').map((p) => p.name)).toEqual(['alpha']);
+    });
   });
 
-  it('honours the order of the selection, not the registry order', () => {
-    expect(filterAndSortProviders(all, 'gamma,alpha').map((p) => p.name)).toEqual([
-      'gamma',
-      'alpha',
-    ]);
+  it('removes only the blacklisted names, keeping registry order', () => {
+    withBlacklist('beta', () => {
+      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'gamma']);
+    });
   });
 
-  it('ignores unknown names and duplicates', () => {
-    expect(filterAndSortProviders(all, 'alpha,nope,alpha').map((p) => p.name)).toEqual(['alpha']);
+  it('tolerates whitespace, case and unknown names in the list', () => {
+    withBlacklist(' BETA , nope,, ', () => {
+      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'gamma']);
+    });
   });
 
-  it('matches names whose punctuation has been stripped', () => {
+  it('matches names whose punctuation has been stripped, in either direction', () => {
     const punctuated = [stub('ip-api.com')];
-    expect(filterAndSortProviders(punctuated, 'ipapicom').map((p) => p.name)).toEqual([
-      'ip-api.com',
-    ]);
+    withBlacklist('ipapicom', () => {
+      expect(filterProviders(punctuated, 'ip')).toEqual([]);
+    });
+    withBlacklist('ip-api.com', () => {
+      expect(filterProviders(punctuated, 'ip')).toEqual([]);
+    });
+  });
+
+  it('answers for things that are not providers, such as whole lookup types', () => {
+    withBlacklist('web,steam-xml', () => {
+      // A whole lookup type and a single sub-provider share the one list.
+      expect(isTypeBlacklisted('web')).toBe(true);
+      expect(isBlacklisted('steamxml')).toBe(true);
+      expect(isTypeBlacklisted('tel')).toBe(false);
+    });
+  });
+
+  it('lets a scope separate a name that means two things', () => {
+    // 'steam' is both a lookup type and a provider in the status registry.
+    withBlacklist('status:steam', () => {
+      expect(isBlacklisted('steam', 'status')).toBe(true);
+      expect(isTypeBlacklisted('steam')).toBe(false);
+    });
+    withBlacklist('type:steam', () => {
+      expect(isTypeBlacklisted('steam')).toBe(true);
+      expect(isBlacklisted('steam', 'status')).toBe(false);
+    });
+    // Unscoped still hits both, which is the common intent.
+    withBlacklist('steam', () => {
+      expect(isTypeBlacklisted('steam')).toBe(true);
+      expect(isBlacklisted('steam', 'status')).toBe(true);
+    });
+  });
+
+  it('runs nothing at all for a blacklisted lookup type', () => {
+    // Defence in depth: the route refuses the type too, but an internal caller
+    // (auto falling back to web) must not fan out to a disabled type either.
+    withBlacklist('tel', () => {
+      expect(filterProviders(all, 'tel')).toEqual([]);
+      expect(filterProviders(all, 'ip').map((p) => p.name)).toHaveLength(3);
+    });
+  });
+
+  it('scopes a provider to its own registry', () => {
+    withBlacklist('tel:beta', () => {
+      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'gamma']);
+      expect(filterProviders(all, 'ip').map((p) => p.name)).toEqual(['alpha', 'beta', 'gamma']);
+    });
   });
 });
 

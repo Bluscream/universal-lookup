@@ -4,7 +4,7 @@ import { config } from '../../config.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
 } from '../../lib/providers.js';
 import { scrapeWithPuppeteer } from '../../lib/puppeteer.js';
 import type {
@@ -277,7 +277,7 @@ export const yahooProvider: Provider = {
 const ALL_WEB_PROVIDERS = [googleProvider, bingProvider, duckduckgoProvider, yahooProvider];
 
 export function lookupWeb(query: string, type: LookupType = 'web'): DualPromiseResult {
-  const providers = filterAndSortProviders(ALL_WEB_PROVIDERS, config.providersWeb);
+  const providers = filterProviders(ALL_WEB_PROVIDERS, 'web');
 
   return executeProvidersBackground(providers, query, type);
 }

@@ -1,25 +1,15 @@
-import { config } from '../../config.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
-import { bingProvider, duckduckgoProvider, googleProvider, yahooProvider } from '../web/index.js';
 import { dnsProvider } from './dns.js';
 import { subdomainProvider } from './subdomain.js';
 import { whois } from './whois.js';
 
 /** All domain lookup providers in priority order */
-const ALL_PROVIDERS: Provider[] = [
-  whois,
-  dnsProvider,
-  subdomainProvider,
-  googleProvider,
-  bingProvider,
-  duckduckgoProvider,
-  yahooProvider,
-];
+const ALL_PROVIDERS: Provider[] = [whois, dnsProvider, subdomainProvider];
 
 /**
  * Run all available Domain providers in parallel with timeout.
@@ -29,7 +19,7 @@ export function lookupDomain(
   type?: LookupType,
   originalQuery?: string,
 ): DualPromiseResult {
-  const providers = filterAndSortProviders(ALL_PROVIDERS, config.providersDomain);
+  const providers = filterProviders(ALL_PROVIDERS, 'domain');
 
   return executeProvidersBackground(providers, query, type, originalQuery);
 }

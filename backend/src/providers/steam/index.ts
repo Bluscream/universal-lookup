@@ -1,8 +1,7 @@
-import { config } from '../../config.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
 } from '../../lib/providers.js';
 import type { LookupType, Provider } from '../../types/common.js';
 import { backpackTfProvider } from './backpack-tf.js';
@@ -34,7 +33,7 @@ export function lookupSteam(
   type?: LookupType,
   originalQuery?: string,
 ): DualPromiseResult {
-  const providers = filterAndSortProviders(ALL_STEAM_PROVIDERS, config.providersSteam);
+  const providers = filterProviders(ALL_STEAM_PROVIDERS, 'steam');
 
   return executeProvidersBackground(providers, query, type, originalQuery);
 }

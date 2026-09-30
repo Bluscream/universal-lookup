@@ -39,8 +39,9 @@ const PROVIDER_CATEGORIES: Record<string, string> = (() => {
   const map: Record<string, string> = {};
   for (const [type, names] of byType) {
     for (const name of names) {
-      // First registry wins, so a provider shared with the web-search
-      // fallbacks keeps its own category rather than being relabelled "web".
+      // First registry wins. Nothing is shared between registries any more —
+      // the web search engines used to also sit in seven other types — but the
+      // guard stays so a future shared provider keeps its own category.
       const key = name.toLowerCase();
       if (!(key in map)) map[key] = type;
     }

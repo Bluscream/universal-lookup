@@ -1,9 +1,10 @@
-import { config, getCacheTtl } from '../../config.js';
+import { getCacheTtl } from '../../config.js';
 import { getCached, setCache } from '../../db/cache.js';
 import {
   type DualPromiseResult,
   executeProvidersBackground,
-  filterAndSortProviders,
+  filterProviders,
+  isBlacklisted,
 } from '../../lib/providers.js';
 import type { ApkData, LookupType, Provider, ProviderResult } from '../../types/common.js';
 import { getApkmirrorDownload } from './subproviders/apkmirror.js';
@@ -181,8 +182,9 @@ export const apkProvider: Provider = {
 };
 
 /**
- * Download mirrors by their PROVIDERS_APK name. 'googleplay' is not here: it is
- * the metadata source, consulted before any of these.
+ * Download mirrors, in the order they are tried. Each name is blacklistable on
+ * its own via PROVIDERS_BLACKLIST, like any other provider. 'googleplay' is not
+ * here: it is the metadata source, consulted before any of these.
  */
 const APK_MIRRORS: Array<[string, (pkg: string) => Promise<ApkDownloadInfo[]>]> = [
   ['aptoide', getAptoideDownload],
@@ -196,13 +198,7 @@ const APK_MIRRORS: Array<[string, (pkg: string) => Promise<ApkDownloadInfo[]>]> 
 ];
 
 function selectedMirrors(): typeof APK_MIRRORS {
-  const requested = config.providersApk
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  if (requested.length === 0) return APK_MIRRORS;
-  // Keep the caller's order, so the first mirror listed is tried first.
-  return requested.flatMap((name) => APK_MIRRORS.filter(([id]) => id === name));
+  return APK_MIRRORS.filter(([id]) => !isBlacklisted(id, 'apk'));
 }
 
 const ALL_PROVIDERS: Provider[] = [apkProvider];
@@ -212,7 +208,7 @@ export function lookupApk(
   type?: LookupType,
   originalQuery?: string,
 ): DualPromiseResult {
-  const providers = filterAndSortProviders(ALL_PROVIDERS);
+  const providers = filterProviders(ALL_PROVIDERS, 'apk');
   return executeProvidersBackground(providers, query, type, originalQuery);
 }
 

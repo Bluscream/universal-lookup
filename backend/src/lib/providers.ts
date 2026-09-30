@@ -1,52 +1,73 @@
 import { config } from '../config.js';
 import type { LookupType, Provider, ProviderResult } from '../types/common.js';
 
+/** Punctuation-insensitive form, so "ipapicom" and "ip-api.com" are one name. */
+function canonical(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
 /**
- * Filter and sort providers based on a comma-separated list of names.
- * If names is empty, returns all available providers in their default order.
+ * The single PROVIDERS_BLACKLIST, as a set of canonical entries.
+ *
+ * An entry is a bare name or `scope:name`, and the scope is kept in the key, so
+ * "status:steam" and "steam" are two distinct entries that `isBlacklisted` below
+ * checks separately.
+ *
+ * Read on every call rather than memoised: the list is a handful of entries, and
+ * tests reassign `config.providersBlacklist` between cases.
  */
-export function filterAndSortProviders(allProviders: Provider[], names?: string): Provider[] {
-  const available = allProviders.filter((p) => p.isAvailable());
-
-  if (!names || names.trim() === '') {
-    return available;
+function blacklist(): Set<string> {
+  const out = new Set<string>();
+  for (const raw of config.providersBlacklist.split(',')) {
+    const [a, b] = raw.split(':');
+    const entry = b === undefined ? canonical(a) : `${canonical(a)}:${canonical(b)}`;
+    if (entry !== '' && entry !== ':') out.add(entry);
   }
+  return out;
+}
 
-  const requestedNames = names
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter((s) => s !== '');
+/**
+ * Whether `name` is turned off, optionally within a `scope`.
+ *
+ * A bare entry matches whatever carries that name, whether that is a lookup type
+ * or a provider inside one. A scoped entry only matches its own scope, which is
+ * how the two names that mean both things can be told apart: `steam` disables
+ * the steam lookup *and* the steam status provider, `status:steam` disables only
+ * the latter, and `type:steam` only the former.
+ */
+export function isBlacklisted(name: string, scope?: string): boolean {
+  const denied = blacklist();
+  const key = canonical(name);
+  return denied.has(key) || (scope !== undefined && denied.has(`${canonical(scope)}:${key}`));
+}
 
-  if (requestedNames.length === 0) {
-    return available;
-  }
+/** Whether a whole lookup type is turned off. */
+export function isTypeBlacklisted(type: string): boolean {
+  return isBlacklisted(type, 'type');
+}
 
-  // Create a map for quick lookup
-  const providerMap = new Map<string, Provider>();
-  for (const p of available) {
-    const name = p.name.toLowerCase();
-    providerMap.set(name, p);
-    // Add common aliases
-    providerMap.set(name.replace(/[^a-z0-9]/g, ''), p); // e.g. "ip-api-com" -> "ipapicom"
-    if (name === '11880') providerMap.set('provider11880', p);
-    if (name === 'ip-api.com') providerMap.set('ipapicom', p);
-    if (name === 'ip-api.io') providerMap.set('ipapiio', p);
-  }
-
-  const sorted: Provider[] = [];
-  const seen = new Set<string>();
-
-  for (const name of requestedNames) {
-    const cleanName = name.replace(/[^a-z0-9]/g, '');
-    const provider = providerMap.get(name) || providerMap.get(cleanName);
-
-    if (provider && !seen.has(provider.name)) {
-      sorted.push(provider);
-      seen.add(provider.name);
-    }
-  }
-
-  return sorted;
+/**
+ * Providers that should actually run, in registry order.
+ *
+ * This replaced a per-type allowlist (PROVIDERS_TEL, PROVIDERS_IP, …) whose
+ * default value had to repeat every provider name, so adding a provider meant
+ * editing config.ts, .env.example and two Unraid templates or it silently never
+ * ran. A blacklist defaults to "everything registered", which is what a new
+ * provider wants. Registry order is now the only order — the arrays are already
+ * written in priority order, and nothing ever depended on reordering via env.
+ *
+ * `type` is the registry's own lookup type, which is what makes `status:steam`
+ * addressable; pass it for every registry. A blacklisted type runs nothing here
+ * as well as being refused by the route, so an internal caller — /auto/ falling
+ * back to a web search, or an ip lookup chaining into a domain one — cannot fan
+ * out to a type the operator turned off.
+ */
+export function filterProviders(allProviders: Provider[], type: string): Provider[] {
+  if (isTypeBlacklisted(type)) return [];
+  return allProviders.filter((p) => p.isAvailable() && !isBlacklisted(p.name, type));
 }
 
 export interface DualPromiseResult {
