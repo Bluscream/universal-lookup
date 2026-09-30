@@ -5,6 +5,7 @@ import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/mer
 import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.js';
 import { lookupApk } from '../providers/apk/index.js';
 import { lookupApp } from '../providers/app/index.js';
+import { lookupArchive } from '../providers/archive/index.js';
 import { lookupDomain } from '../providers/domain/index.js';
 import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
@@ -21,14 +22,14 @@ import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
 import { type DualPromiseResult, isBlacklisted } from '../lib/providers.js';
 import { LOOKUP_TYPES } from '../types/common.js';
-import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
+import type { LookupOptions, LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
 /** Signature shared by every `lookup<Type>()` orchestrator. */
 type LookupFn = (
   query: string,
   type?: LookupType,
   originalQuery?: string,
-  options?: { postalCode?: string },
+  options?: LookupOptions,
 ) => DualPromiseResult;
 
 const VALID_TYPES = new Set<string>([
@@ -47,6 +48,7 @@ const VALID_TYPES = new Set<string>([
   'app',
   'order',
   'status',
+  'archive',
   'auto',
 ]);
 
@@ -86,6 +88,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         zip?: string;
         postal_code?: string;
         postcode?: string;
+        save?: string;
         format?: string;
       };
     }>(
@@ -112,6 +115,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
               zip: { type: 'string' },
               postal_code: { type: 'string' },
               postcode: { type: 'string' },
+              save: { type: 'string', enum: ['true', 'false', '1', '0'] },
               format: { type: 'string', enum: ['statuspage'] },
             },
           },
@@ -137,6 +141,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         zip?: string;
         postal_code?: string;
         postcode?: string;
+        save?: boolean | string;
       };
     }>(
       `${prefix}/:type`,
@@ -162,6 +167,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
               zip: { type: 'string' },
               postal_code: { type: 'string' },
               postcode: { type: 'string' },
+              save: { type: ['boolean', 'string'] },
             },
             required: ['query'],
           },
@@ -169,7 +175,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         },
       },
       async (request) => {
-        const { query, raw, fresh, wait, zip, postal_code, postcode } = request.body;
+        const { query, raw, fresh, wait, zip, postal_code, postcode, save } = request.body;
         const queryParams = {
           raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
           fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
@@ -177,6 +183,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
           zip,
           postal_code,
           postcode,
+          save: typeof save === 'boolean' ? (save ? 'true' : 'false') : save,
         };
         return handleLookup(request.params.type, query || '', queryParams, request.ip);
       },
@@ -193,6 +200,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         zip?: string;
         postal_code?: string;
         postcode?: string;
+        save?: boolean | string;
       };
     }>(
       `${prefix}/lookup`,
@@ -211,6 +219,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
               zip: { type: 'string' },
               postal_code: { type: 'string' },
               postcode: { type: 'string' },
+              save: { type: ['boolean', 'string'] },
             },
             required: ['type', 'query'],
           },
@@ -218,7 +227,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         },
       },
       async (request) => {
-        const { type, query, raw, fresh, wait, zip, postal_code, postcode } = request.body;
+        const { type, query, raw, fresh, wait, zip, postal_code, postcode, save } = request.body;
         const queryParams = {
           raw: typeof raw === 'boolean' ? (raw ? 'true' : 'false') : raw,
           fresh: typeof fresh === 'boolean' ? (fresh ? 'true' : 'false') : fresh,
@@ -226,6 +235,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
           zip,
           postal_code,
           postcode,
+          save: typeof save === 'boolean' ? (save ? 'true' : 'false') : save,
         };
         return handleLookup(type, query, queryParams, request.ip);
       },
@@ -324,6 +334,7 @@ async function handleLookup(
     zip?: string;
     postal_code?: string;
     postcode?: string;
+    save?: string;
   },
   clientIp: string,
 ): Promise<LookupResponse> {
@@ -335,7 +346,19 @@ async function handleLookup(
     !config.disableWait && (queryParams.wait === 'true' || queryParams.wait === '1');
 
   const postalCode = queryParams.postal_code || queryParams.postcode || queryParams.zip;
-  const options = postalCode ? { postalCode } : undefined;
+  /**
+   * `?save=true` is the opt-in for publishing to a public archive.
+   *
+   * It is a separate parameter rather than a property of the `archive` type
+   * because it changes what a lookup *does* to the world: without it, /archive/
+   * only reports what is already out there. Nothing else reads it, and no other
+   * lookup type acts on it.
+   */
+  const save = queryParams.save === 'true' || queryParams.save === '1';
+  const options: LookupOptions | undefined =
+    postalCode || save
+      ? { ...(postalCode ? { postalCode } : {}), ...(save ? { save } : {}) }
+      : undefined;
 
   if (!VALID_TYPES.has(type)) {
     return {
@@ -382,8 +405,14 @@ async function handleLookup(
     }
   }
 
-  // Check cache (unless ?fresh=true)
-  if (!forceFresh) {
+  // Check cache (unless ?fresh=true, or a save was asked for).
+  //
+  // A save must never be answered from cache: the caller asked for an action,
+  // and handing back yesterday's read would report it as done without anything
+  // having happened. For the same reason its response is not written to the
+  // cache either (below) — "just saved" is true for one moment, and caching it
+  // would make every later plain lookup claim this request saved something.
+  if (!forceFresh && !save) {
     const cached = getCached(resolvedType, normalizedQuery);
     if (cached) {
       // Update request metadata for this specific request
@@ -486,7 +515,7 @@ async function handleLookup(
 
   // Cache the initial response (with full raw for potential future ?raw requests)
   const fullResponse = { ...response, raw: collectRaw(clientResults) };
-  cacheResponse(resolvedType, normalizedQuery, fullResponse);
+  if (!save) cacheResponse(resolvedType, normalizedQuery, fullResponse);
 
   // Background caching: wait for server promise and update cache if needed
   if (serverPromise) {
@@ -514,7 +543,7 @@ async function handleLookup(
             query: normalizedQuery,
           },
         };
-        cacheResponse(resolvedType, normalizedQuery, finalResponse);
+        if (!save) cacheResponse(resolvedType, normalizedQuery, finalResponse);
       })
       .catch(() => {
         // Ignore background errors
@@ -586,6 +615,8 @@ function getLookupFunction(type: LookupType): LookupFn {
       return lookupOrder;
     case 'status':
       return lookupStatus;
+    case 'archive':
+      return lookupArchive;
     default:
       return lookupWeb;
   }

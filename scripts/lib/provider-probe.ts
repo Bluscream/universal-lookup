@@ -22,6 +22,7 @@ import { config, ensureDataDir } from '../../backend/src/config.js';
 import { initDatabase } from '../../backend/src/db/migrations.js';
 import { APK_MIRRORS, PROVIDERS as apk } from '../../backend/src/providers/apk/index.js';
 import { PROVIDERS as app } from '../../backend/src/providers/app/index.js';
+import { PROVIDERS as archive } from '../../backend/src/providers/archive/index.js';
 import { PROVIDERS as domain } from '../../backend/src/providers/domain/index.js';
 import { PROVIDERS as email } from '../../backend/src/providers/email/index.js';
 import { PROVIDERS as ip } from '../../backend/src/providers/ip/index.js';
@@ -54,6 +55,18 @@ export const QUERIES: Record<string, string> = {
   // probes, so the target has to be something harmless that is already
   // shortened a thousand times a day.
   shorten: 'https://example.com',
+  // The probe exercises the archive providers' READ path only, and this is the
+  // main reason the query is example.com: a boring, stable, already-archived URL
+  // whose snapshots every service has. The save path is deliberately not probed.
+  // It is opt-in per request (`?save=true`) and `options` is not passed here, so
+  // there is nothing to suppress — but it is worth saying why that is right
+  // rather than a gap. A probe that saved would publish a URL to five public
+  // archives on every run, which is an irreversible side effect a health check
+  // must not have; and a Wayback save takes minutes, far past the probe's
+  // SERVER_TIMEOUT deadline, so it would report a spurious failure for a save
+  // that was in fact going to succeed. Reading is the honest test: it uses the
+  // same credentials, endpoints and parsers, and a broken service fails it.
+  archive: 'https://example.com',
   web: 'example.com',
   status: 'github',
   steam: '76561197960435530', // Valve's own well-known test account
@@ -99,6 +112,7 @@ export const REGISTRIES: Array<[string, Provider[]]> = [
   ['location', location],
   ['url', url],
   ['shorten', shorten],
+  ['archive', archive],
   ['web', web],
   ['status', status],
   ['steam', steam],

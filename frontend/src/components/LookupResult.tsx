@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { AppEntry, LookupResponse, LookupType, ShortLink, WebResult } from '../types/api';
 import { ApkCard } from './ApkCard';
 import { AppTable } from './AppTable';
+import { ArchiveCard } from './ArchiveCard';
 import { MapCard } from './MapCard';
 import { OrderCard } from './OrderCard';
 import { ParcelTimeline } from './ParcelTimeline';
@@ -140,6 +141,7 @@ export function LookupResult({ data }: LookupResultProps) {
   const isStatus = reqType === 'status' || 'services' in response;
   const isShorten = reqType === 'shorten' || 'short_links' in response;
   const shortLinks = (response.short_links as ShortLink[] | undefined) ?? [];
+  const isArchive = reqType === 'archive' || 'snapshots' in response;
 
   // Determine excluded keys based on card type
   let excludedKeys: string[] = [];
@@ -265,6 +267,8 @@ export function LookupResult({ data }: LookupResultProps) {
     excludedKeys = ['services', 'incidents'];
   } else if (isShorten) {
     excludedKeys = ['short_links', 'short_url', 'long_url'];
+  } else if (isArchive) {
+    excludedKeys = ['archives', 'snapshots', 'original_url', 'save_requested', 'archived'];
   }
 
   // Check for geographic coordinates
@@ -345,6 +349,7 @@ export function LookupResult({ data }: LookupResultProps) {
         )}
         {isOrder && <OrderCard response={response} />}
         {isStatus && <StatusCard response={response} />}
+        {isArchive && <ArchiveCard response={response} />}
 
         {/* Priority key cards */}
         {CARD_KEYS.filter(

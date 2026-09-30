@@ -16,6 +16,7 @@ export type LookupType =
   | 'app'
   | 'order'
   | 'status'
+  | 'archive'
   | 'auto';
 
 export type StatusIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance' | 'unknown';
@@ -169,6 +170,25 @@ export interface WebResult {
   provider: string;
 }
 
+// Archive types
+export interface ArchiveSnapshot {
+  service: string;
+  snapshot_url: string;
+  original_url?: string;
+  timestamp?: string;
+  http_status?: number;
+  saved_now?: boolean;
+}
+
+export type ArchiveSaveState = 'saved' | 'existing' | 'not-archived' | 'read-only' | 'unconfigured';
+
+export interface ArchiveServiceResult {
+  service: string;
+  status: ArchiveSaveState;
+  note?: string;
+  snapshots?: ArchiveSnapshot[];
+}
+
 // APK download types
 export interface ApkDownload {
   source: string;
@@ -193,6 +213,7 @@ export const PLACEHOLDERS: Record<LookupType, string> = {
   app: 'e.g. firefox, vlc, obs-studio — searched across every software repository',
   order: 'e.g. 305-1827771-7197161',
   status: 'all, or e.g. discord,xbox,playstation',
+  archive: 'e.g. https://example.com — add ?save=true to publish it to an archive',
   auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
 };
 
@@ -212,6 +233,7 @@ export const LOOKUP_OPTIONS: { value: LookupType; label: string; icon: string }[
   { value: 'app', label: 'Software', icon: '📦' },
   { value: 'order', label: 'Order', icon: '📦' },
   { value: 'status', label: 'Service Status', icon: '🚦' },
+  { value: 'archive', label: 'Web Archives', icon: '🗄️' },
   { value: 'auto', label: 'Auto Detect', icon: '✨' },
 ];
 

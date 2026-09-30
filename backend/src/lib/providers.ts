@@ -1,5 +1,5 @@
 import { config } from '../config.js';
-import type { LookupType, Provider, ProviderResult } from '../types/common.js';
+import type { LookupOptions, LookupType, Provider, ProviderResult } from '../types/common.js';
 
 /** Punctuation-insensitive form, so "ipapicom" and "ip-api.com" are one name. */
 function canonical(name: string): string {
@@ -67,9 +67,12 @@ export function executeProvidersBackground(
   query: string,
   type?: LookupType,
   originalQuery?: string,
-  options?: { postalCode?: string },
+  options?: LookupOptions,
 ): DualPromiseResult {
-  // Wrap each provider execution in a promise that respects the SERVER_TIMEOUT
+  // SERVER_TIMEOUT unless the caller asked for longer — see LookupOptions.
+  const serverTimeout = options?.timeoutMs ?? config.serverTimeout;
+
+  // Wrap each provider execution in a promise that respects that deadline
   const providerPromises = providers.map(async (provider) => {
     // Losing the race does not cancel the timer, and a /status fan-out starts
     // ~30 of these. Left uncleared they hold the event loop open for the full
@@ -80,7 +83,7 @@ export function executeProvidersBackground(
       const result = await Promise.race([
         provider.lookup(query, type, originalQuery, options),
         new Promise<ProviderResult>((_, reject) => {
-          timer = setTimeout(() => reject(new Error('Timeout')), config.serverTimeout);
+          timer = setTimeout(() => reject(new Error('Timeout')), serverTimeout);
         }),
       ]);
       return result;
@@ -90,7 +93,7 @@ export function executeProvidersBackground(
         success: false,
         data: {},
         error: error instanceof Error ? error.message : String(error),
-        duration: config.serverTimeout,
+        duration: serverTimeout,
       };
     } finally {
       if (timer !== undefined) clearTimeout(timer);

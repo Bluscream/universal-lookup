@@ -1398,6 +1398,83 @@ a:hover {
   line-height: 1.4;
 }
 
+/* ============ Web Archives ============ */
+.archive-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+.archive-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.archive-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+.archive-original-url {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+.archive-header-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.archive-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.archive-services {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.archive-service {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.archive-service:last-child {
+  border-bottom: none;
+}
+.archive-service-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.archive-service-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.archive-snapshot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-top: 0.4rem;
+}
+.archive-snapshot-link {
+  font-size: 0.8rem;
+  color: var(--accent-secondary);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+.archive-snapshot-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 768px) {
   .navbar {

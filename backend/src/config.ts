@@ -207,6 +207,33 @@ export const config = {
   // How many NINA warnings to fetch full CAP detail for. Each is one request.
   locationNinaDetailLimit: envInt('LOCATION_NINA_DETAIL_LIMIT', 5),
 
+  // Archive providers
+  //
+  // Saving publishes the queried URL to a public third-party archive and cannot
+  // be undone, so it never happens on an ordinary lookup: the caller has to ask
+  // with `?save=true`. ARCHIVE_SAVE_ENABLED is the operator's switch over that —
+  // with it false, a save request is refused and only existing snapshots are
+  // reported, which is the right default for an instance exposed to the world.
+  archiveSaveEnabled: envBool('ARCHIVE_SAVE_ENABLED', true),
+  // A Wayback save takes tens of seconds and the endpoint blocks a caller that
+  // hammers it, so saves are serialized with this gap and given their own, much
+  // longer deadline than SERVER_TIMEOUT. The same gap paces the Save Page Now
+  // status polls, which are the same conversation with the same endpoint.
+  archiveSaveTimeout: envInt('ARCHIVE_SAVE_TIMEOUT', 120000),
+  archiveSaveMinGapMs: envInt('ARCHIVE_SAVE_MIN_GAP_MS', 5000),
+  // archive.org S3-style keys, from https://archive.org/account/s3.php.
+  // Save Page Now answers an anonymous request "You need to be logged in to use
+  // Save Page Now" (HTTP 401), so these are not a rate-limit upgrade any more —
+  // they are what makes saving to the Wayback Machine possible at all. Reading
+  // existing snapshots needs no credentials.
+  iaAccessKey: env('IA_ACCESS_KEY'),
+  iaSecretKey: env('IA_SECRET_KEY'),
+  // perma.cc API key, from a perma.cc account's settings page. Without it the
+  // provider reports itself unavailable, like every other credentialed one.
+  permaCcApiKey: env('PERMA_CC_API_KEY'),
+  // Perma links are created inside a folder; empty means the account's default.
+  permaCcFolderId: env('PERMA_CC_FOLDER_ID'),
+
   // Status providers
   statusUserAgent: env(
     'STATUS_USER_AGENT',

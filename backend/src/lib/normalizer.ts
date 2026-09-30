@@ -290,6 +290,9 @@ export async function normalizeQuery(type: LookupType, input: string): Promise<s
     // the shorteners as one URL and share one cache entry — which matters more
     // here than elsewhere, since a miss creates a link.
     case 'shorten':
+    // An archive query is a URL, and the archives key their snapshots on the
+    // full form — a bare "example.com" finds nothing at any of them.
+    case 'archive':
       return normalizeUrl(input);
     case 'apk':
       return input.trim();

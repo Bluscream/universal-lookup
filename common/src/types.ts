@@ -19,6 +19,7 @@ export const LOOKUP_TYPES = [
   'app',
   'order',
   'status',
+  'archive',
   'auto',
 ] as const;
 
@@ -488,6 +489,69 @@ export interface WebData {
   [key: string]: unknown;
 }
 
+/**
+ * What one archival service knows about one URL.
+ *
+ * Every archive provider emits this same shape, so a client never has to know
+ * which service answered: `service` names it, and every other field means the
+ * same thing everywhere. Anything genuinely specific to one service stays in
+ * that provider's `raw`, not here.
+ */
+export interface ArchiveSnapshot {
+  /** The service that holds it — 'wayback', 'archive-today', … */
+  service: string;
+  /** Link to the archived copy. */
+  snapshot_url: string;
+  /** The URL that was archived, as the service recorded it. */
+  original_url?: string | null;
+  /** When the snapshot was taken, ISO 8601. */
+  timestamp?: string | null;
+  /** The HTTP status the archive recorded for the page it captured. */
+  http_status?: number | null;
+  /** True only when this very lookup created the snapshot. */
+  saved_now?: boolean | null;
+}
+
+/**
+ * What happened at one service, and whether it can be written to at all.
+ *
+ *   saved         this lookup published the URL to the service
+ *   existing      the service already held a copy; nothing was published
+ *   not-archived  the service answered, and has no copy
+ *   read-only     the service has no save path we can use (see `note`)
+ *   unconfigured  saving there needs credentials this deployment does not have
+ */
+export type ArchiveSaveState = 'saved' | 'existing' | 'not-archived' | 'read-only' | 'unconfigured';
+
+/** One archival service's answer for a URL. */
+export interface ArchiveServiceResult {
+  service: string;
+  status: ArchiveSaveState;
+  /** Why the service could not be saved to, when that is the answer. */
+  note?: string | null;
+  snapshots?: ArchiveSnapshot[] | null;
+}
+
+export interface ArchiveData {
+  original_url?: string | null;
+  /**
+   * Set to true by a provider that found or made a snapshot, and left unset
+   * otherwise — the merger keeps the first non-empty value, so a provider with
+   * nothing to report must stay silent rather than answer for the rest.
+   */
+  archived?: boolean | null;
+  /** Whether this request asked for the URL to be published (`?save=true`). */
+  save_requested?: boolean | null;
+  snapshots?: ArchiveSnapshot[] | null;
+  /**
+   * Per-service outcome. Named `archives` rather than `services` because the
+   * status lookup already owns `services` in the merged response with an
+   * entirely different meaning, and there is one flat response namespace.
+   */
+  archives?: ArchiveServiceResult[] | null;
+  [key: string]: unknown;
+}
+
 /** Canonical health indicator across all status providers. */
 export type StatusIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance' | 'unknown';
 
@@ -565,6 +629,26 @@ export interface MaintenanceWindow {
   utcHourEnd: number;
 }
 
+/**
+ * Per-request options passed down to every provider.
+ *
+ * `save` is deliberately not a boolean that defaults to true: the archive
+ * providers publish the query URL to a third-party public archive, which is an
+ * outward-facing and irreversible act, so it happens only when the caller asked
+ * for it with `?save=true`.
+ */
+export interface LookupOptions {
+  postalCode?: string;
+  save?: boolean;
+  /**
+   * Deadline for this lookup's providers, overriding SERVER_TIMEOUT. Archiving
+   * is the case that needs it: Save Page Now captures a page asynchronously and
+   * routinely takes minutes, so the ordinary 30s ceiling would abandon a save
+   * that is going to succeed — and abandoning it does not undo it.
+   */
+  timeoutMs?: number;
+}
+
 /** Provider function interface */
 export interface Provider {
   name: string;
@@ -572,7 +656,7 @@ export interface Provider {
     query: string,
     type?: LookupType,
     originalQuery?: string,
-    options?: { postalCode?: string },
+    options?: LookupOptions,
   ): Promise<ProviderResult>;
   isAvailable(): boolean;
 }
