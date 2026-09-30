@@ -8,6 +8,13 @@ const CHROMIUM_CANDIDATES = [
   '/usr/bin/chromium',
   '/usr/bin/chromium-browser',
   '/usr/bin/google-chrome-stable',
+  // Immutable desktops (Bazzite, Silverblue) have no Chromium in /usr/bin at
+  // all — it is a Flatpak. The exported wrapper takes the same arguments and
+  // drives fine over the DevTools protocol; the binary inside the sandbox does
+  // not run directly, because it needs the Flatpak runtime's glibc.
+  '/var/lib/flatpak/exports/bin/io.github.ungoogled_software.ungoogled_chromium',
+  '/var/lib/flatpak/exports/bin/org.chromium.Chromium',
+  '/var/lib/flatpak/exports/bin/com.google.Chrome',
 ];
 
 let browser: Browser | null = null;
@@ -121,7 +128,8 @@ export async function getBrowser(): Promise<Browser> {
   const executablePath = resolvePuppeteerExecutablePath();
   if (!executablePath) {
     throw new Error(
-      'Chromium not found. Set PUPPETEER_EXECUTABLE_PATH (e.g. /usr/bin/chromium) or install system Chromium.',
+      'Chromium not found. Set PUPPETEER_EXECUTABLE_PATH (e.g. /usr/bin/chromium, or a ' +
+        'Flatpak wrapper under /var/lib/flatpak/exports/bin/) or install system Chromium.',
     );
   }
 

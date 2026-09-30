@@ -45,7 +45,31 @@ function print(row: Row): void {
   );
 }
 
+/**
+ * Keep one bad provider from ending the run.
+ *
+ * `order/amazon` took the whole process down with "Database not initialized",
+ * thrown from a floating promise well outside the awaited call — so every row
+ * after it was simply never reported, which is the one thing this probe must not
+ * do. The probe initialises the database now, but a provider that throws from a
+ * detached promise can still happen, and losing the rest of the run over it is a
+ * worse outcome than a noisy line.
+ */
+function survivePoorlyBehavedProviders(): void {
+  process.on('uncaughtException', (error) => {
+    console.warn(`⚠️  uncaught exception from a provider (run continues): ${error.message}`);
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.warn(
+      `⚠️  unhandled rejection from a provider (run continues): ${
+        reason instanceof Error ? reason.message : String(reason)
+      }`,
+    );
+  });
+}
+
 async function main(): Promise<void> {
+  survivePoorlyBehavedProviders();
   const args = process.argv.slice(2);
   const asJson = args.includes('--json');
   const wanted = args.filter((a) => !a.startsWith('--'));

@@ -4,8 +4,10 @@ import { LOOKUP_TYPES } from '../backend/src/types/common.js';
 import {
   needsCredentials,
   PROBED_TYPES,
+  PROVIDER_QUERIES,
   probeTargets,
   QUERIES,
+  queryFor,
   REGISTRIES,
   UNPROBED_TYPES,
   looksBroken,
@@ -29,6 +31,21 @@ describe('the probe reaches every provider', () => {
   it('has a known-good query for every probed type', () => {
     const missing = PROBED_TYPES.filter((type) => !QUERIES[type]?.trim());
     expect(missing).toEqual([]);
+  });
+
+  it('gives every provider a non-empty query', () => {
+    const missing = probeTargets()
+      .filter(([type, p]) => !queryFor(type, p.name)?.trim())
+      .map(([type, p]) => `${type}/${p.name}`);
+    expect(missing).toEqual([]);
+  });
+
+  it('every per-provider query override names a provider that exists', () => {
+    // A rename would otherwise leave the override in place and silently stop
+    // applying, sending that provider back to the type-wide query it rejects.
+    const known = probeTargets().map(([type, p]) => `${type}/${p.name}`);
+    const stale = Object.keys(PROVIDER_QUERIES).filter((key) => !known.includes(key));
+    expect(stale).toEqual([]);
   });
 
   it('runs every registered provider', () => {

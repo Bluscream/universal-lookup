@@ -18,7 +18,8 @@
  * after every provider has had its turn, never by aborting the run.
  */
 
-import { config } from '../../backend/src/config.js';
+import { config, ensureDataDir } from '../../backend/src/config.js';
+import { initDatabase } from '../../backend/src/db/migrations.js';
 import { APK_MIRRORS, PROVIDERS as apk } from '../../backend/src/providers/apk/index.js';
 import { PROVIDERS as domain } from '../../backend/src/providers/domain/index.js';
 import { PROVIDERS as email } from '../../backend/src/providers/email/index.js';
@@ -52,9 +53,32 @@ export const QUERIES: Record<string, string> = {
   steam: '76561197960435530', // Valve's own well-known test account
   apk: 'com.android.chrome',
   parcel: '1Z999AA10123456784', // UPS's documented sample tracking number
-  shipment: 'TBA000000000000',
+  // The shipment provider takes an order number, `orderId::trackingNumber`, or a
+  // tracking URL — a bare TBA number was rejected as malformed, which is not a
+  // test of anything.
+  shipment: '000-0000000-0000000',
   order: '000-0000000-0000000',
 };
+
+/**
+ * Per-provider query overrides, keyed `type/provider`.
+ *
+ * One query per type is right for providers that answer the same question, but
+ * some validate a format only they accept and reject anything else before making
+ * a request — which tests nothing at all. These give those providers a key of the
+ * shape they want. The values need not identify a real parcel or order: a
+ * well-formed key that comes back "not found" still exercises the provider,
+ * whereas a malformed one only exercises its format check.
+ */
+export const PROVIDER_QUERIES: Record<string, string> = {
+  'parcel/amazon-tba': 'TBA000000000000',
+  'order/aliexpress': '8000000000000000', // 16 digits, which is all it checks for
+};
+
+/** The query a given provider is probed with. */
+export function queryFor(type: string, provider: string): string {
+  return PROVIDER_QUERIES[`${type}/${provider}`] ?? QUERIES[type];
+}
 
 export const REGISTRIES: Array<[string, Provider[]]> = [
   ['tel', tel],
@@ -266,7 +290,7 @@ export async function probe(type: string, provider: Provider, timeout: number): 
   }
 
   try {
-    const query = QUERIES[type];
+    const query = queryFor(type, provider.name);
     const result = await withTimeout(provider.lookup(query, type as never), timeout);
     if (result.success) return { ...base, state: 'ok', authed, ms: Date.now() - started };
     const detail = result.error ?? 'reported success: false with no error';
@@ -301,7 +325,15 @@ export async function probeAll(options?: {
   timeout?: number;
   onRow?: (row: Row) => void;
 }): Promise<Row[]> {
-  const timeout = options?.timeout ?? 25_000;
+  // The same deadline the server itself gives a provider: one that cannot answer
+  // inside SERVER_TIMEOUT is not working in production either.
+  const timeout = options?.timeout ?? config.serverTimeout;
+  // The providers are written against a running server, and some of them reach
+  // for the database — the Amazon ones save their session cookies there. Without
+  // this the first of those throws "Database not initialized" outside the awaited
+  // chain and takes the whole process down, losing every row after it.
+  ensureDataDir();
+  await initDatabase();
   const rows: Row[] = [];
   for (const [type, provider] of probeTargets(options?.types)) {
     const row = await probe(type, provider, timeout);
