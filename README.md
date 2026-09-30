@@ -61,7 +61,7 @@ All endpoints are available at `http://localhost:24010/api/*`.
 | `GET /api/ip/:query` | IP intelligence, ping, traceroute, ports | `8.8.8.8` |
 | `GET /api/domain/:query` | WHOIS, DNS records, subdomains | `example.com` |
 | `GET /api/email/:query` | Email validation & risk | `user@example.com` |
-| `GET /api/location/:query` | Geocoding & reverse geocoding | `Berlin, Germany` |
+| `GET /api/location/:query` | Geocoding, official warnings & current weather | `Berlin, Germany` |
 | `GET /api/parcel/:query` | Package tracking | `00340434515310596216` |
 | `GET /api/shipment/:query` | Shipment lookup by order | `702-1234567-1234567` |
 | `GET /api/order/:query` | Order details (Amazon, AliExpress) | `702-1234567-1234567` |

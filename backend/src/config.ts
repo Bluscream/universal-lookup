@@ -135,6 +135,20 @@ export const config = {
   // Empty (the default) means everything registered runs.
   providersBlacklist: env('PROVIDERS_BLACKLIST', ''),
 
+  // Location providers
+  //
+  // The warning and weather providers geocode through Nominatim, whose usage
+  // policy is 1 req/s, so the result is shared and cached for a day — a place's
+  // coordinates do not move.
+  locationGeocodeTtl: envInt('LOCATION_GEOCODE_TTL', 86400),
+  locationWarningsEnabled: envBool('LOCATION_WARNINGS_ENABLED', true),
+  locationWeatherEnabled: envBool('LOCATION_WEATHER_ENABLED', true),
+  // German text where a warning carries both. DWD and NINA publish the German
+  // original and a translation, and the German is the authoritative wording.
+  locationWarningsGerman: envBool('LOCATION_WARNINGS_GERMAN', true),
+  // How many NINA warnings to fetch full CAP detail for. Each is one request.
+  locationNinaDetailLimit: envInt('LOCATION_NINA_DETAIL_LIMIT', 5),
+
   // Status providers
   statusUserAgent: env(
     'STATUS_USER_AGENT',

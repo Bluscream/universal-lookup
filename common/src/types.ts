@@ -175,6 +175,57 @@ export interface EmailData {
   [key: string]: unknown;
 }
 
+/**
+ * Canonical severity for a location warning, lowest to highest.
+ *
+ * DWD and NINA both publish the CAP severity vocabulary, so this is their own
+ * scale rather than one invented here — which is why both can emit the shared
+ * field instead of a `dwd_`/`nina_` prefixed one.
+ */
+export type WarningSeverity = 'unknown' | 'minor' | 'moderate' | 'severe' | 'extreme';
+
+/**
+ * One active warning for a place, from any warning provider.
+ *
+ * Providers append to the same `warnings` array, so a place covered by both a
+ * weather warning and a civil-protection alert reports both in one list. `source`
+ * is the provider that issued it.
+ */
+export interface LocationWarning {
+  source: string;
+  /** Event type as the issuer names it, e.g. "Sturmböen" or "Gefahreninformation". */
+  event?: string | null;
+  headline?: string | null;
+  description?: string | null;
+  /** What the issuer tells people to do. Empty for most weather warnings. */
+  instruction?: string | null;
+  severity?: WarningSeverity | null;
+  /** CAP urgency: Immediate, Expected, Future, Past. */
+  urgency?: string | null;
+  /** Free-text area the warning covers, as the issuer describes it. */
+  area?: string | null;
+  start?: string | null;
+  end?: string | null;
+  url?: string | null;
+}
+
+/** Current conditions for a place. Units are in the field names. */
+export interface LocationWeather {
+  observed_at?: string | null;
+  temperature_c?: number | null;
+  apparent_temperature_c?: number | null;
+  humidity_percent?: number | null;
+  precipitation_mm?: number | null;
+  cloud_cover_percent?: number | null;
+  pressure_hpa?: number | null;
+  wind_speed_kmh?: number | null;
+  wind_gust_kmh?: number | null;
+  wind_direction_deg?: number | null;
+  /** Plain-language conditions, e.g. "Light rain". */
+  condition?: string | null;
+  source?: string | null;
+}
+
 export interface LocationData {
   name?: string | null;
   latitude?: number | null;
@@ -186,6 +237,10 @@ export interface LocationData {
   postal_code?: string | null;
   bounding_box?: string[] | null;
   display_name?: string | null;
+  warnings?: LocationWarning[] | null;
+  /** Highest severity across `warnings`, so a caller can triage without reading them. */
+  warning_level?: WarningSeverity | null;
+  weather?: LocationWeather | null;
   [key: string]: unknown;
 }
 
