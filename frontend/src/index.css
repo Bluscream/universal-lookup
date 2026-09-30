@@ -1322,6 +1322,47 @@ a:hover {
 .web-results-card {
   padding: 1rem 1.25rem;
 }
+/* Short links (/shorten) */
+.short-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.short-link-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.short-link-item:last-child {
+  border-bottom: none;
+}
+.short-link-service {
+  min-width: 5.5rem;
+  text-align: center;
+}
+.short-link-url {
+  flex: 1;
+  color: var(--accent-secondary);
+  word-break: break-all;
+}
+.short-link-copy {
+  cursor: pointer;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: inherit;
+}
+.short-link-copy:hover {
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+}
+
 .web-results-list {
   display: flex;
   flex-direction: column;

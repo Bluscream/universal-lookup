@@ -14,6 +14,7 @@ export const LOOKUP_TYPES = [
   'web',
   'steam',
   'url',
+  'shorten',
   'apk',
   'order',
   'status',
@@ -317,6 +318,54 @@ export interface SteamData {
   total_inventory_items?: number | null;
   trade_ban_state?: string | null;
   csfloat_registered?: boolean | null;
+  [key: string]: unknown;
+}
+
+/**
+ * One short link, as created by one shortening service.
+ *
+ * Every service answers the same question, so every service fills the same
+ * fields: a client must not have to know which one replied. Only what is
+ * genuinely one service's own — a YOURLS keyword, its click counter — is
+ * namespaced, and only where nothing else has an equivalent.
+ */
+export interface ShortLink {
+  /** The shortening service, matching the provider name: yourls, is.gd, … */
+  service: string;
+  /** The created (or pre-existing) short URL. */
+  short_url: string;
+  /** The URL it points at, echoed back by the services that report it. */
+  long_url?: string | null;
+  /** Creation timestamp, ISO 8601, where the service reports one. */
+  created?: string | null;
+  /**
+   * True when the service returned a link it already held for this URL rather
+   * than creating a new one. Worth surfacing: shortening is a write, and
+   * "nothing was created" is a different outcome from "a link was created".
+   */
+  existing?: boolean | null;
+  /** The short code itself, where the service exposes it separately. */
+  keyword?: string | null;
+  /** Clicks so far; only the services that keep statistics report this. */
+  clicks?: number | null;
+  [key: string]: unknown;
+}
+
+export interface ShortenData {
+  /** The URL that was shortened — the same for every provider in a lookup. */
+  long_url?: string | null;
+  /**
+   * This provider's short URL. The merger keeps the first non-empty value, so
+   * registry order decides which service owns the top-level field; YOURLS is
+   * registered first, so a self-hosted instance wins over the public ones.
+   */
+  short_url?: string | null;
+  /**
+   * Every short link from every service that answered. The merger concatenates
+   * arrays, so each provider contributes only its own entry and the merged
+   * response carries the full list.
+   */
+  short_links?: ShortLink[] | null;
   [key: string]: unknown;
 }
 

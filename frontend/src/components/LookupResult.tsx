@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import type { LookupResponse, LookupType, WebResult } from '../types/api';
+import type { LookupResponse, LookupType, ShortLink, WebResult } from '../types/api';
 import { ApkCard } from './ApkCard';
 import { MapCard } from './MapCard';
 import { OrderCard } from './OrderCard';
 import { ParcelTimeline } from './ParcelTimeline';
+import { ShortLinksCard } from './ShortLinksCard';
 import { StatusCard } from './StatusCard';
 import { SteamProfileCard } from './SteamProfileCard';
 import { UrlMetadataCard } from './UrlMetadataCard';
@@ -135,6 +136,8 @@ export function LookupResult({ data }: LookupResultProps) {
   const isParcel = reqType === 'parcel' || reqType === 'shipment' || 'tracking_number' in response;
   const isOrder = reqType === 'order' || 'order_id' in response;
   const isStatus = reqType === 'status' || 'services' in response;
+  const isShorten = reqType === 'shorten' || 'short_links' in response;
+  const shortLinks = (response.short_links as ShortLink[] | undefined) ?? [];
 
   // Determine excluded keys based on card type
   let excludedKeys: string[] = [];
@@ -258,6 +261,8 @@ export function LookupResult({ data }: LookupResultProps) {
     excludedKeys = ['order_id', 'items', 'tracking_ids'];
   } else if (isStatus) {
     excludedKeys = ['services', 'incidents'];
+  } else if (isShorten) {
+    excludedKeys = ['short_links', 'short_url', 'long_url'];
   }
 
   // Check for geographic coordinates
@@ -327,6 +332,12 @@ export function LookupResult({ data }: LookupResultProps) {
             events={(response.events as unknown as import('../types/api').ParcelEvent[]) || []}
             latitude={response.latitude as number}
             longitude={response.longitude as number}
+          />
+        )}
+        {isShorten && shortLinks.length > 0 && (
+          <ShortLinksCard
+            longUrl={(response.long_url as string) || (data.request?.query ?? '')}
+            links={shortLinks}
           />
         )}
         {isOrder && <OrderCard response={response} />}

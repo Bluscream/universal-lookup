@@ -89,6 +89,22 @@ export const config = {
   steamApiKey: env('STEAM_API_KEY'),
   virustotalApiKey: env('VIRUSTOTAL_API_KEY'),
   urlscanApiKey: env('URLSCAN_API_KEY'),
+
+  // YOURLS, the self-hosted shortener behind the /shorten/ lookup.
+  //
+  // Empty by default and empty in the repo: an instance is somebody's own
+  // server, and its signature token is a credential that writes to it. Without
+  // both a URL and one form of authentication the provider reports itself
+  // unavailable rather than guessing at an endpoint.
+  //
+  // yourlsApiUrl points at the instance's yourls-api.php. The signature token
+  // is the documented machine credential (Tools -> Secure passwordless API
+  // requests); username/password is the fallback for an instance that has not
+  // issued one.
+  yourlsApiUrl: env('YOURLS_API_URL'),
+  yourlsSignature: env('YOURLS_SIGNATURE'),
+  yourlsUsername: env('YOURLS_USERNAME'),
+  yourlsPassword: env('YOURLS_PASSWORD'),
   backpackTfApiKey: env('BACKPACK_TF_API_KEY'),
   seventeenTrackApiKey: env('SEVENTEEN_TRACK_API_KEY'),
   amazonUsername: env('AMAZON_USERNAME'),

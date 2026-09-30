@@ -66,6 +66,7 @@ All endpoints are available at `http://localhost:24010/api/*`.
 | `GET /api/shipment/:query` | Shipment lookup by order | `702-1234567-1234567` |
 | `GET /api/order/:query` | Order details (Amazon, AliExpress) | `702-1234567-1234567` |
 | `GET /api/url/:query` | URL safety, metadata, reachability | `https://example.com` |
+| `GET /api/shorten/:query` | Creates a short link on your YOURLS instance and the public shorteners. A write — never auto-detected, never a fallback. | `https://example.com` |
 | `GET /api/steam/:query` | Steam profile, inventory, value | `76561198000000000` |
 | `GET /api/apk/:query` | Android package metadata & mirrors | `com.spotify.music` |
 | `GET /api/status/:query` | Service health across ~30 providers | `discord` |
@@ -111,6 +112,8 @@ Copy `.env.example` to `.env` to customize the service.
 | `GOOGLE_SEARCH_CX`| Google Custom Search Engine ID |
 | `PARCELSAPP_API_KEY` | Key for ParcelsApp tracking |
 | `DHL_API_KEY` | Key for official DHL API |
+| `YOURLS_API_URL` | Your own YOURLS instance's `yourls-api.php`. Without it the `/shorten` lookup uses only the public shorteners. |
+| `YOURLS_SIGNATURE` | YOURLS passwordless signature token (preferred). `YOURLS_USERNAME` + `YOURLS_PASSWORD` are the alternative. |
 
 ### Integration Settings
 | Variable | Default | Description |

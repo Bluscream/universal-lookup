@@ -7,6 +7,7 @@ import { PROVIDER_NAMES as locationNames } from '../providers/location/index.js'
 import { PROVIDER_NAMES as orderNames } from '../providers/order/index.js';
 import { PROVIDER_NAMES as parcelNames } from '../providers/parcel/index.js';
 import { PROVIDER_NAMES as shipmentNames } from '../providers/shipment/index.js';
+import { PROVIDER_NAMES as shortenNames } from '../providers/shorten/index.js';
 import { PROVIDER_NAMES as statusNames } from '../providers/status/index.js';
 import { PROVIDER_NAMES as steamNames } from '../providers/steam/index.js';
 import { PROVIDER_NAMES as telNames } from '../providers/tel/index.js';
@@ -31,6 +32,7 @@ const PROVIDER_CATEGORIES: Record<string, string> = (() => {
     ['shipment', shipmentNames],
     ['steam', steamNames],
     ['url', urlNames],
+    ['shorten', shortenNames],
     ['apk', apkNames],
     ['order', orderNames],
     ['status', statusNames],
@@ -370,6 +372,28 @@ const CATEGORY_SCHEMAS: Record<string, Record<string, unknown>> = {
       status_code: { type: ['integer', 'null'] },
       risk_score: { type: ['integer', 'null'] },
       threats: { type: ['array', 'null'], items: { type: 'string' } },
+    },
+  },
+  shorten: {
+    type: 'object',
+    properties: {
+      long_url: { type: ['string', 'null'] },
+      short_url: { type: ['string', 'null'] },
+      short_links: {
+        type: ['array', 'null'],
+        items: {
+          type: 'object',
+          properties: {
+            service: { type: 'string' },
+            short_url: { type: 'string' },
+            long_url: { type: ['string', 'null'] },
+            created: { type: ['string', 'null'] },
+            existing: { type: ['boolean', 'null'] },
+            keyword: { type: ['string', 'null'] },
+            clicks: { type: ['integer', 'null'] },
+          },
+        },
+      },
     },
   },
   apk: {

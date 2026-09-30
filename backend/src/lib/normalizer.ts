@@ -286,6 +286,10 @@ export async function normalizeQuery(type: LookupType, input: string): Promise<s
     case 'steam':
       return normalizeSteam(input);
     case 'url':
+    // The same normalization, so "example.com" and "https://example.com" reach
+    // the shorteners as one URL and share one cache entry — which matters more
+    // here than elsewhere, since a miss creates a link.
+    case 'shorten':
       return normalizeUrl(input);
     case 'apk':
       return input.trim();

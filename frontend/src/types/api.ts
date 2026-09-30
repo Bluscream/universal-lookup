@@ -11,6 +11,7 @@ export type LookupType =
   | 'web'
   | 'steam'
   | 'url'
+  | 'shorten'
   | 'apk'
   | 'order'
   | 'status'
@@ -52,6 +53,17 @@ export interface LookupRequest {
   raw?: boolean;
   fresh?: boolean;
   wait?: boolean;
+}
+
+/** One short link from one shortening service, as /shorten returns it. */
+export interface ShortLink {
+  service: string;
+  short_url: string;
+  long_url?: string | null;
+  created?: string | null;
+  existing?: boolean | null;
+  keyword?: string | null;
+  clicks?: number | null;
 }
 
 export interface LookupResponse {
@@ -175,6 +187,7 @@ export const PLACEHOLDERS: Record<LookupType, string> = {
   web: 'e.g. what is my ip, tellows 01756350071',
   steam: 'e.g. 76561197960287930 or steamcommunity.com/id/gabelogannewell',
   url: 'e.g. https://github.com or google.com',
+  shorten: 'e.g. https://example.com/a/very/long/link — creates real short links',
   apk: 'e.g. com.google.android.youtube or Play Store URL',
   order: 'e.g. 305-1827771-7197161',
   status: 'all, or e.g. discord,xbox,playstation',
@@ -192,6 +205,7 @@ export const LOOKUP_OPTIONS: { value: LookupType; label: string; icon: string }[
   { value: 'web', label: 'Web Search', icon: '🔍' },
   { value: 'steam', label: 'Steam', icon: '🎮' },
   { value: 'url', label: 'URL / Domain', icon: '🌐' },
+  { value: 'shorten', label: 'Shorten URL', icon: '✂️' },
   { value: 'apk', label: 'App Package', icon: '📱' },
   { value: 'order', label: 'Order', icon: '📦' },
   { value: 'status', label: 'Service Status', icon: '🚦' },

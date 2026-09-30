@@ -28,6 +28,7 @@ import { PROVIDERS as location } from '../../backend/src/providers/location/inde
 import { PROVIDERS as order } from '../../backend/src/providers/order/index.js';
 import { PROVIDERS as parcel } from '../../backend/src/providers/parcel/index.js';
 import { PROVIDERS as shipment } from '../../backend/src/providers/shipment/index.js';
+import { PROVIDERS as shorten } from '../../backend/src/providers/shorten/index.js';
 import { PROVIDERS as status } from '../../backend/src/providers/status/index.js';
 import { PROVIDERS as steam } from '../../backend/src/providers/steam/index.js';
 import { PROVIDERS as tel } from '../../backend/src/providers/tel/index.js';
@@ -48,6 +49,10 @@ export const QUERIES: Record<string, string> = {
   email: 'postmaster@example.com',
   location: 'Mainz, Germany',
   url: 'https://example.com',
+  // Shortening is a write: this creates a real short link on every service it
+  // probes, so the target has to be something harmless that is already
+  // shortened a thousand times a day.
+  shorten: 'https://example.com',
   web: 'example.com',
   status: 'github',
   steam: '76561197960435530', // Valve's own well-known test account
@@ -87,6 +92,7 @@ export const REGISTRIES: Array<[string, Provider[]]> = [
   ['email', email],
   ['location', location],
   ['url', url],
+  ['shorten', shorten],
   ['web', web],
   ['status', status],
   ['steam', steam],
@@ -160,7 +166,8 @@ export function probeTargets(types?: string[]): Array<[string, Provider]> {
  * that changes its mind was gated on credentials. Deriving it means a provider
  * added later is classified correctly with no annotation to forget.
  */
-const CREDENTIAL_FIELD = /key|secret|token|password|pass$|username|user$|cookie|clientid/i;
+const CREDENTIAL_FIELD =
+  /key|secret|token|signature|password|pass$|username|user$|cookie|clientid/i;
 
 /**
  * Whether `provider` needs credentials to run at all.

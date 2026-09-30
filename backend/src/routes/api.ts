@@ -11,6 +11,7 @@ import { lookupLocation } from '../providers/location/index.js';
 import { lookupOrder } from '../providers/order/index.js';
 import { lookupParcel } from '../providers/parcel/index.js';
 import { lookupShipment } from '../providers/shipment/index.js';
+import { lookupShorten } from '../providers/shorten/index.js';
 import { lookupStatus } from '../providers/status/index.js';
 import { statusDataToStatuspageSummary } from '../providers/status/export.js';
 import { lookupSteam } from '../providers/steam/index.js';
@@ -40,6 +41,7 @@ const VALID_TYPES = new Set<string>([
   'web',
   'steam',
   'url',
+  'shorten',
   'apk',
   'order',
   'status',
@@ -572,6 +574,8 @@ function getLookupFunction(type: LookupType): LookupFn {
       return lookupSteam;
     case 'url':
       return lookupUrl;
+    case 'shorten':
+      return lookupShorten;
     case 'apk':
       return lookupApk;
     case 'order':

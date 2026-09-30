@@ -10,6 +10,7 @@ import { PROVIDER_NAMES as locationNames } from '../backend/src/providers/locati
 import { PROVIDER_NAMES as orderNames } from '../backend/src/providers/order/index.js';
 import { PROVIDER_NAMES as parcelNames } from '../backend/src/providers/parcel/index.js';
 import { PROVIDER_NAMES as shipmentNames } from '../backend/src/providers/shipment/index.js';
+import { PROVIDER_NAMES as shortenNames } from '../backend/src/providers/shorten/index.js';
 import { PROVIDER_NAMES as statusNames } from '../backend/src/providers/status/index.js';
 import { PROVIDER_NAMES as steamNames } from '../backend/src/providers/steam/index.js';
 import { PROVIDER_NAMES as telNames } from '../backend/src/providers/tel/index.js';
@@ -117,6 +118,7 @@ describe('web search lives only in the web provider', () => {
     ['location', locationNames],
     ['parcel', parcelNames],
     ['shipment', shipmentNames],
+    ['shorten', shortenNames],
   ];
 
   it('registers the engines under web', () => {
@@ -141,6 +143,7 @@ describe('the flat blacklist namespace', () => {
     shipment: shipmentNames,
     steam: steamNames,
     url: urlNames,
+    shorten: shortenNames,
     apk: apkNames,
     order: orderNames,
     status: statusNames,
