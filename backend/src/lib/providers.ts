@@ -10,43 +10,27 @@ function canonical(name: string): string {
 }
 
 /**
- * The single PROVIDERS_BLACKLIST, as a set of canonical entries.
- *
- * An entry is a bare name or `scope:name`, and the scope is kept in the key, so
- * "status:steam" and "steam" are two distinct entries that `isBlacklisted` below
- * checks separately.
+ * The single PROVIDERS_BLACKLIST, as a set of canonical names.
  *
  * Read on every call rather than memoised: the list is a handful of entries, and
  * tests reassign `config.providersBlacklist` between cases.
  */
 function blacklist(): Set<string> {
-  const out = new Set<string>();
-  for (const raw of config.providersBlacklist.split(',')) {
-    const [a, b] = raw.split(':');
-    const entry = b === undefined ? canonical(a) : `${canonical(a)}:${canonical(b)}`;
-    if (entry !== '' && entry !== ':') out.add(entry);
-  }
-  return out;
+  return new Set(
+    config.providersBlacklist
+      .split(',')
+      .map(canonical)
+      .filter((s) => s !== ''),
+  );
 }
 
 /**
- * Whether `name` is turned off, optionally within a `scope`.
- *
- * A bare entry matches whatever carries that name, whether that is a lookup type
- * or a provider inside one. A scoped entry only matches its own scope, which is
- * how the two names that mean both things can be told apart: `steam` disables
- * the steam lookup *and* the steam status provider, `status:steam` disables only
- * the latter, and `type:steam` only the former.
+ * Whether `name` — a provider, an apk mirror or a whole lookup type — is turned
+ * off. One flat namespace, so every name has to mean exactly one thing; the
+ * collisions that would break that are pinned in tests/repo-invariants.test.ts.
  */
-export function isBlacklisted(name: string, scope?: string): boolean {
-  const denied = blacklist();
-  const key = canonical(name);
-  return denied.has(key) || (scope !== undefined && denied.has(`${canonical(scope)}:${key}`));
-}
-
-/** Whether a whole lookup type is turned off. */
-export function isTypeBlacklisted(type: string): boolean {
-  return isBlacklisted(type, 'type');
+export function isBlacklisted(name: string): boolean {
+  return blacklist().has(canonical(name));
 }
 
 /**
@@ -59,15 +43,13 @@ export function isTypeBlacklisted(type: string): boolean {
  * provider wants. Registry order is now the only order — the arrays are already
  * written in priority order, and nothing ever depended on reordering via env.
  *
- * `type` is the registry's own lookup type, which is what makes `status:steam`
- * addressable; pass it for every registry. A blacklisted type runs nothing here
- * as well as being refused by the route, so an internal caller — /auto/ falling
- * back to a web search, or an ip lookup chaining into a domain one — cannot fan
- * out to a type the operator turned off.
+ * A blacklisted `type` runs nothing here as well as being refused by the route,
+ * so an internal caller — /auto/ falling back to a web search, or an ip lookup
+ * chaining into a domain one — cannot fan out to a type the operator turned off.
  */
 export function filterProviders(allProviders: Provider[], type: string): Provider[] {
-  if (isTypeBlacklisted(type)) return [];
-  return allProviders.filter((p) => p.isAvailable() && !isBlacklisted(p.name, type));
+  if (isBlacklisted(type)) return [];
+  return allProviders.filter((p) => p.isAvailable() && !isBlacklisted(p.name));
 }
 
 export interface DualPromiseResult {

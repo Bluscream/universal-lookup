@@ -113,9 +113,9 @@ describe('the flat blacklist namespace', () => {
   }
 
   // One list covers every registry, so a name in two of them is disabled in
-  // both by a bare entry. That is the intent for these four — whois is whois
-  // wherever it runs — and `ip:whois` still narrows it to one. Pinning the set
-  // means a new, unintended collision fails here instead of surprising someone.
+  // both. That is the intent for these four — whois is whois wherever it runs.
+  // Pinning the set means a new, unintended collision fails here instead of
+  // surprising someone.
   it('shares only the names that are deliberately the same provider', () => {
     const shared = [...byName().entries()]
       .filter(([, types]) => types.length > 1)
@@ -129,19 +129,17 @@ describe('the flat blacklist namespace', () => {
     ]);
   });
 
-  // A name that is both a lookup type and a provider is the one genuine
-  // ambiguity in a flat list, which is why `type:` and `<type>:` scopes exist.
-  it('names the providers that collide with a lookup type', () => {
+  // The one collision a flat list cannot express: a name that is both a lookup
+  // type and a provider means two different things, and an operator writing it
+  // gets both. The status provider for Steam is called steam-web for exactly
+  // this reason. `apk` is the sole allowed case — that registry's only provider
+  // IS the apk lookup, so both readings are the same thing.
+  it('no provider is named after a different lookup type', () => {
     const names = byName();
     const collisions = LOOKUP_TYPES.filter((t) => names.has(t)).map(
       (t) => `${t} (provider in: ${names.get(t)?.join(',')})`,
     );
-    expect(collisions).toEqual([
-      // Disambiguate with status:steam or type:steam.
-      'steam (provider in: status)',
-      // Harmless: the apk registry's only provider IS the apk lookup.
-      'apk (provider in: apk)',
-    ]);
+    expect(collisions).toEqual(['apk (provider in: apk)']);
   });
 
   it('apk mirrors are a separate list, not provider names', () => {

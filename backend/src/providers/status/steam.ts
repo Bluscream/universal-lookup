@@ -3,7 +3,13 @@ import type { LookupType, Provider, ProviderResult, StatusData } from '../../typ
 import { statusGet } from './http.js';
 import { type StatuspageSummary, summaryToStatusData } from './statuspage.js';
 
-const PROVIDER_NAME = 'steam';
+/**
+ * Named for the API it reads, not for the platform, because PROVIDERS_BLACKLIST
+ * is one flat list: a provider called "steam" could not be told apart from the
+ * `steam` lookup type. The *services* it emits are still "steam" and "cs2" —
+ * those are the user-facing tiles, and icons.ts and maintenance.ts key off them.
+ */
+const PROVIDER_NAME = 'steam-web';
 const PAGE_URL = 'https://steamstat.us/';
 
 /**

@@ -4,7 +4,6 @@ import {
   executeProvidersBackground,
   filterProviders,
   isBlacklisted,
-  isTypeBlacklisted,
 } from '../backend/src/lib/providers.js';
 import type { Provider, ProviderResult } from '../backend/src/types/common.js';
 
@@ -35,26 +34,26 @@ describe('filterProviders', () => {
 
   it('returns every available provider when the blacklist is empty', () => {
     withBlacklist('', () => {
-      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'beta', 'gamma']);
+      expect(filterProviders(all, 'domain').map((p) => p.name)).toEqual(['alpha', 'beta', 'gamma']);
     });
   });
 
   it('drops providers that report themselves unavailable', () => {
     const withMissing = [stub('alpha'), stub('beta', { available: false })];
     withBlacklist('', () => {
-      expect(filterProviders(withMissing, 'tel').map((p) => p.name)).toEqual(['alpha']);
+      expect(filterProviders(withMissing, 'domain').map((p) => p.name)).toEqual(['alpha']);
     });
   });
 
   it('removes only the blacklisted names, keeping registry order', () => {
     withBlacklist('beta', () => {
-      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'gamma']);
+      expect(filterProviders(all, 'domain').map((p) => p.name)).toEqual(['alpha', 'gamma']);
     });
   });
 
   it('tolerates whitespace, case and unknown names in the list', () => {
     withBlacklist(' BETA , nope,, ', () => {
-      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'gamma']);
+      expect(filterProviders(all, 'domain').map((p) => p.name)).toEqual(['alpha', 'gamma']);
     });
   });
 
@@ -70,27 +69,11 @@ describe('filterProviders', () => {
 
   it('answers for things that are not providers, such as whole lookup types', () => {
     withBlacklist('web,steam-xml', () => {
-      // A whole lookup type and a single sub-provider share the one list.
-      expect(isTypeBlacklisted('web')).toBe(true);
+      // One flat list: a whole lookup type and a single sub-provider both live
+      // in it, which is why no name may mean two things (see repo-invariants).
+      expect(isBlacklisted('web')).toBe(true);
       expect(isBlacklisted('steamxml')).toBe(true);
-      expect(isTypeBlacklisted('tel')).toBe(false);
-    });
-  });
-
-  it('lets a scope separate a name that means two things', () => {
-    // 'steam' is both a lookup type and a provider in the status registry.
-    withBlacklist('status:steam', () => {
-      expect(isBlacklisted('steam', 'status')).toBe(true);
-      expect(isTypeBlacklisted('steam')).toBe(false);
-    });
-    withBlacklist('type:steam', () => {
-      expect(isTypeBlacklisted('steam')).toBe(true);
-      expect(isBlacklisted('steam', 'status')).toBe(false);
-    });
-    // Unscoped still hits both, which is the common intent.
-    withBlacklist('steam', () => {
-      expect(isTypeBlacklisted('steam')).toBe(true);
-      expect(isBlacklisted('steam', 'status')).toBe(true);
+      expect(isBlacklisted('tel')).toBe(false);
     });
   });
 
@@ -103,10 +86,11 @@ describe('filterProviders', () => {
     });
   });
 
-  it('scopes a provider to its own registry', () => {
-    withBlacklist('tel:beta', () => {
-      expect(filterProviders(all, 'tel').map((p) => p.name)).toEqual(['alpha', 'gamma']);
-      expect(filterProviders(all, 'ip').map((p) => p.name)).toEqual(['alpha', 'beta', 'gamma']);
+  it('disables a provider in every registry that carries it', () => {
+    withBlacklist('beta', () => {
+      // A provider name is global: it is off wherever it is registered.
+      expect(filterProviders(all, 'domain').map((p) => p.name)).toEqual(['alpha', 'gamma']);
+      expect(filterProviders(all, 'ip').map((p) => p.name)).toEqual(['alpha', 'gamma']);
     });
   });
 });

@@ -17,7 +17,7 @@ import { lookupSteam } from '../providers/steam/index.js';
 import { lookupTel } from '../providers/tel/index.js';
 import { lookupUrl } from '../providers/url/index.js';
 import { lookupWeb } from '../providers/web/index.js';
-import { type DualPromiseResult, isTypeBlacklisted } from '../lib/providers.js';
+import { type DualPromiseResult, isBlacklisted } from '../lib/providers.js';
 import { LOOKUP_TYPES } from '../types/common.js';
 import type { LookupResponse, LookupType, ProviderResult } from '../types/common.js';
 
@@ -326,7 +326,7 @@ async function handleLookup(
   // PROVIDERS_BLACKLIST covers whole lookup types as well as single providers.
   // Checked after auto-detection so blacklisting "web" also stops /auto/ from
   // falling back into a web search.
-  if (isTypeBlacklisted(resolvedType)) {
+  if (isBlacklisted(resolvedType)) {
     return {
       lookup_time: `${Date.now() - startTime}ms`,
       success: false,

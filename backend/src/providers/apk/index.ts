@@ -198,7 +198,7 @@ const APK_MIRRORS: Array<[string, (pkg: string) => Promise<ApkDownloadInfo[]>]> 
 ];
 
 function selectedMirrors(): typeof APK_MIRRORS {
-  return APK_MIRRORS.filter(([id]) => !isBlacklisted(id, 'apk'));
+  return APK_MIRRORS.filter(([id]) => !isBlacklisted(id));
 }
 
 const ALL_PROVIDERS: Provider[] = [apkProvider];
