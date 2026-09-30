@@ -53,6 +53,57 @@ describe('provider selection is one blacklist', () => {
   });
 });
 
+describe('every env var is documented everywhere it is read from', () => {
+  /**
+   * The PROVIDERS_* guard above only covered one prefix, so when the location
+   * providers added five LOCATION_* variables they went missing from both Unraid
+   * templates and nothing failed — an operator on Unraid had no way to see or set
+   * them. This covers all of them by construction.
+   */
+  const DOCUMENTED_ELSEWHERE: Record<string, string> = {
+    PORT: 'the container port, set by the template Web Port config, not a variable',
+    DB_PATH: 'inside the appdata volume mount',
+    MAXMIND_DB_PATH: 'inside the appdata volume mount',
+  };
+
+  function envKeys(file: string, pattern: RegExp): Set<string> {
+    const src = readFileSync(join(ROOT, file), 'utf-8');
+    return new Set([...src.matchAll(pattern)].map((m) => m[1]));
+  }
+
+  // config.ts reads most of them; a handful of providers read process.env
+  // directly, and .env.example is where those are written down.
+  const declared = new Set([
+    ...envKeys('backend/src/config.ts', /env(?:Int|Bool)?\('([A-Z0-9_]+)'/g),
+    ...envKeys('.env.example', /^([A-Z0-9_]+)=/gm),
+  ]);
+
+  const SURFACES: Array<[string, RegExp]> = [
+    ['.env.example', /^([A-Z0-9_]+)=/gm],
+    ['unraid/universal-lookup.xml', /Target="([A-Z0-9_]+)"/g],
+    ['unraid/universal-lookup-tailscale.xml', /Target="([A-Z0-9_]+)"/g],
+  ];
+
+  for (const [file, pattern] of SURFACES) {
+    it(`${file} documents every variable`, () => {
+      const present = envKeys(file, pattern);
+      const missing = [...declared]
+        .filter((key) => !present.has(key) && !DOCUMENTED_ELSEWHERE[key])
+        .sort();
+      expect(missing).toEqual([]);
+    });
+  }
+
+  it('the two Unraid templates offer the same variables', () => {
+    // They differ only in the Tailscale block; a variable in one and not the
+    // other means one set of users cannot configure a feature.
+    const plain = envKeys('unraid/universal-lookup.xml', /Target="([A-Z0-9_]+)"/g);
+    const tailscale = envKeys('unraid/universal-lookup-tailscale.xml', /Target="([A-Z0-9_]+)"/g);
+    expect([...plain].filter((k) => !tailscale.has(k)).sort()).toEqual([]);
+    expect([...tailscale].filter((k) => !plain.has(k)).sort()).toEqual([]);
+  });
+});
+
 describe('web search lives only in the web provider', () => {
   // The four engines used to be appended to seven other registries as
   // "fallbacks", so a tel lookup with no hit returned a page of Google links

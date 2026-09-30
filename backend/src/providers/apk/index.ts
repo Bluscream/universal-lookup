@@ -185,8 +185,13 @@ export const apkProvider: Provider = {
  * Download mirrors, in the order they are tried. Each name is blacklistable on
  * its own via PROVIDERS_BLACKLIST, like any other provider. 'googleplay' is not
  * here: it is the metadata source, consulted before any of these.
+ *
+ * Exported because these are the one sub-provider layer that is not a Provider:
+ * they are only ever reached through the single `apk` provider, so a mirror can
+ * rot without any registry noticing. The live probe enumerates this list, and
+ * tests/provider-coverage.test.ts fails if it ever stops doing so.
  */
-const APK_MIRRORS: Array<[string, (pkg: string) => Promise<ApkDownloadInfo[]>]> = [
+export const APK_MIRRORS: Array<[string, (pkg: string) => Promise<ApkDownloadInfo[]>]> = [
   ['aptoide', getAptoideDownload],
   ['apkmirror', getApkmirrorDownload],
   ['apkpure', getApkpureDownload],

@@ -2,6 +2,7 @@ import axios from 'axios';
 import { config } from '../../config.js';
 import { decrementRateLimit, isRateLimited, updateRateLimit } from '../../lib/rate-limiter.js';
 import type { EmailData, LookupType, Provider, ProviderResult } from '../../types/common.js';
+import { ipApiIoError } from '../ip/ip-api-io-error.js';
 
 const PROVIDER_NAME = 'ip-api.io/email-advanced';
 
@@ -60,7 +61,7 @@ export const ipApiIoAdvEmail: Provider = {
         provider: PROVIDER_NAME,
         success: false,
         data: {},
-        error: error instanceof Error ? error.message : String(error),
+        error: ipApiIoError(error),
         duration: Date.now() - start,
       };
     }

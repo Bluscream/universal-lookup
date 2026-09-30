@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { API_PREFIX, config, getCacheTtl } from '../config.js';
+import { API_PREFIX, config, getCacheTtlFor } from '../config.js';
 import { getCached, setCache } from '../db/cache.js';
 import { collectErrors, collectRaw, deepClean, mergeResponses } from '../lib/merger.js';
 import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.js';
@@ -281,6 +281,35 @@ export async function registerShortcutRoutes(app: FastifyInstance): Promise<void
   );
 }
 
+/**
+ * Store a response, with a short TTL when nothing succeeded.
+ *
+ * Caching a total failure for the normal 24 hours turns a transient upstream
+ * outage into a sticky one: a /web/ lookup where all four engines timed out was
+ * written with the ordinary TTL and then re-served as `17ms (cached)`, so the
+ * retry that would have fixed it never happened and nothing said the answer came
+ * from a failed run. Dropping the write instead would be worse the other way —
+ * every provider erroring is also what an unknown phone number looks like, and
+ * that would re-scrape seven sites on every request.
+ *
+ * So a failure is still cached, briefly (CACHE_TTL_FAILURE), which bounds the
+ * load and lets the next request past the window actually retry. The failure is
+ * logged either way, because until now a lookup where every provider died was
+ * indistinguishable in the logs from one that worked.
+ */
+function cacheResponse(type: LookupType, query: string, response: LookupResponse): void {
+  const failed = !response.success;
+  if (failed) {
+    console.warn(
+      `⚠️  ${type}/${query}: no provider succeeded — ` +
+        (Object.entries(response.errors ?? {})
+          .map(([provider, error]) => `${provider}: ${error}`)
+          .join('; ') || 'no errors reported either'),
+    );
+  }
+  setCache(type, query, response, getCacheTtlFor(type, response.success));
+}
+
 async function handleLookup(
   type: string,
   query: string,
@@ -453,7 +482,7 @@ async function handleLookup(
 
   // Cache the initial response (with full raw for potential future ?raw requests)
   const fullResponse = { ...response, raw: collectRaw(clientResults) };
-  setCache(resolvedType, normalizedQuery, fullResponse, getCacheTtl(resolvedType));
+  cacheResponse(resolvedType, normalizedQuery, fullResponse);
 
   // Background caching: wait for server promise and update cache if needed
   if (serverPromise) {
@@ -481,7 +510,7 @@ async function handleLookup(
             query: normalizedQuery,
           },
         };
-        setCache(resolvedType, normalizedQuery, finalResponse, getCacheTtl(resolvedType));
+        cacheResponse(resolvedType, normalizedQuery, finalResponse);
       })
       .catch(() => {
         // Ignore background errors

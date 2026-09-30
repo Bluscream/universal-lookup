@@ -90,6 +90,7 @@
   <Config Name="Cache TTL (seconds)" Target="CACHE_TTL" Default="86400" Mode="" Description="How long to cache lookup results (default: 24 hours)" Type="Variable" Display="always" Required="false" Mask="false">86400</Config>
   <Config Name="Cache TTL Parcel (seconds)" Target="CACHE_TTL_PARCEL" Default="3600" Mode="" Description="Cache duration for parcels" Type="Variable" Display="advanced" Required="false" Mask="false">3600</Config>
   <Config Name="Cache TTL Status (s)" Target="CACHE_TTL_STATUS" Default="120" Mode="" Description="Cache duration for status lookups (seconds)" Type="Variable" Display="advanced" Required="false" Mask="false">120</Config>
+  <Config Name="Cache TTL Failure (s)" Target="CACHE_TTL_FAILURE" Default="60" Mode="" Description="How long a lookup where every provider failed is cached (seconds). Short so a transient outage is retried instead of served back." Type="Variable" Display="advanced" Required="false" Mask="false">60</Config>
   <Config Name="Client Timeout (ms)" Target="CLIENT_TIMEOUT" Default="5000" Mode="" Description="Max time to wait for initial API response" Type="Variable" Display="advanced" Required="false" Mask="false">5000</Config>
   <Config Name="DHL API Key" Target="DHL_API_KEY" Default="" Mode="" Description="Key for official DHL API" Type="Variable" Display="advanced" Required="false" Mask="true"/>
   <Config Name="Disable Fresh" Target="DISABLE_FRESH" Default="false" Mode="" Description="Set to true to disable ?fresh query param" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>

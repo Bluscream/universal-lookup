@@ -72,6 +72,22 @@ function cleanUrl(url: string): string {
   }
 }
 
+/**
+ * A scrape either produced results or could not run. Keeping the two apart is
+ * the whole point of the type.
+ *
+ * This used to return a bare array and log the exception, so an engine that
+ * could not start a browser at all reported the same "No results found" as an
+ * engine that searched and found nothing. That is how `/api/web/<query>` came to
+ * answer `success: false` with four identical unhelpful errors while the real
+ * cause — a missing Chromium, or Google answering 403 — appeared only in the
+ * container log, if anyone thought to look.
+ */
+interface ScrapeOutcome {
+  results: SearchResult[];
+  error?: string;
+}
+
 async function scrape(
   url: string,
   selector: string,
@@ -79,7 +95,7 @@ async function scrape(
   // biome-ignore lint/suspicious/noExplicitAny: Puppeteer/Cheerio element
   mapper: ($el: any) => { title: string; url: string; description: string } | null,
   limit?: number,
-): Promise<SearchResult[]> {
+): Promise<ScrapeOutcome> {
   try {
     const html = await scrapeWithPuppeteer(url, selector);
     const $ = cheerio.load(html);
@@ -97,10 +113,11 @@ async function scrape(
         }
       }
     });
-    return results;
+    return { results };
   } catch (error) {
-    console.error(`Error scraping ${url}:`, error);
-    return [];
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Error scraping ${url}: ${message}`);
+    return { results: [], error: `${providerName} scrape failed: ${message}` };
   }
 }
 
@@ -141,7 +158,7 @@ export const googleProvider: Provider = {
     }
 
     // Fallback to Scraping
-    const results = await scrape(
+    const { results, error } = await scrape(
       `https://www.google.com/search?q=${encodeURIComponent(query)}`,
       '.g',
       'google',
@@ -164,7 +181,7 @@ export const googleProvider: Provider = {
       success: results.length > 0,
       data: { web: results },
       raw: { scraped: results },
-      error: results.length === 0 ? 'No results found' : undefined,
+      error: error ?? (results.length === 0 ? 'No results found' : undefined),
       duration: Date.now() - start,
     };
   },
@@ -176,7 +193,7 @@ export const bingProvider: Provider = {
   lookup: async (query: string, type?: LookupType): Promise<ProviderResult<WebData>> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
-    const results = await scrape(
+    const { results, error } = await scrape(
       `https://www.bing.com/search?q=${encodeURIComponent(query)}`,
       '.b_algo',
       'bing',
@@ -194,7 +211,7 @@ export const bingProvider: Provider = {
       success: results.length > 0,
       data: { web: results },
       raw: { scraped: results },
-      error: results.length === 0 ? 'No results found' : undefined,
+      error: error ?? (results.length === 0 ? 'No results found' : undefined),
       duration: Date.now() - start,
     };
   },
@@ -206,7 +223,7 @@ export const duckduckgoProvider: Provider = {
   lookup: async (query: string, type?: LookupType): Promise<ProviderResult<WebData>> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
-    const results = await scrape(
+    const { results, error } = await scrape(
       `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
       '.result',
       'duckduckgo',
@@ -238,7 +255,7 @@ export const duckduckgoProvider: Provider = {
       success: results.length > 0,
       data: { web: results },
       raw: { scraped: results },
-      error: results.length === 0 ? 'No results found' : undefined,
+      error: error ?? (results.length === 0 ? 'No results found' : undefined),
       duration: Date.now() - start,
     };
   },
@@ -250,7 +267,7 @@ export const yahooProvider: Provider = {
   lookup: async (query: string, type?: LookupType): Promise<ProviderResult<WebData>> => {
     const start = Date.now();
     const limit = type === 'web' ? undefined : config.universalResultsLimit;
-    const results = await scrape(
+    const { results, error } = await scrape(
       `https://search.yahoo.com/search?p=${encodeURIComponent(query)}`,
       '.algo',
       'yahoo',
@@ -268,7 +285,7 @@ export const yahooProvider: Provider = {
       success: results.length > 0,
       data: { web: results },
       raw: { scraped: results },
-      error: results.length === 0 ? 'No results found' : undefined,
+      error: error ?? (results.length === 0 ? 'No results found' : undefined),
       duration: Date.now() - start,
     };
   },

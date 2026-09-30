@@ -6,6 +6,24 @@ import type { DomainData, LookupType, Provider, ProviderResult } from '../../typ
 
 const PROVIDER_NAME = 'subdomain';
 
+/**
+ * Why an empty result is empty.
+ *
+ * The two sources are allowed to fail independently, so "this domain has no
+ * subdomains" and "both sources errored" used to arrive identically: success
+ * false, no subdomains, and no error at all. An empty answer with no reason reads
+ * as an answer, and the live probe cannot tell it from one either.
+ */
+function emptyReason(sources: Array<[string, PromiseSettledResult<unknown>]>): string {
+  const failed = sources
+    .filter(([, r]) => r.status === 'rejected')
+    .map(([label, r]) => {
+      const reason = (r as PromiseRejectedResult).reason;
+      return `${label} failed: ${reason instanceof Error ? reason.message : String(reason)}`;
+    });
+  return failed.length ? `no subdomains found; ${failed.join('; ')}` : 'No subdomains found';
+}
+
 /** Common subdomains to check via DNS */
 const COMMON_SUBDOMAINS = [
   'www',
@@ -93,6 +111,13 @@ export const subdomainProvider: Provider = {
       return {
         provider: PROVIDER_NAME,
         success: sorted.length > 0,
+        error:
+          sorted.length > 0
+            ? undefined
+            : emptyReason([
+                ['crt.sh', crtResults],
+                ['dns brute force', dnsResults],
+              ]),
         data: { subdomains: sorted },
         raw: {
           crt_sh: crtResults.status === 'fulfilled' ? crtResults.value : [],

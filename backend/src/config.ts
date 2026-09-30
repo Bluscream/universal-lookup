@@ -54,6 +54,9 @@ export const config = {
   cacheTtl: envInt('CACHE_TTL', 86400), // 24 hours
   cacheTtlParcel: envInt('CACHE_TTL_PARCEL', 3600), // 1 hour
   cacheTtlStatus: envInt('CACHE_TTL_STATUS', 120), // 2 minutes (service health changes fast)
+  // A lookup where no provider succeeded is cached this long instead of the full
+  // TTL, so a transient upstream outage cannot be served back for a day.
+  cacheTtlFailure: envInt('CACHE_TTL_FAILURE', 60),
 
   // Timeouts
   clientTimeout: envInt('CLIENT_TIMEOUT', 5000),
@@ -320,6 +323,19 @@ export function getCacheTtl(type: string): number {
   if (type === 'parcel' || type === 'shipment') return config.cacheTtlParcel;
   if (type === 'status') return config.cacheTtlStatus;
   return config.cacheTtl;
+}
+
+/**
+ * How long to keep a response, given whether anything actually answered.
+ *
+ * A lookup where every provider failed gets the short CACHE_TTL_FAILURE instead
+ * of the type's full TTL. Caching a total failure for a day is how a /web/ lookup
+ * came to keep reporting four timed-out engines as `17ms (cached)` long after the
+ * engines recovered; not caching it at all would re-scrape every provider on
+ * every request for a query that genuinely has no answer.
+ */
+export function getCacheTtlFor(type: string, success: boolean): number {
+  return success ? getCacheTtl(type) : config.cacheTtlFailure;
 }
 
 /** Ensure the data directory exists */
