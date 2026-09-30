@@ -14,6 +14,7 @@ import type {
   SearchResult,
   WebData,
 } from '../../types/common.js';
+import { searxngProvider } from './searxng.js';
 
 function cleanUrl(url: string): string {
   if (!url) return '';
@@ -291,7 +292,13 @@ export const yahooProvider: Provider = {
   },
 };
 
-const ALL_WEB_PROVIDERS = [googleProvider, bingProvider, duckduckgoProvider, yahooProvider];
+const ALL_WEB_PROVIDERS = [
+  googleProvider,
+  bingProvider,
+  duckduckgoProvider,
+  yahooProvider,
+  searxngProvider,
+];
 
 export function lookupWeb(query: string, type: LookupType = 'web'): DualPromiseResult {
   const providers = filterProviders(ALL_WEB_PROVIDERS, 'web');

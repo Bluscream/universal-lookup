@@ -76,6 +76,13 @@ export const config = {
   maxmindLicenseKey: env('MAXMIND_LICENSE_KEY'),
   maxmindDbPath: env('MAXMIND_DB_PATH', './data/maxmind'),
   googleApiKey: env('GOOGLE_API_KEY'),
+  // Base URL of a self-hosted SearXNG instance, e.g. https://search.example.com
+  // or, from inside a Docker container talking to a SearXNG on the host,
+  // http://172.17.0.1:28080 (the bridge gateway). Empty on purpose: no address
+  // is right for everyone, and an unset value makes the provider report itself
+  // as not configured instead of failing a connection on every search.
+  searxngUrl: env('SEARXNG_URL'),
+  searxngTimeout: envInt('SEARXNG_TIMEOUT', 10000),
   googleSearchCx: env('GOOGLE_SEARCH_CX'),
   parcelsAppApiKey: env('PARCELSAPP_API_KEY'),
   dhlApiKey: env('DHL_API_KEY'),
