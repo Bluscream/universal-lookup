@@ -15,9 +15,29 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-const DARK_TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+/**
+ * Dark basemap, key-free.
+ *
+ * This used to be CARTO's `basemaps.cartocdn.com/dark_all`, which now needs an
+ * API key — but it does not *fail* without one: it answers 200 with a 2.5 KB
+ * tile reading "API KEY REQUIRED" stamped across it, so the map kept "working"
+ * while showing nothing but that watermark on every tile.
+ *
+ * Esri's Dark Gray Canvas needs no key and no referrer. Note the axis order:
+ * ArcGIS serves `/{z}/{row}/{col}`, i.e. y before x, and it has no retina (`{r}`)
+ * or subdomain (`{s}`) variants — getting that order wrong yields tiles from the
+ * wrong place rather than an error, which is the trap this comment exists for.
+ */
+const DARK_TILE_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, DeLorme, NAVTEQ';
+/**
+ * This basemap is only rendered to z16. Past it ArcGIS still answers 200, but
+ * with a *light* "no data at this zoom" notice tile, which flashes white against
+ * the dark theme. Capping the native zoom makes Leaflet upscale z16 instead.
+ */
+const MAX_NATIVE_ZOOM = 16;
 
 interface Coordinate {
   lat: number;
@@ -79,7 +99,7 @@ export function MapCard({
         }
         boundsOptions={{ padding: [40, 40] }}
       >
-        <TileLayer url={DARK_TILE_URL} attribution={ATTRIBUTION} />
+        <TileLayer url={DARK_TILE_URL} attribution={ATTRIBUTION} maxNativeZoom={MAX_NATIVE_ZOOM} />
         {coordinates.map((c) => (
           <Marker key={`${c.lat}-${c.lng}-${c.label}`} position={[c.lat, c.lng]}>
             <Popup>
