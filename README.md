@@ -161,7 +161,21 @@ The sources themselves:
 | [Keybase](https://keybase.io) | twitter, github, reddit, hackernews, facebook, coinbase, dns, web | Real proofs, but frozen since 2020 — a miss means nothing |
 | Synchra | twitch, youtube, kick, rumble, discord, x, tiktok, spotify | Finds a channel by its own name **or** by a handle on any platform it connected. Also the only source for `recent_chat`. |
 
-**Enrichment** reads each platform directly. `github-user` and `hackernews-user`
+**Enrichment** reads each platform directly. `instagram-profile` and
+`threads-profile` are a different shape from the rest: neither platform has an
+API route to an arbitrary public handle any more — Instagram's Basic Display API
+was shut off in December 2024 and Threads' `profile_lookup` is App-Review-gated
+to Meta's own accounts — so both read the profile page's **Open Graph tags**, the
+same bytes a chat client fetches to draw a link preview. That needs no
+credentials, no app review and no user's session cookie, and the counts come back
+as the platform rounds them for display, flagged `counts_are_rounded`.
+
+TikTok is deliberately *not* read this way. It serves those tags only to an
+allowlist of named crawlers — `facebookexternalhit` gets them, an honest agent
+gets nothing, Googlebot gets 403 — and claiming to be Facebook's crawler is not
+something this project will do.
+
+`github-user` and `hackernews-user`
 work anonymously; `youtube-channel`, `twitch-channel` and `reddit-user` need a
 key, and without one the account is still returned, just undescribed. The same
 readers serve rungs 4 and 5 — though only GitHub, Twitch and YouTube offer a

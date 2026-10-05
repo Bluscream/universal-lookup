@@ -41,8 +41,10 @@ import type {
   SocialChatMessage,
 } from '../../types/common.js';
 import { githubUser } from './enrich/github-user.js';
+import { instagramProfile } from './enrich/instagram-profile.js';
 import { hackernewsUser } from './enrich/hackernews-user.js';
 import { redditUser } from './enrich/reddit-user.js';
+import { threadsProfile } from './enrich/threads-profile.js';
 import { twitchChannel } from './enrich/twitch-channel.js';
 import { youtubeChannel } from './enrich/youtube-channel.js';
 import { githubRepos } from './detail/github-repos.js';
@@ -93,6 +95,8 @@ const ENRICHERS: Enricher[] = [
   githubUser,
   redditUser,
   hackernewsUser,
+  instagramProfile,
+  threadsProfile,
 ];
 
 /**

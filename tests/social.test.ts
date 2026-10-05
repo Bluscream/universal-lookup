@@ -1,6 +1,13 @@
 import type { ChatMessage } from 'synchra-ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../backend/src/config.js';
+import {
+  parseCount,
+  parseCounts,
+  parseDisplayName,
+  parseOpenGraph,
+  toAccount,
+} from '../backend/src/providers/social/enrich/open-graph.js';
 import { profileUrl } from '../backend/src/providers/social/profile-url.js';
 import {
   resetViewerAvatars,
@@ -215,6 +222,8 @@ describe('the registry', () => {
       'github-user',
       'reddit-user',
       'hackernews-user',
+      'instagram-profile',
+      'threads-profile',
       'youtube-uploads',
       'twitch-videos',
       'github-repos',
@@ -793,5 +802,77 @@ describe('viewer avatars', () => {
     // Thirty unknown chatters must not mean thirty requests on one refresh;
     // the rest are picked up by the next call.
     expect(calls).toHaveLength(6);
+  });
+});
+
+describe('reading a profile from its link-preview tags', () => {
+  it('reads the counts Instagram writes into og:description', () => {
+    const counts = parseCounts(
+      '165 Followers, 132 Following, 104 Posts - See Instagram photos and videos from Bleichi Loveless (@bleichi_loveless)',
+    );
+
+    expect(counts).toMatchObject({ followers: 165, following: 132, posts: 104 });
+  });
+
+  it('reads the ones Threads writes, with its different separators', () => {
+    const counts = parseCounts(
+      '15 Followers • 18 Threads. See the latest conversations with @bleichi_loveless.',
+    );
+
+    expect(counts).toMatchObject({ followers: 15, threads: 18 });
+  });
+
+  it('expands the abbreviations a display string uses', () => {
+    // These are rendered for humans, so every shape a human would read turns up.
+    expect(parseCount('1,234')).toBe(1234);
+    expect(parseCount('15.4k')).toBe(15400);
+    expect(parseCount('2.1M')).toBe(2_100_000);
+    expect(parseCount('1.5B')).toBe(1_500_000_000);
+    expect(parseCount('5519')).toBe(5519);
+  });
+
+  it('returns null, not zero, for a count it cannot read', () => {
+    // Zero followers and an unparseable count are different answers, and
+    // reporting the second as the first would be a confident lie.
+    expect(parseCount(undefined)).toBeNull();
+    expect(parseCount('')).toBeNull();
+    expect(parseCount('lots')).toBeNull();
+  });
+
+  it('takes the display name only when the title carries a handle', () => {
+    expect(
+      parseDisplayName('Bleichi Loveless (@bleichi_loveless) • Instagram photos and videos'),
+    ).toBe('Bleichi Loveless');
+    // The signed-out landing page, which is what a missing account serves.
+    expect(parseDisplayName('Threads')).toBeNull();
+    expect(parseDisplayName(undefined)).toBeNull();
+  });
+
+  it('pulls the tags out of a page, by property or by name', () => {
+    const og = parseOpenGraph(
+      '<html><head><meta property="og:title" content="A (@b)"><meta name="og:image" content="https://cdn/a.jpg"></head></html>',
+    );
+
+    expect(og.title).toBe('A (@b)');
+    expect(og.image).toBe('https://cdn/a.jpg');
+    expect(og.description).toBeUndefined();
+  });
+
+  it('marks the counts as rounded, because they are', () => {
+    // A caller comparing 15.4k against an API's 15,431 deserves to know why.
+    const built = toAccount(
+      { url: 'https://x/y', title: 'A (@b)', image: 'https://cdn/a.jpg' },
+      'b',
+      { followers: 15400 },
+      'followers',
+      'posts',
+      'test',
+    );
+
+    expect(built.metrics?.counts_are_rounded).toBe(true);
+    expect(built.metrics?.read_from).toBe('open-graph');
+    expect(built.followers).toBe(15400);
+    // No posts count in the description means null, not zero.
+    expect(built.uploads).toBeNull();
   });
 });
