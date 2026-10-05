@@ -68,6 +68,20 @@ export const githubUser = defineEnricher({
       throw error;
     }
   },
+  async findByName(handle: string): Promise<Partial<SocialAccount>[]> {
+    // `type:user` keeps organisations out: the chain is looking for a person's
+    // other accounts, and an org that happens to share the name is not one.
+    const { data } = await octokit().rest.search.users({
+      q: `${handle} type:user`,
+      per_page: 5,
+    });
+    return data.items.map((item) => ({
+      account: item.login,
+      account_id: String(item.id),
+      url: item.html_url,
+      avatar: item.avatar_url,
+    }));
+  },
 });
 
 function isNotFound(error: unknown): boolean {

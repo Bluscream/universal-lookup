@@ -225,6 +225,20 @@ export const config = {
   socialEnrichLimit: envInt('SOCIAL_ENRICH_LIMIT', 12),
   // How many recent chat messages to carry back from Synchra.
   socialChatLimit: envInt('SOCIAL_CHAT_LIMIT', 25),
+  // Stop at the first source that knows the handle, rather than merging all of
+  // them: Synchra, then Keybase, then Harbor, then the platforms themselves.
+  //
+  // The cost is measured, not theoretical. Looking up `Bluscream` with the
+  // cascade off returns 10 accounts, because Keybase and Synchra each know 5
+  // and they only partly overlap; with it on, Synchra answers first and the
+  // Keybase proofs are never fetched. Set SOCIAL_CASCADE=false to query every
+  // source and merge, which is slower and broader.
+  socialCascade: envBool('SOCIAL_CASCADE', true),
+  // Whether the chain's last rung — each platform's own user search, first hit
+  // — runs when nothing else matched. Off by default: a fuzzy name match is not
+  // evidence that the account belongs to the person being looked up, and it
+  // spends a request on every searchable platform to say so.
+  socialDirectSearch: envBool('SOCIAL_DIRECT_SEARCH', false),
 
   // Location providers
   //

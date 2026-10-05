@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../backend/src/config.js';
+import {
+  exactHandleMatches,
+  searchFallbackEnabled,
+  searchMatches,
+} from '../backend/src/providers/social/direct.js';
 import { PROVIDER_NAMES, PROVIDERS } from '../backend/src/providers/social/index.js';
 import { resolveChannelId as resolveChannelIdForTest } from '../backend/src/providers/social/synchra.js';
 import {
@@ -344,5 +349,104 @@ describe('resolving a Synchra channel', () => {
 
     expect(id).toBe('aaaaaaaa-0000-0000-0000-000000000009');
     expect(searched).toBe(false);
+  });
+});
+
+describe('the fallback chain', () => {
+  function enricher(spec: {
+    platform: string;
+    exists?: boolean;
+    searchHit?: string;
+    available?: boolean;
+  }) {
+    return defineEnricher({
+      name: `${spec.platform}-test`,
+      platform: spec.platform,
+      isAvailable: () => spec.available ?? true,
+      read: async () => (spec.exists ? { display_name: `${spec.platform} person` } : null),
+      ...(spec.searchHit
+        ? { findByName: async () => [{ account: spec.searchHit as string }] }
+        : {}),
+    });
+  }
+
+  it('asks a platform for the handle taken literally, and keeps only what exists', async () => {
+    const { accounts } = await exactHandleMatches(
+      [enricher({ platform: 'github', exists: true }), enricher({ platform: 'twitch' })],
+      '@maxtaco',
+    );
+
+    expect(accounts.map((a) => a.platform)).toEqual(['github']);
+    // An identical handle on another platform is not evidence of the same
+    // person, so nothing vouches for it and the weaker basis is recorded.
+    expect(accounts[0]?.verified_by).toEqual([]);
+    expect(accounts[0]?.metrics?.match).toBe('exact-handle');
+  });
+
+  it('reports a platform that failed instead of reading it as a miss', async () => {
+    const broken = defineEnricher({
+      name: 'broken-test',
+      platform: 'github',
+      isAvailable: () => true,
+      read: async () => {
+        throw new Error('503 Service Unavailable');
+      },
+    });
+
+    const { accounts, failures } = await exactHandleMatches([broken], 'maxtaco');
+
+    expect(accounts).toEqual([]);
+    expect(failures[0]?.error).toContain('503');
+  });
+
+  it('skips a platform with no search rather than guessing one', async () => {
+    const { accounts } = await searchMatches(
+      [
+        enricher({ platform: 'github', searchHit: 'maxtaco' }),
+        // No findByName: Reddit's user search needs scopes an app token lacks.
+        enricher({ platform: 'reddit' }),
+      ],
+      'maxtaco',
+    );
+
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]?.platform).toBe('github');
+    expect(accounts[0]?.metrics?.match).toBe('search-result');
+    expect(accounts[0]?.verified_by).toEqual([]);
+  });
+
+  it('takes one hit per platform, not the whole ranked list', async () => {
+    const many = defineEnricher({
+      name: 'many-test',
+      platform: 'github',
+      isAvailable: () => true,
+      read: async () => null,
+      findByName: async () => [{ account: 'first' }, { account: 'second' }],
+    });
+
+    const { accounts } = await searchMatches([many], 'first');
+
+    expect(accounts.map((a) => a.account)).toEqual(['first']);
+  });
+
+  it('does not reach an unavailable platform', async () => {
+    const { accounts } = await exactHandleMatches(
+      [enricher({ platform: 'twitch', exists: true, available: false })],
+      'x',
+    );
+
+    expect(accounts).toEqual([]);
+  });
+
+  it('gates the search rung on SOCIAL_DIRECT_SEARCH', () => {
+    const original = config.socialDirectSearch;
+    try {
+      config.socialDirectSearch = false;
+      expect(searchFallbackEnabled()).toBe(false);
+      config.socialDirectSearch = true;
+      expect(searchFallbackEnabled()).toBe(true);
+    } finally {
+      config.socialDirectSearch = original;
+    }
   });
 });

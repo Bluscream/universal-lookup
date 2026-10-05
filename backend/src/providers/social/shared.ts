@@ -304,7 +304,27 @@ export interface Enricher extends Provider {
   /** The canonical platform slug this reads. One enricher per platform. */
   platform: string;
   enrich(account: SocialAccount): Promise<SocialAccount>;
+  /**
+   * Fuzzy search for a handle, when the platform offers one.
+   *
+   * Absent on platforms that do not: Reddit's user search needs scopes an app
+   * token does not carry, and Hacker News has no search over users at all. The
+   * fallback chain skips a platform that cannot answer rather than guessing.
+   */
+  search?(handle: string): Promise<SocialAccount[]>;
 }
+
+/**
+ * How an account came to be in the answer.
+ *
+ * The first three mean a source asserted the link. The last two do not: they
+ * mean this lookup went to a platform and found *a* handle, which is a weaker
+ * claim and must be readable as such. Recorded under `metrics.match` rather
+ * than in `verified_by`, which is reserved for someone who actually vouched.
+ */
+export const MATCH_CLAIMED = 'claimed';
+export const MATCH_EXACT_HANDLE = 'exact-handle';
+export const MATCH_SEARCH = 'search-result';
 
 /**
  * Build an enricher from the one function that differs between platforms.
@@ -320,6 +340,14 @@ export function defineEnricher(spec: {
   platform: string;
   isAvailable: () => boolean;
   read: (account: SocialAccount) => Promise<Partial<SocialAccount> | null>;
+  /**
+   * Candidates whose handle resembles the query, best first.
+   *
+   * Each returns only the fields the search itself produced; the platform,
+   * provenance and match label are stamped on below so every enricher labels a
+   * search hit identically.
+   */
+  findByName?: (handle: string) => Promise<Partial<SocialAccount>[]>;
 }): Enricher {
   async function enrich(account: SocialAccount): Promise<SocialAccount> {
     const learned = await spec.read(account);
@@ -327,10 +355,26 @@ export function defineEnricher(spec: {
     return { ...account, ...learned, enriched_by: spec.name };
   }
 
+  const findByName = spec.findByName;
+  const search = findByName
+    ? async (handle: string): Promise<SocialAccount[]> =>
+        (await findByName(normalizeHandle(handle))).map((found) => ({
+          account: null,
+          ...found,
+          platform: spec.platform,
+          sources: [spec.name],
+          // Nobody vouched for this: the handle merely looked right.
+          verified_by: [],
+          enriched_by: spec.name,
+          metrics: { ...(found.metrics ?? {}), match: MATCH_SEARCH },
+        }))
+    : undefined;
+
   return {
     name: spec.name,
     platform: spec.platform,
     enrich,
+    ...(search ? { search } : {}),
     isAvailable: spec.isAvailable,
     async lookup(query: string): Promise<ProviderResult<DiscoveryData>> {
       const start = Date.now();

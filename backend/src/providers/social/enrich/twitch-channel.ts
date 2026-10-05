@@ -76,4 +76,18 @@ export const twitchChannel = defineEnricher({
       },
     };
   },
+  async findByName(handle: string): Promise<Partial<SocialAccount>[]> {
+    // `searchChannels` is Twitch's own channel search and is all an app token
+    // can reach — there is no user search in Helix. It returns channels, which
+    // is the same thing for this purpose: on Twitch a user *is* a channel.
+    const { data } = await api().search.searchChannels(handle, { limit: 5 });
+    return data.map((hit) => ({
+      account: hit.name,
+      account_id: hit.id,
+      url: `https://twitch.tv/${hit.name}`,
+      display_name: hit.displayName,
+      avatar: hit.thumbnailUrl,
+      metrics: { live: hit.isLive, stream_game: hit.gameName || null },
+    }));
+  },
 });

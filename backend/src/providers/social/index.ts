@@ -11,8 +11,12 @@
  *
  * So the pipeline is explicit:
  *
- *   1. Discovery: Keybase, Harbor and Synchra in parallel, each turning the
- *      query into a set of claimed accounts.
+ *   1. Discovery: a fallback chain — Synchra, then Keybase, then Harbor, each
+ *      turning the query into a set of claimed accounts, stopping at the first
+ *      one that finds any. When all three come up empty the chain continues
+ *      into `direct.ts`: the handle taken literally on each platform, and then
+ *      optionally each platform's own search. See SOCIAL_CASCADE for querying
+ *      all three at once and merging instead.
  *   2. Merge: the same account claimed by two sources becomes one entry whose
  *      `sources` and `verified_by` are the union, so corroboration is visible
  *      rather than double-counted.
@@ -41,6 +45,7 @@ import { hackernewsUser } from './enrich/hackernews-user.js';
 import { redditUser } from './enrich/reddit-user.js';
 import { twitchChannel } from './enrich/twitch-channel.js';
 import { youtubeChannel } from './enrich/youtube-channel.js';
+import { exactHandleMatches, searchFallbackEnabled, searchMatches } from './direct.js';
 import { harbor } from './harbor.js';
 import { keybase } from './keybase.js';
 import {
@@ -48,6 +53,7 @@ import {
   type DiscoveryData,
   type Enricher,
   groupByPlatform,
+  MATCH_CLAIMED,
   mergeAccounts,
   normalizeHandle,
 } from './shared.js';
@@ -61,6 +67,18 @@ import { synchra } from './synchra.js';
  * attests nothing cryptographically.
  */
 const DISCOVERY: Provider[] = [harbor, keybase, synchra];
+
+/**
+ * Fallback order, which is a different question from merge priority.
+ *
+ * Merging asks "whose field wins"; the chain asks "who is worth asking first",
+ * and the answer there is whoever is most likely to know and cheapest to ask.
+ * Synchra leads because this deployment's own channels live there and it is the
+ * only source that also returns chat; Keybase next, free and unauthenticated;
+ * Harbor last of the three. The platforms themselves come after all of them,
+ * in `direct.ts`, because they answer a weaker question.
+ */
+const CASCADE: Provider[] = [synchra, keybase, harbor];
 
 /** One enricher per platform. */
 const ENRICHERS: Enricher[] = [
@@ -133,47 +151,111 @@ async function enrichAll(
  * keeps what the route actually needs from them — the provider name, the
  * success flag and the error — so a dead source is still visible in `errors`.
  */
+async function ask(
+  provider: Provider,
+  query: string,
+  type: LookupType,
+  options?: LookupOptions,
+): Promise<ProviderResult<DiscoveryData>> {
+  try {
+    return (await provider.lookup(query, type, query, options)) as ProviderResult<DiscoveryData>;
+  } catch (error) {
+    return {
+      provider: provider.name,
+      success: false,
+      data: {},
+      error: error instanceof Error ? error.message : String(error),
+      duration: 0,
+    } satisfies ProviderResult<DiscoveryData>;
+  }
+}
+
+/**
+ * Stages 1–3, as a chain or as a fan-out.
+ *
+ * The chain is the default and what SOCIAL_CASCADE describes: ask one source,
+ * and move on only if it found nothing. It is one request instead of three for
+ * a handle the first source knows, and it is the behaviour an operator asked
+ * for — but it genuinely returns less, because sources overlap only partly and
+ * a source that is never asked cannot contribute. SOCIAL_CASCADE=false asks all
+ * three at once and merges, which is the broader, slower answer.
+ *
+ * A source that *errors* does not end the chain. "Keybase is down" is not
+ * "Keybase says no", and treating the two alike would silently truncate the
+ * answer whenever a free API had a bad minute.
+ */
+async function discover(
+  query: string,
+  providers: Provider[],
+  type: LookupType,
+  options?: LookupOptions,
+): Promise<ProviderResult<DiscoveryData>[]> {
+  if (!config.socialCascade) {
+    return Promise.all(providers.map((provider) => ask(provider, query, type, options)));
+  }
+
+  const ordered = CASCADE.filter((provider) => providers.includes(provider));
+  const results: ProviderResult<DiscoveryData>[] = [];
+  for (const provider of ordered) {
+    const result = await ask(provider, query, type, options);
+    results.push(result);
+    if ((result.data.socials ?? []).length > 0) break;
+  }
+  return results;
+}
+
 async function pipeline(
   query: string,
   providers: Provider[],
   type: LookupType,
   options?: LookupOptions,
 ): Promise<ProviderResult[]> {
-  const discoveries = await Promise.all(
-    providers.map(async (provider) => {
-      try {
-        return (await provider.lookup(
-          query,
-          type,
-          query,
-          options,
-        )) as ProviderResult<DiscoveryData>;
-      } catch (error) {
-        return {
-          provider: provider.name,
-          success: false,
-          data: {},
-          error: error instanceof Error ? error.message : String(error),
-          duration: 0,
-        } satisfies ProviderResult<DiscoveryData>;
-      }
-    }),
-  );
+  const discoveries = await discover(query, providers, type, options);
+  const direct: ProviderResult<DiscoveryData>[] = [];
 
-  const claimed = discoveries.flatMap((result) => result.data.socials ?? []);
+  let claimed = discoveries.flatMap((result) => result.data.socials ?? []);
+  const fromDirect = claimed.length === 0;
+
+  // Stages 4 and 5 run only when the sources that actually know about links
+  // have all come up empty — they are a fallback, not an addition.
+  if (claimed.length > 0) {
+    claimed = claimed.map((account) => ({
+      ...account,
+      metrics: { ...(account.metrics ?? {}), match: MATCH_CLAIMED },
+    }));
+  } else {
+    const exact = await exactHandleMatches(ENRICHERS, query);
+    direct.push(...exact.failures);
+    claimed = exact.accounts;
+
+    if (claimed.length === 0 && searchFallbackEnabled()) {
+      const searched = await searchMatches(ENRICHERS, query);
+      direct.push(...searched.failures);
+      claimed = searched.accounts;
+    }
+  }
+
   const chat = discoveries.flatMap((result) => result.data.recent_chat ?? []);
   const identities = discoveries
     .filter((result) => result.data.identity !== undefined)
     .map((result) => `${result.provider}:${result.data.identity as string}`);
 
-  const blanked: ProviderResult[] = discoveries.map((result) => ({ ...result, data: {} }));
+  const blanked: ProviderResult[] = [...discoveries, ...direct].map((result) => ({
+    ...result,
+    data: {},
+  }));
 
   if (claimed.length === 0 || isBlacklisted(AGGREGATOR)) {
     return blanked;
   }
 
   const merged = mergeAccounts(claimed);
-  const { accounts, failures } = await enrichAll(merged);
+  // Stages 4 and 5 read the platform to decide whether the account exists at
+  // all, so their results arrive enriched. Running enrichment over them again
+  // would repeat every one of those requests to learn nothing.
+  const { accounts, failures } = fromDirect
+    ? { accounts: merged, failures: [] as ProviderResult<DiscoveryData>[] }
+    : await enrichAll(merged);
 
   return [
     ...blanked,

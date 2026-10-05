@@ -76,4 +76,24 @@ export const youtubeChannel = defineEnricher({
       },
     };
   },
+  async findByName(handle: string): Promise<Partial<SocialAccount>[]> {
+    // `search.list` costs 100 quota units against a default daily 10,000 —
+    // two orders of magnitude more than the 1-unit `channels.list` above. That
+    // is the main reason stage 5 is opt-in.
+    const response = await api().search.list({
+      part: ['snippet'],
+      q: handle,
+      type: ['channel'],
+      maxResults: 5,
+    });
+
+    return (response.data.items ?? []).map((item) => ({
+      account: null,
+      account_id: item.id?.channelId ?? null,
+      url: item.id?.channelId ? `https://www.youtube.com/channel/${item.id.channelId}` : null,
+      display_name: item.snippet?.title ?? null,
+      description: item.snippet?.description ?? null,
+      avatar: item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.default?.url,
+    }));
+  },
 });
