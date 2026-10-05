@@ -1475,6 +1475,158 @@ a:hover {
   color: var(--text-muted);
 }
 
+/* ============ Social lookup ============ */
+.social-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.social-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.social-card-title {
+  margin: 0;
+  font-size: 1rem;
+}
+.social-account {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border-color);
+}
+.social-account:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.social-account-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-width: 0;
+  flex: 1 1 14rem;
+}
+.social-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  /* Avatars are full-colour and some are near-white artwork. */
+  background: rgba(255, 255, 255, 0.06);
+}
+.social-avatar-blank {
+  display: inline-block;
+  border: 1px dashed var(--border-color);
+}
+.social-account-text {
+  min-width: 0;
+}
+.social-account-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+.social-handle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.social-description {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  /* A bio can be hundreds of characters; two lines is enough to recognise one. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.social-counts {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.social-account-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.social-summary {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 0 0.25rem;
+}
+.social-identities {
+  font-family: var(--font-mono);
+}
+.social-chat {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  /* Twenty-five messages is a lot of vertical space for context nobody scrolls
+     past; the list scrolls instead of pushing the accounts off the screen. */
+  max-height: 22rem;
+  overflow-y: auto;
+}
+.social-chat-line {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.8rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.social-chat-line:last-child {
+  border-bottom: none;
+}
+.social-chat-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-muted);
+}
+.social-chat-time {
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+.social-chat-author {
+  font-weight: 600;
+  white-space: nowrap;
+}
+a.social-chat-author {
+  color: var(--accent-secondary);
+}
+.social-chat-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .social-chat-line {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 768px) {
   .navbar {

@@ -9,22 +9,33 @@ import {
   siDigitalocean,
   siDiscord,
   siEa,
+  siFacebook,
   siO2,
   siEpicgames,
   siGithub,
+  siInstagram,
+  siKeybase,
+  siKick,
   siGooglecloud,
   siMongodb,
   siNetlify,
   siPlaystation,
   siReddit,
+  siRumble,
   siSentry,
+  siSpotify,
   siSteam,
+  siThreads,
+  siTiktok,
   siTwitch,
   siUbisoft,
   siVercel,
   siVodafone,
   siVrchat,
   siWindsurf,
+  siX,
+  siYcombinator,
+  siYoutube,
 } from 'simple-icons';
 
 interface Icon {
@@ -85,6 +96,20 @@ const LOGOS: Record<string, Icon> = {
   'deutsche-telekom': siDeutschetelekom,
   vodafone: siVodafone,
   o2: siO2,
+  // Social platforms, keyed by the slug the social lookup groups accounts
+  // under, so a platform heading and a chat line can both ask for one by name.
+  youtube: siYoutube,
+  tiktok: siTiktok,
+  kick: siKick,
+  rumble: siRumble,
+  x: siX,
+  spotify: siSpotify,
+  keybase: siKeybase,
+  instagram: siInstagram,
+  threads: siThreads,
+  facebook: siFacebook,
+  // Hacker News has no mark of its own; the Y Combinator one is what it uses.
+  hackernews: siYcombinator,
 };
 
 /**

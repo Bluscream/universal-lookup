@@ -1,8 +1,21 @@
+import { LOOKUP_TYPES } from '@universal-lookup/common';
 import { useEffect, useState } from 'react';
 import { LookupResult } from './components/LookupResult';
 import { SearchBar } from './components/SearchBar';
 import type { LookupResponse, LookupType } from './types/api';
 import './index.css';
+
+/**
+ * `/social/bleichi_loveless`, `/api/v1/ip/8.8.8.8` — a deep link that prefills
+ * the form and runs the lookup.
+ *
+ * Built from `LOOKUP_TYPES` rather than spelled out. The spelled-out version
+ * omitted `social`, so the whole path stopped matching: the type dropped back
+ * to `auto`, the query was dropped with it, and the page opened empty instead
+ * of searching. That was the third hand-written copy of this list to fall
+ * behind, after the UI's own type union and its placeholder table.
+ */
+const DEEP_LINK = new RegExp(`^/(?:api/)?(?:v\\d+/)?(${LOOKUP_TYPES.join('|')})/(.+)$`);
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,9 +24,7 @@ function App() {
 
   // Parse initial state from URL synchronously on initial load
   const getInitialState = () => {
-    const pathMatch = location.pathname.match(
-      /^\/(?:api\/)?(?:v\d+\/)?(auto|tel|ip|domain|email|location|parcel|shipment|web|steam|url|shorten|apk|app|order|status|archive)\/(.+)$/,
-    );
+    const pathMatch = location.pathname.match(DEEP_LINK);
     const searchParams = new URLSearchParams(location.search);
     const raw = searchParams.get('raw') === 'true' || searchParams.get('raw') === '1';
     const fresh = searchParams.get('fresh') === 'true' || searchParams.get('fresh') === '1';

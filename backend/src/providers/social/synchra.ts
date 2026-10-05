@@ -39,6 +39,7 @@ import type {
   SocialAccount,
   SocialChatMessage,
 } from '../../types/common.js';
+import { profileUrl } from './profile-url.js';
 import {
   canonicalPlatform,
   type DiscoveryData,
@@ -105,6 +106,13 @@ function toChatMessage(message: ChatMessage): SocialChatMessage {
     platform: canonicalPlatform(message.provider),
     channel: message.source_provider_channel_name ?? message.provider_channel_id ?? null,
     author: message.viewer_display_name ?? null,
+    // The handle, kept beside the display name: they differ often enough, and
+    // the handle is what the profile url is built from.
+    author_name: message.viewer_name ?? null,
+    author_id: message.provider_viewer_id ?? null,
+    // Synchra does not send one, so it is derived — the same mapping
+    // synchra-php applies when rendering the same data.
+    author_url: profileUrl(message.provider, message.viewer_name, message.provider_viewer_id),
     text: parts.map((part) => part.text).join('') || null,
     time: message.created_at ?? null,
     type: message.type,

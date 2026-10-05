@@ -608,7 +608,21 @@ export interface SocialChatMessage {
   platform?: string | null;
   /** Synchra channel it belongs to. */
   channel?: string | null;
+  /** Display name, as the platform shows it. */
   author?: string | null;
+  /** The platform's own handle for them, which can differ from the display name. */
+  author_name?: string | null;
+  /** The platform's own id for them. */
+  author_id?: string | null;
+  /**
+   * Their public profile page.
+   *
+   * Derived rather than reported: Synchra carries the handle and the id but no
+   * url, since a url is a property of the platform. Null where the platform has
+   * no public profile page — Discord, and the integrations that are not places
+   * people have profiles at all.
+   */
+  author_url?: string | null;
   text?: string | null;
   /** ISO 8601. */
   time?: string | null;

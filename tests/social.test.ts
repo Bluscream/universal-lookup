@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../backend/src/config.js';
+import { profileUrl } from '../backend/src/providers/social/profile-url.js';
 import {
   exactHandleMatches,
   searchFallbackEnabled,
@@ -553,5 +554,47 @@ describe('enriching an account', () => {
     const enriched = await enricher.enrich(account({ platform: 'github', account: 'x' }));
 
     expect(enriched.metrics).toBeUndefined();
+  });
+});
+
+describe("a chat author's profile url", () => {
+  it('builds one from the handle for the platforms that use handles', () => {
+    expect(profileUrl('twitch', 'bleichi_loveless')).toBe('https://www.twitch.tv/bleichi_loveless');
+    expect(profileUrl('tiktok', 'bleichiloveless')).toBe('https://www.tiktok.com/@bleichiloveless');
+    expect(profileUrl('x', 'BleichiLoveless')).toBe('https://x.com/BleichiLoveless');
+    expect(profileUrl('kick', 'someone')).toBe('https://kick.com/someone');
+    expect(profileUrl('rumble', 'someone')).toBe('https://rumble.com/user/someone');
+  });
+
+  it('uses the id for YouTube, whose canonical url is the channel id', () => {
+    // The handle is what the API gives us for everyone else, but a YouTube
+    // viewer url built from a handle is not the one YouTube serves.
+    expect(profileUrl('youtube', 'Someone', 'UCabcdefghijklmnopqrstuv')).toBe(
+      'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv',
+    );
+    // And without an id there is nothing to build, so it says so.
+    expect(profileUrl('youtube', 'Someone', null)).toBeNull();
+  });
+
+  it('returns null for a platform that has no public profile page', () => {
+    // Discord has no public profile url, and these are not places people have
+    // profiles at all — a guessed link is worse than no link.
+    expect(profileUrl('discord', 'someone', '123')).toBeNull();
+    expect(profileUrl('7tv', 'someone')).toBeNull();
+    expect(profileUrl('streamelements', 'someone')).toBeNull();
+  });
+
+  it('handles a missing platform or handle without inventing a url', () => {
+    expect(profileUrl(null, 'someone')).toBeNull();
+    expect(profileUrl('twitch', '')).toBeNull();
+    expect(profileUrl('twitch', null)).toBeNull();
+  });
+
+  it('escapes a handle rather than pasting it into a url', () => {
+    expect(profileUrl('twitch', 'a b/c')).toBe('https://www.twitch.tv/a%20b%2Fc');
+  });
+
+  it('matches the platform whatever case Synchra reports it in', () => {
+    expect(profileUrl('Twitch', 'someone')).toBe('https://www.twitch.tv/someone');
   });
 });

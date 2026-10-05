@@ -7,6 +7,7 @@ import { MapCard } from './MapCard';
 import { OrderCard } from './OrderCard';
 import { ParcelTimeline } from './ParcelTimeline';
 import { ShortLinksCard } from './ShortLinksCard';
+import { SocialCard } from './SocialCard';
 import { StatusCard } from './StatusCard';
 import { SteamProfileCard } from './SteamProfileCard';
 import { UrlMetadataCard } from './UrlMetadataCard';
@@ -142,6 +143,7 @@ export function LookupResult({ data }: LookupResultProps) {
   const isShorten = reqType === 'shorten' || 'short_links' in response;
   const shortLinks = (response.short_links as ShortLink[] | undefined) ?? [];
   const isArchive = reqType === 'archive' || 'snapshots' in response;
+  const isSocial = reqType === 'social' || 'accounts' in response;
 
   // Determine excluded keys based on card type
   let excludedKeys: string[] = [];
@@ -269,6 +271,10 @@ export function LookupResult({ data }: LookupResultProps) {
     excludedKeys = ['short_links', 'short_url', 'long_url'];
   } else if (isArchive) {
     excludedKeys = ['archives', 'snapshots', 'original_url', 'save_requested', 'archived'];
+  } else if (isSocial) {
+    // The card renders all three, and the generic renderer would print the same
+    // accounts again as nested JSON underneath it.
+    excludedKeys = ['accounts', 'recent_chat', 'identities'];
   }
 
   // Check for geographic coordinates
@@ -350,6 +356,7 @@ export function LookupResult({ data }: LookupResultProps) {
         {isOrder && <OrderCard response={response} />}
         {isStatus && <StatusCard response={response} />}
         {isArchive && <ArchiveCard response={response} />}
+        {isSocial && <SocialCard response={response} />}
 
         {/* Priority key cards */}
         {CARD_KEYS.filter(
