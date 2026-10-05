@@ -152,15 +152,12 @@ export const tiktokProfile = defineEnricher({
         // so it is not reported as them.
         views: null,
         created_at: user.createTime ? new Date(user.createTime * 1000).toISOString() : null,
-        metrics: {
-          likes: stats?.heartCount ?? null,
-          following: stats?.followingCount ?? null,
-          friends: stats?.friendCount ?? null,
-          verified: user.verified ?? null,
-          private: user.privateAccount ?? null,
-          region: user.region ?? null,
-          read_from: 'page-data',
-        },
+        likes: stats?.heartCount ?? null,
+        following: stats?.followingCount ?? null,
+        friends: stats?.friendCount ?? null,
+        verified: user.verified ?? null,
+        private: user.privateAccount ?? null,
+        region: user.region ?? null,
       };
     }
 
@@ -179,11 +176,8 @@ export const tiktokProfile = defineEnricher({
         avatar: oembed.thumbnail_url ?? null,
         followers: null,
         uploads: null,
-        metrics: {
-          read_from: 'oembed',
-          // Named outright, so nobody reads the missing counts as zero.
-          counts_unavailable: 'TikTok page data was unreadable; only oEmbed answered',
-        },
+        // Named outright, so nobody reads the missing counts as zero.
+        counts_unavailable: 'TikTok page data was unreadable; only oEmbed answered',
       };
     }
 

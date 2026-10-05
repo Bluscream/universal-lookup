@@ -23,9 +23,9 @@
  * agent gets nothing and Googlebot gets 403 — and claiming to be Facebook's
  * crawler is a lie this codebase will not tell.
  *
- * And it is **honest about being approximate**. Open Graph counts are rounded
- * for display ("15.4k Likes"), so what comes back is the platform's own rounded
- * figure, not a precise one, and it is reported as such.
+ * The caveat to keep in mind: Open Graph counts are rounded for display ("15.4k
+ * Likes"), so what comes back is the platform's own rounded figure rather than a
+ * precise one. Counts from these two platforms will not match an API's exactly.
  */
 
 import axios from 'axios';
@@ -145,22 +145,20 @@ export function toAccount(
   counts: Record<string, number>,
   followersKey: string,
   uploadsKey: string,
-  source: string,
 ): Partial<SocialAccount> {
+  // The two counts that have proper homes are not repeated under the platform's
+  // own label as well; everything else the description carried goes on flat.
+  const rest = { ...counts };
+  delete rest[followersKey];
+  delete rest[uploadsKey];
+
   return {
+    ...rest,
     account: handle,
     url: og.url ?? null,
     display_name: parseDisplayName(og.title),
     avatar: og.image ?? null,
     followers: counts[followersKey] ?? null,
     uploads: counts[uploadsKey] ?? null,
-    metrics: {
-      ...counts,
-      // Said plainly, because the number is not exact and a caller comparing it
-      // against an API figure deserves to know why they differ.
-      counts_are_rounded: true,
-      read_from: 'open-graph',
-      source,
-    },
   };
 }

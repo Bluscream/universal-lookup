@@ -312,19 +312,18 @@ describe('reading a profile from its link-preview tags', () => {
     expect(og.description).toBeUndefined();
   });
 
-  it('marks the counts as rounded, because they are', () => {
-    // A caller comparing 15.4k against an API's 15,431 deserves to know why.
+  it('puts the counts on the account flat, with no leftover duplicates', () => {
     const built = toAccount(
       { url: 'https://x/y', title: 'A (@b)', image: 'https://cdn/a.jpg' },
       'b',
-      { followers: 15400 },
+      { followers: 15400, following: 12 },
       'followers',
       'posts',
-      'test',
     );
 
-    expect(built.metrics?.counts_are_rounded).toBe(true);
-    expect(built.metrics?.read_from).toBe('open-graph');
+    // `following` has no field of its own, so it goes on under its own name;
+    // `followers` does, and is not repeated beside it.
+    expect(built.following).toBe(12);
     expect(built.followers).toBe(15400);
     // No posts count in the description means null, not zero.
     expect(built.uploads).toBeNull();

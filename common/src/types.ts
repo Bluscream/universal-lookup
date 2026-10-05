@@ -592,7 +592,7 @@ export interface SocialAccount {
   display_name?: string | null;
   description?: string | null;
   avatar?: string | null;
-  /** Followers, subscribers or equivalent. Named per platform in `metrics`. */
+  /** Followers, subscribers or equivalent, whatever the platform calls it. */
   followers?: number | null;
   /** Items published: videos, repos, posts. */
   uploads?: number | null;
@@ -600,10 +600,28 @@ export interface SocialAccount {
   /** Account creation, ISO 8601. */
   created_at?: string | null;
   /**
-   * Platform-specific counts under their real names — `public_gists`,
-   * `karma`, `broadcaster_type` — rather than forced into the fields above.
+   * Live stream state, where the platform reports it. Twitch and Kick do; the
+   * rest leave these absent rather than guessing.
    */
-  metrics?: Record<string, unknown> | null;
+  live?: boolean | null;
+  stream_title?: string | null;
+  stream_category?: string | null;
+  stream_viewers?: number | null;
+  stream_started_at?: string | null;
+  /**
+   * On what basis this account is in the answer: `claimed` when a source
+   * asserted the link, `exact-handle` or `search-result` when only the handle
+   * matched. The one piece of provenance that survives into the response,
+   * because it is about whether the account really belongs to the person asked
+   * about rather than about how this program found it.
+   */
+  match?: string | null;
+  /**
+   * Everything else a platform reports, flat and under its own name —
+   * `following`, `likes`, `karma`, `public_gists`, `broadcaster_type`. There is
+   * no nested `metrics`: a count is a count, and splitting `followers` from
+   * `following` across two levels was an arbitrary line that did not hold.
+   */
   /** The enricher that read the platform, when one did. */
   enriched_by?: string | null;
   /**

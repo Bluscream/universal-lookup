@@ -66,14 +66,12 @@ export const twitchChannel = defineEnricher({
       // No `views` either: Twitch removed channel view counts in 2022 and
       // Twurple 8 dropped the property with them.
       created_at: user.creationDate.toISOString(),
-      metrics: {
-        broadcaster_type: user.broadcasterType || null,
-        live: stream !== null,
-        stream_title: stream?.title ?? null,
-        stream_game: stream?.gameName ?? null,
-        stream_viewers: stream?.viewers ?? null,
-        stream_started_at: stream?.startDate.toISOString() ?? null,
-      },
+      broadcaster_type: user.broadcasterType || null,
+      live: stream !== null,
+      stream_title: stream?.title ?? null,
+      stream_game: stream?.gameName ?? null,
+      stream_viewers: stream?.viewers ?? null,
+      stream_started_at: stream?.startDate.toISOString() ?? null,
     };
   },
   async findByName(handle: string): Promise<Partial<SocialAccount>[]> {
@@ -87,7 +85,8 @@ export const twitchChannel = defineEnricher({
       url: `https://twitch.tv/${hit.name}`,
       display_name: hit.displayName,
       avatar: hit.thumbnailUrl,
-      metrics: { live: hit.isLive, stream_game: hit.gameName || null },
+      live: hit.isLive,
+      stream_game: hit.gameName || null,
     }));
   },
 });

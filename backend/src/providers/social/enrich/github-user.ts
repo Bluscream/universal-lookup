@@ -50,15 +50,13 @@ export const githubUser = defineEnricher({
         followers: data.followers,
         uploads: data.public_repos,
         created_at: data.created_at,
-        metrics: {
-          following: data.following,
-          public_gists: data.public_gists,
-          company: data.company,
-          location: data.location,
-          blog: data.blog || null,
-          type: data.type,
-          site_admin: data.site_admin,
-        },
+        following: data.following,
+        public_gists: data.public_gists,
+        company: data.company,
+        location: data.location,
+        blog: data.blog || null,
+        type: data.type,
+        site_admin: data.site_admin,
       };
     } catch (error) {
       // 404 is a claim that has gone stale — the account was renamed or

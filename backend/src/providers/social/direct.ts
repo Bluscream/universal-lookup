@@ -12,7 +12,7 @@
  *   - **Stage 4, exact handle.** `github.com/<handle>` exists. That is a fact
  *     about a handle, not about a person. Two unrelated people routinely hold
  *     the same handle on two platforms, so these accounts carry
- *     `verified_by: []` and `metrics.match = "exact-handle"`.
+ *     `verified_by: []` and `match: "exact-handle"`.
  *   - **Stage 5, search.** The platform's own search for the handle, first hit.
  *     Weaker still — the match is approximate — so it is off unless
  *     SOCIAL_DIRECT_SEARCH is set, and labelled `"search-result"`.
@@ -84,10 +84,7 @@ export async function exactHandleMatches(
           verified_by: [],
         });
         if (account.enriched_by !== enricher.name) return null;
-        return {
-          ...account,
-          metrics: { ...(account.metrics ?? {}), match: MATCH_EXACT_HANDLE },
-        };
+        return { ...account, match: MATCH_EXACT_HANDLE };
       } catch (error) {
         failures.push(failed(enricher, handle, start, error));
         return null;

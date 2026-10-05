@@ -39,6 +39,6 @@ export const threadsProfile = defineEnricher({
     const counts = parseCounts(og.description);
     if (counts.followers === undefined) return null;
 
-    return toAccount(og, handle, counts, 'followers', 'threads', NAME);
+    return toAccount(og, handle, counts, 'followers', 'threads');
   },
 });

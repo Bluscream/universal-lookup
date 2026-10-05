@@ -9,7 +9,7 @@ interface SocialCardProps {
  * How an account came to be in the answer.
  *
  * This is the distinction the whole lookup turns on, so it is a visible badge
- * rather than a field buried in `metrics`. `claimed` means a source asserted the
+ * rather than a field nobody notices. `claimed` means a source asserted the
  * link. The other two mean only that a handle exists on that platform, which two
  * unrelated people routinely do share.
  */
@@ -57,6 +57,15 @@ function formatTime(iso: string | null | undefined): string {
  * followers to an app token and YouTube omits subscribers entirely when a
  * channel hides them, and both would otherwise read as "nobody follows them".
  */
+const EXTRA_COUNTS: [string, string][] = [
+  ['following', 'following'],
+  ['likes', 'likes'],
+  ['subscribers', 'subscribers'],
+  ['total_karma', 'karma'],
+  ['karma', 'karma'],
+  ['public_gists', 'gists'],
+];
+
 function Counts({ account }: { account: SocialAccount }) {
   const parts: string[] = [];
   const followers = compact(account.followers);
@@ -65,6 +74,16 @@ function Counts({ account }: { account: SocialAccount }) {
   if (followers) parts.push(`${followers} followers`);
   if (uploads) parts.push(`${uploads} uploads`);
   if (views) parts.push(`${views} views`);
+  // The rest of what a platform reported, which now sits on the account itself
+  // under the platform's own name. Only the counts with a sensible label are
+  // shown; the raw response carries all of them either way.
+  for (const [key, label] of EXTRA_COUNTS) {
+    const value = account[key];
+    const formatted = typeof value === 'number' ? compact(value) : null;
+    if (formatted && !parts.some((part) => part.endsWith(label))) {
+      parts.push(`${formatted} ${label}`);
+    }
+  }
   if (account.created_at) parts.push(`since ${formatTime(account.created_at).split(',')[0]}`);
 
   if (parts.length === 0) return null;
@@ -73,7 +92,7 @@ function Counts({ account }: { account: SocialAccount }) {
 
 function AccountRow({ account }: { account: SocialAccount }) {
   const handle = account.account ?? account.account_id ?? '(unnamed)';
-  const match = typeof account.metrics?.match === 'string' ? account.metrics.match : null;
+  const match = typeof account.match === 'string' ? account.match : null;
 
   return (
     <div className="social-account">
@@ -102,6 +121,14 @@ function AccountRow({ account }: { account: SocialAccount }) {
       </div>
 
       <div className="social-account-badges">
+        {/* Live state sits on the account flat, the same as every other thing a
+            platform reports about it. Twitch and Kick are the two that say. */}
+        {account.live === true && (
+          <span className="badge badge-error">
+            live{account.stream_viewers ? ` · ${compact(account.stream_viewers)} viewers` : ''}
+            {account.stream_title ? ` · ${account.stream_title}` : ''}
+          </span>
+        )}
         {match && (
           <span className={`badge ${MATCH_BADGES[match] ?? 'tech-badge'}`}>
             {MATCH_LABELS[match] ?? match}

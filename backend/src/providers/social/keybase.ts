@@ -90,7 +90,7 @@ function toAccount(proof: KeybaseProof): SocialAccount | null {
     url: proof.service_url ?? null,
     sources: [NAME],
     verified_by: proof.state === 1 ? [NAME] : [],
-    metrics: { keybase_proof_url: proof.proof_url ?? proof.human_url ?? null },
+    keybase_proof_url: proof.proof_url ?? proof.human_url ?? null,
   };
 }
 

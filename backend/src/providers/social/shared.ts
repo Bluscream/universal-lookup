@@ -323,8 +323,8 @@ export interface Enricher extends Provider {
  *
  * The first three mean a source asserted the link. The last two do not: they
  * mean this lookup went to a platform and found *a* handle, which is a weaker
- * claim and must be readable as such. Recorded under `metrics.match` rather
- * than in `verified_by`, which is reserved for someone who actually vouched.
+ * claim and must be readable as such. Recorded under `match` rather than in
+ * `verified_by`, which is reserved for someone who actually vouched.
  */
 export const MATCH_CLAIMED = 'claimed';
 export const MATCH_EXACT_HANDLE = 'exact-handle';
@@ -356,17 +356,14 @@ export function defineEnricher(spec: {
   async function enrich(account: SocialAccount): Promise<SocialAccount> {
     const learned = await spec.read(account);
     if (!learned) return account;
-    // `metrics` merges rather than replacing. A flat spread would drop whatever
-    // the discovery stage recorded there — including `match`, which says on
-    // what basis the account is in the answer at all, and which would then go
-    // missing from precisely the accounts a platform confirmed.
+    // `match` is re-applied after the spread. No enricher sets it today, but it
+    // says on what basis the account is in the answer at all, and a reader that
+    // one day did carry the key would otherwise silently erase it from exactly
+    // the accounts a platform confirmed.
     return {
       ...account,
       ...learned,
-      metrics:
-        account.metrics || learned.metrics
-          ? { ...(account.metrics ?? {}), ...(learned.metrics ?? {}) }
-          : undefined,
+      ...(account.match ? { match: account.match } : {}),
       enriched_by: spec.name,
     };
   }
@@ -382,7 +379,7 @@ export function defineEnricher(spec: {
           // Nobody vouched for this: the handle merely looked right.
           verified_by: [],
           enriched_by: spec.name,
-          metrics: { ...(found.metrics ?? {}), match: MATCH_SEARCH },
+          match: MATCH_SEARCH,
         }))
     : undefined;
 

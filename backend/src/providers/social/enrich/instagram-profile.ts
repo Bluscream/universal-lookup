@@ -35,6 +35,6 @@ export const instagramProfile = defineEnricher({
     const counts = parseCounts(og.description);
     if (counts.followers === undefined) return null;
 
-    return toAccount(og, handle, counts, 'followers', 'posts', NAME);
+    return toAccount(og, handle, counts, 'followers', 'posts');
   },
 });

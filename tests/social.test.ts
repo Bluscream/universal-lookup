@@ -464,7 +464,7 @@ describe('the fallback chain', () => {
     // An identical handle on another platform is not evidence of the same
     // person, so nothing vouches for it and the weaker basis is recorded.
     expect(accounts[0]?.verified_by).toEqual([]);
-    expect(accounts[0]?.metrics?.match).toBe('exact-handle');
+    expect(accounts[0]?.match).toBe('exact-handle');
   });
 
   it('reports a platform that failed instead of reading it as a miss', async () => {
@@ -495,7 +495,7 @@ describe('the fallback chain', () => {
 
     expect(accounts).toHaveLength(1);
     expect(accounts[0]?.platform).toBe('github');
-    expect(accounts[0]?.metrics?.match).toBe('search-result');
+    expect(accounts[0]?.match).toBe('search-result');
     expect(accounts[0]?.verified_by).toEqual([]);
   });
 
@@ -536,36 +536,41 @@ describe('the fallback chain', () => {
 });
 
 describe('enriching an account', () => {
-  it('keeps the metrics discovery recorded instead of replacing them', async () => {
-    // Regression: a flat spread of `read()`'s result dropped `metrics.match`,
-    // so the accounts a platform had confirmed were the ones that lost the
-    // record of why they were in the answer.
+  it('keeps the match discovery recorded instead of replacing it', async () => {
+    // Regression: the spread of `read()`'s result must not drop `match`, or the
+    // accounts a platform had confirmed would be the ones that lost the record
+    // of why they are in the answer at all.
     const enricher = defineEnricher({
       name: 'merge-test',
       platform: 'github',
       isAvailable: () => true,
-      read: async () => ({ followers: 7, metrics: { following: 3 } }),
+      read: async () => ({ followers: 7, following: 3 }),
     });
 
     const enriched = await enricher.enrich(
-      account({ platform: 'github', account: 'x', metrics: { match: 'claimed' } }),
+      account({ platform: 'github', account: 'x', match: 'claimed' }),
     );
 
-    expect(enriched.metrics).toEqual({ match: 'claimed', following: 3 });
+    expect(enriched.match).toBe('claimed');
+    expect(enriched.following).toBe(3);
     expect(enriched.followers).toBe(7);
   });
 
-  it('leaves metrics absent when neither side has any', async () => {
+  it('puts what a platform reports on the account itself, flat', async () => {
+    // There is no nested `metrics`: `followers` and `following` are the same
+    // kind of fact and sat at two different levels until this was flattened.
     const enricher = defineEnricher({
-      name: 'bare-test',
+      name: 'flat-test',
       platform: 'github',
       isAvailable: () => true,
-      read: async () => ({ followers: 1 }),
+      read: async () => ({ followers: 1, public_gists: 4 }),
     });
 
     const enriched = await enricher.enrich(account({ platform: 'github', account: 'x' }));
 
-    expect(enriched.metrics).toBeUndefined();
+    expect(enriched.followers).toBe(1);
+    expect(enriched.public_gists).toBe(4);
+    expect('metrics' in enriched).toBe(false);
   });
 });
 

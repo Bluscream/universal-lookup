@@ -130,17 +130,15 @@ export const kickChannel = defineEnricher({
       // Kick does not publish a follower count on this endpoint. Subscribers are
       // a different, paid relationship and are reported as themselves below.
       followers: null,
-      metrics: {
-        live: stream?.is_live ?? false,
-        stream_title: channel.stream_title || null,
-        stream_category: channel.category?.name ?? null,
-        stream_viewers: stream?.viewer_count ?? null,
-        stream_started_at: stream?.start_time ?? null,
-        stream_language: stream?.language ?? null,
-        mature: stream?.is_mature ?? null,
-        subscribers: channel.subscriber_count ?? null,
-        gifted_subscribers: channel.gifted_subscriber_count ?? null,
-      },
+      live: stream?.is_live ?? false,
+      stream_title: channel.stream_title || null,
+      stream_category: channel.category?.name ?? null,
+      stream_viewers: stream?.viewer_count ?? null,
+      stream_started_at: stream?.start_time ?? null,
+      stream_language: stream?.language ?? null,
+      mature: stream?.is_mature ?? null,
+      subscribers: channel.subscriber_count ?? null,
+      gifted_subscribers: channel.gifted_subscriber_count ?? null,
     };
   },
 });

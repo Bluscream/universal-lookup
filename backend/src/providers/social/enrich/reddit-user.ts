@@ -119,19 +119,17 @@ export const redditUser = defineEnricher({
       // The icon URL is HTML-escaped in Reddit's JSON.
       avatar: data.icon_img?.replace(/&amp;/g, '&') ?? null,
       // A profile's subreddit subscribers are the closest thing Reddit has to
-      // followers; karma is a separate idea and stays under `metrics`.
+      // followers; karma is a separate idea and is reported as itself.
       followers: data.subreddit?.subscribers ?? null,
       created_at:
         data.created_utc === undefined ? null : new Date(data.created_utc * 1000).toISOString(),
-      metrics: {
-        link_karma: data.link_karma ?? null,
-        comment_karma: data.comment_karma ?? null,
-        total_karma: data.total_karma ?? null,
-        is_employee: data.is_employee ?? null,
-        is_mod: data.is_mod ?? null,
-        is_gold: data.is_gold ?? null,
-        verified: data.verified ?? null,
-      },
+      link_karma: data.link_karma ?? null,
+      comment_karma: data.comment_karma ?? null,
+      total_karma: data.total_karma ?? null,
+      is_employee: data.is_employee ?? null,
+      is_mod: data.is_mod ?? null,
+      is_gold: data.is_gold ?? null,
+      verified: data.verified ?? null,
     };
   },
 });

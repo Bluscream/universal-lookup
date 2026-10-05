@@ -31,7 +31,7 @@
  */
 
 import { config } from '../../config.js';
-import { isBlacklisted, type DualPromiseResult, filterProviders } from '../../lib/providers.js';
+import { type DualPromiseResult, filterProviders, isBlacklisted } from '../../lib/providers.js';
 import type {
   LookupOptions,
   LookupType,
@@ -41,21 +41,21 @@ import type {
   SocialChatMessage,
   SocialStream,
 } from '../../types/common.js';
-import { githubUser } from './enrich/github-user.js';
-import { instagramProfile } from './enrich/instagram-profile.js';
-import { kickChannel } from './enrich/kick-channel.js';
-import { hackernewsUser } from './enrich/hackernews-user.js';
-import { redditUser } from './enrich/reddit-user.js';
-import { threadsProfile } from './enrich/threads-profile.js';
-import { tiktokProfile } from './enrich/tiktok-profile.js';
-import { twitchChannel } from './enrich/twitch-channel.js';
-import { youtubeChannel } from './enrich/youtube-channel.js';
 import { githubRepos } from './detail/github-repos.js';
 import { hackernewsActivity } from './detail/hackernews-activity.js';
 import { redditActivity } from './detail/reddit-activity.js';
 import { twitchVideos } from './detail/twitch-videos.js';
 import { youtubeUploads } from './detail/youtube-uploads.js';
 import { exactHandleMatches, searchFallbackEnabled, searchMatches } from './direct.js';
+import { githubUser } from './enrich/github-user.js';
+import { hackernewsUser } from './enrich/hackernews-user.js';
+import { instagramProfile } from './enrich/instagram-profile.js';
+import { kickChannel } from './enrich/kick-channel.js';
+import { redditUser } from './enrich/reddit-user.js';
+import { threadsProfile } from './enrich/threads-profile.js';
+import { tiktokProfile } from './enrich/tiktok-profile.js';
+import { twitchChannel } from './enrich/twitch-channel.js';
+import { youtubeChannel } from './enrich/youtube-channel.js';
 import { harbor } from './harbor.js';
 import { keybase } from './keybase.js';
 import {
@@ -328,10 +328,7 @@ async function pipeline(
   // Stages 4 and 5 run only when the sources that actually know about links
   // have all come up empty — they are a fallback, not an addition.
   if (claimed.length > 0) {
-    claimed = claimed.map((account) => ({
-      ...account,
-      metrics: { ...(account.metrics ?? {}), match: MATCH_CLAIMED },
-    }));
+    claimed = claimed.map((account) => ({ ...account, match: MATCH_CLAIMED }));
   } else {
     const exact = await exactHandleMatches(ENRICHERS, query);
     direct.push(...exact.failures);
@@ -398,9 +395,11 @@ async function pipeline(
  * So they are internal, and removed here, at the one point where an account
  * becomes a response field.
  *
- * `verified_by` is deliberately kept: it is the only one that is a claim about
- * the world rather than about this program's own workings — Keybase and Harbor
- * hold signatures somebody can check — and it was not among those asked to go.
+ * `verified_by` and `match` are deliberately kept: they are the two that are
+ * claims about the world rather than about this program's own workings —
+ * Keybase and Harbor hold signatures somebody can check, and `match` says
+ * whether the account really belongs to the person asked about or merely shares
+ * their handle.
  */
 function published(account: SocialAccount): SocialAccount {
   const { sources: _sources, enriched_by: _enriched, detailed_by: _detailed, ...rest } = account;

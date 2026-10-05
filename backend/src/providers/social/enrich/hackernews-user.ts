@@ -44,7 +44,7 @@ export const hackernewsUser = defineEnricher({
       // submission count — but the array is large and is not worth publishing.
       uploads: user.submitted?.length ?? null,
       created_at: user.created === undefined ? null : new Date(user.created * 1000).toISOString(),
-      metrics: { karma: user.karma ?? null },
+      karma: user.karma ?? null,
     };
   },
 });

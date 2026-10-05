@@ -68,12 +68,9 @@ export const youtubeChannel = defineEnricher({
       uploads: count(stats?.videoCount),
       views: count(stats?.viewCount),
       created_at: channel.snippet?.publishedAt ?? null,
-      metrics: {
-        subscribers: count(stats?.subscriberCount),
-        subscriber_count_hidden: stats?.hiddenSubscriberCount ?? null,
-        country: channel.snippet?.country ?? null,
-        keywords: channel.brandingSettings?.channel?.keywords ?? null,
-      },
+      subscriber_count_hidden: stats?.hiddenSubscriberCount ?? null,
+      country: channel.snippet?.country ?? null,
+      keywords: channel.brandingSettings?.channel?.keywords ?? null,
     };
   },
   async findByName(handle: string): Promise<Partial<SocialAccount>[]> {
