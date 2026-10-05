@@ -1,20 +1,7 @@
 import axios from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  alpineProvider,
-  archlinuxProvider,
-  aurProvider,
-  debianProvider,
-  fedoraProvider,
-  ubuntuProvider,
-} from '../backend/src/providers/app/linux-distro.js';
 import { mergeResponses } from '../backend/src/lib/merger.js';
-import { PROVIDER_NAMES, PROVIDERS } from '../backend/src/providers/app/index.js';
-import {
-  chocolateyProvider,
-  scoopProvider,
-  wingetProvider,
-} from '../backend/src/providers/app/windows.js';
+import { fdroidProvider, izzyondroidProvider } from '../backend/src/providers/app/android.js';
 import {
   appImageCatalogue,
   appimagehubProvider,
@@ -23,7 +10,20 @@ import {
   nixpkgsProvider,
 } from '../backend/src/providers/app/crossplatform.js';
 import { githubProvider } from '../backend/src/providers/app/github.js';
-import { fdroidProvider, izzyondroidProvider } from '../backend/src/providers/app/android.js';
+import { PROVIDER_NAMES, PROVIDERS } from '../backend/src/providers/app/index.js';
+import {
+  alpineProvider,
+  archlinuxProvider,
+  aurProvider,
+  debianProvider,
+  fedoraProvider,
+  ubuntuProvider,
+} from '../backend/src/providers/app/linux-distro.js';
+import {
+  chocolateyProvider,
+  scoopProvider,
+  wingetProvider,
+} from '../backend/src/providers/app/windows.js';
 import type { AppEntry, ProviderResult } from '../backend/src/types/common.js';
 
 /**

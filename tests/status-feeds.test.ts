@@ -1,21 +1,19 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { activisionToSummary } from '../backend/src/providers/status/activision.js';
 import {
-  realmsToSummary,
   reachabilityToSummary,
+  realmsToSummary,
 } from '../backend/src/providers/status/blizzard.js';
 import { instatusToSummary } from '../backend/src/providers/status/instatus.js';
 import { nintendoToSummary } from '../backend/src/providers/status/nintendo.js';
 import { psnToSummary } from '../backend/src/providers/status/playstation.js';
-import { ubisoftToSummary } from '../backend/src/providers/status/ubisoft.js';
 import {
-  summaryToStatusData,
   clearIncidentCache,
+  summaryToStatusData,
 } from '../backend/src/providers/status/statuspage.js';
 import { steamGroupSummary } from '../backend/src/providers/status/steam.js';
+import { ubisoftToSummary } from '../backend/src/providers/status/ubisoft.js';
 import { xboxToSummary } from '../backend/src/providers/status/xbox.js';
-
-import { beforeEach } from 'vitest';
 
 beforeEach(() => {
   clearIncidentCache();

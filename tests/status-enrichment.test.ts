@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   companyToSummary,
   extractCompany,
@@ -16,8 +16,6 @@ import {
 } from '../backend/src/providers/status/maintenance.js';
 import { clearIncidentCache } from '../backend/src/providers/status/statuspage.js';
 import type { StatusServiceEntry } from '../backend/src/types/common.js';
-
-import { beforeEach } from 'vitest';
 
 beforeEach(() => {
   clearIncidentCache();

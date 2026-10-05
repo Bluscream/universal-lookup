@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Row, PROBED_TYPES, isFailure, probeAll } from '../scripts/lib/provider-probe.js';
+import { isFailure, PROBED_TYPES, probeAll, type Row } from '../scripts/lib/provider-probe.js';
 
 /**
  * Every provider and sub-provider, against a real upstream.

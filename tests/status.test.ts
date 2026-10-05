@@ -1,15 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mergeResponses } from '../backend/src/lib/merger.js';
 import {
+  clearIncidentCache,
   normalizeIndicator,
   type StatuspageSummary,
   summaryToStatusData,
-  clearIncidentCache,
 } from '../backend/src/providers/status/statuspage.js';
 import { xboxToSummary } from '../backend/src/providers/status/xbox.js';
 import type { ProviderResult, StatusServiceEntry } from '../backend/src/types/common.js';
-
-import { beforeEach } from 'vitest';
 
 beforeEach(() => {
   clearIncidentCache();

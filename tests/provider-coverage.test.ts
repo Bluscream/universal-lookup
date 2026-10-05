@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { APK_MIRRORS } from '../backend/src/providers/apk/index.js';
 import { LOOKUP_TYPES } from '../backend/src/types/common.js';
 import {
+  looksBroken,
   needsCredentials,
   PROBED_TYPES,
   PROVIDER_QUERIES,
@@ -10,7 +11,6 @@ import {
   queryFor,
   REGISTRIES,
   UNPROBED_TYPES,
-  looksBroken,
 } from '../scripts/lib/provider-probe.js';
 
 /**
