@@ -170,10 +170,16 @@ same bytes a chat client fetches to draw a link preview. That needs no
 credentials, no app review and no user's session cookie, and the counts come back
 as the platform rounds them for display, flagged `counts_are_rounded`.
 
-TikTok is deliberately *not* read this way. It serves those tags only to an
-allowlist of named crawlers — `facebookexternalhit` gets them, an honest agent
-gets nothing, Googlebot gets 403 — and claiming to be Facebook's crawler is not
-something this project will do.
+`tiktok-profile` gets there a different way, because TikTok serves those tags
+only to an allowlist of named crawlers — `facebookexternalhit` gets them, an
+honest agent gets nothing, Googlebot gets 403 — and claiming to be Facebook's
+crawler is not something this project will do. Instead it reads the profile
+page's own `__UNIVERSAL_DATA_FOR_REHYDRATION__` state, which TikTok *does* serve
+to this project's honest user-agent, and whose counts are **exact** rather than
+rounded. The documented, supported `oembed` endpoint runs alongside it: it has no
+counts, but it answers 400 for a handle that does not exist, which is what tells
+a missing account apart from a rate-limited read. A blocked page read falls back
+to the oEmbed name with `counts_unavailable` saying so, never a fabricated zero.
 
 `github-user` and `hackernews-user`
 work anonymously; `youtube-channel`, `twitch-channel` and `reddit-user` need a

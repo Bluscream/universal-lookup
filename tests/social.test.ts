@@ -8,6 +8,7 @@ import {
   parseOpenGraph,
   toAccount,
 } from '../backend/src/providers/social/enrich/open-graph.js';
+import { parseRehydration } from '../backend/src/providers/social/enrich/tiktok-profile.js';
 import { profileUrl } from '../backend/src/providers/social/profile-url.js';
 import {
   resetViewerAvatars,
@@ -224,6 +225,7 @@ describe('the registry', () => {
       'hackernews-user',
       'instagram-profile',
       'threads-profile',
+      'tiktok-profile',
       'youtube-uploads',
       'twitch-videos',
       'github-repos',
@@ -874,5 +876,57 @@ describe('reading a profile from its link-preview tags', () => {
     expect(built.followers).toBe(15400);
     // No posts count in the description means null, not zero.
     expect(built.uploads).toBeNull();
+  });
+});
+
+describe("TikTok's page data", () => {
+  const blob = (payload: unknown) =>
+    `<html><head><script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">${JSON.stringify(payload)}</script></head></html>`;
+
+  it('reads the state the page would have hydrated itself from', () => {
+    const parsed = parseRehydration(
+      blob({
+        __DEFAULT_SCOPE__: {
+          'webapp.user-detail': {
+            statusCode: 0,
+            userInfo: { user: { uniqueId: 'someone' }, stats: { followerCount: 5519 } },
+          },
+        },
+      }),
+    );
+
+    const detail = parsed?.__DEFAULT_SCOPE__?.['webapp.user-detail'];
+    expect(detail?.userInfo?.user?.uniqueId).toBe('someone');
+    expect(detail?.userInfo?.stats?.followerCount).toBe(5519);
+  });
+
+  it('returns null for a page with no blob, rather than throwing', () => {
+    // TikTok owns this markup and may rename or restructure it at any time.
+    expect(parseRehydration('<html><head></head></html>')).toBeNull();
+  });
+
+  it('returns null for a truncated blob, rather than throwing', () => {
+    expect(
+      parseRehydration(
+        '<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__">{"__DEFAULT_SCOPE__":</script>',
+      ),
+    ).toBeNull();
+  });
+
+  it('distinguishes a missing account from an unreadable page', () => {
+    // The distinction that matters: a handle nobody holds answers 200 with
+    // userInfo null and statusCode 10221, while a blocked read answers with no
+    // usable blob at all. Reporting the second as the first would mark a live
+    // account dead every time TikTok rate-limited us.
+    const missing = parseRehydration(
+      blob({ __DEFAULT_SCOPE__: { 'webapp.user-detail': { statusCode: 10221, userInfo: null } } }),
+    );
+    const detail = missing?.__DEFAULT_SCOPE__?.['webapp.user-detail'];
+
+    expect(detail).toBeDefined();
+    expect(detail?.userInfo).toBeNull();
+
+    // A blocked read has no detail section to consult at all.
+    expect(parseRehydration('<html></html>')?.__DEFAULT_SCOPE__).toBeUndefined();
   });
 });
