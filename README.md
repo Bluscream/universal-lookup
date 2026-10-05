@@ -129,10 +129,31 @@ Copy `.env.example` to `.env` to customize the service.
 
 `GET /api/social/:query` takes one account — `@bleichi_loveless`, a bare handle,
 a channel id or a pasted profile URL — and answers with every account linked to
-it. It runs in two stages: three identity sources say *which* accounts exist,
-then each platform is asked what its own account looks like.
+it. It runs in two stages: identity sources say *which* accounts exist, then
+each platform is asked what its own account looks like.
 
-**Discovery** needs no credentials at all:
+**Discovery** is a fallback chain, and needs no credentials at all. Each rung is
+tried only when the ones above it found nothing — a rung that *errors* does not
+end the chain, because "Keybase is down" is not "Keybase says no":
+
+1. **Synchra** — this deployment's own channels, and the only source for chat.
+2. **Keybase** — free and unauthenticated.
+3. **Harbor** — signed claims.
+4. **The handle, taken literally**, on every platform that can be read.
+5. **Each platform's own search**, first hit — only with `SOCIAL_DIRECT_SEARCH`.
+
+Rungs 4 and 5 answer a weaker question than the first three. They report that a
+handle *exists* somewhere, not that anyone linked it to the query, and two
+unrelated people routinely hold the same handle on two platforms — so those
+accounts carry an empty `verified_by` and a `metrics.match` of `exact-handle` or
+`search-result`, against `claimed` for the rest.
+
+Stopping early costs breadth, measurably: `Bluscream` returns 10 accounts when
+all three sources are merged, because Keybase and Synchra each know 5 and
+overlap only partly, but 5 when Synchra answers first. Set `SOCIAL_CASCADE=false`
+to query every source at once and merge.
+
+The sources themselves:
 
 | Source | Covers | Notes |
 |--------|--------|-------|
@@ -142,7 +163,9 @@ then each platform is asked what its own account looks like.
 
 **Enrichment** reads each platform directly. `github-user` and `hackernews-user`
 work anonymously; `youtube-channel`, `twitch-channel` and `reddit-user` need a
-key, and without one the account is still returned, just undescribed.
+key, and without one the account is still returned, just undescribed. The same
+readers serve rungs 4 and 5 — though only GitHub, Twitch and YouTube offer a
+search, so Reddit and Hacker News take part in rung 4 and not rung 5.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -156,6 +179,8 @@ key, and without one the account is still returned, just undescribed.
 | `GITHUB_TOKEN` | `null` | Reused; optional, raises the rate limit from 60/h to 5000/h |
 | `SOCIAL_ENRICH_LIMIT` | `12` | How many accounts get read from their platform. The rest are returned unenriched. |
 | `SOCIAL_CHAT_LIMIT` | `25` | Recent chat messages carried back from Synchra |
+| `SOCIAL_CASCADE` | `true` | Stop at the first source that finds anything. `false` queries all three and merges — slower, broader. |
+| `SOCIAL_DIRECT_SEARCH` | `false` | Run rung 5, each platform's own user search. Off by default: a fuzzy name match is not evidence, and YouTube's search costs 100 quota units against a daily 10,000. |
 
 Each account says where it came from, and that distinction is the point:
 `sources` lists who *claimed* the link, `verified_by` lists who cryptographically
