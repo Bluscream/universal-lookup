@@ -1,23 +1,18 @@
 // Universal Lookup API Response Types
 
-export type LookupType =
-  | 'ip'
-  | 'domain'
-  | 'tel'
-  | 'email'
-  | 'location'
-  | 'parcel'
-  | 'shipment'
-  | 'web'
-  | 'steam'
-  | 'url'
-  | 'shorten'
-  | 'apk'
-  | 'app'
-  | 'order'
-  | 'status'
-  | 'archive'
-  | 'auto';
+/**
+ * Re-exported from `common` rather than restated.
+ *
+ * This file used to hold its own copy of the list, and the copy fell behind:
+ * `social` was added to the backend, served happily at `/api/social/:query`,
+ * and never appeared in the UI's dropdown because the frontend did not know the
+ * type existed. The only defence is to not have a second list, which is also
+ * how `common` describes itself — the route matcher and the auth hook already
+ * derive from it.
+ */
+import type { LookupType } from '@universal-lookup/common';
+
+export type { LookupType };
 
 export type StatusIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance' | 'unknown';
 
@@ -214,28 +209,43 @@ export const PLACEHOLDERS: Record<LookupType, string> = {
   order: 'e.g. 305-1827771-7197161',
   status: 'all, or e.g. discord,xbox,playstation',
   archive: 'e.g. https://example.com — add ?save=true to publish it to an archive',
+  social: 'e.g. @bleichi_loveless, Bluscream, or a pasted profile URL — the @ is optional',
   auto: 'e.g. 8.8.8.8, google.com, +49123..., user@..., 0034..., SteamID..., com.android...',
 };
 
-export const LOOKUP_OPTIONS: { value: LookupType; label: string; icon: string }[] = [
-  { value: 'ip', label: 'IP Address', icon: '🌍' },
-  { value: 'domain', label: 'Domain Name', icon: '📡' },
-  { value: 'tel', label: 'Phone Number', icon: '📞' },
-  { value: 'email', label: 'Email', icon: '📧' },
-  { value: 'location', label: 'Location', icon: '📍' },
-  { value: 'parcel', label: 'Parcel', icon: '📦' },
-  { value: 'shipment', label: 'Shipment', icon: '🚚' },
-  { value: 'web', label: 'Web Search', icon: '🔍' },
-  { value: 'steam', label: 'Steam', icon: '🎮' },
-  { value: 'url', label: 'URL / Domain', icon: '🌐' },
-  { value: 'shorten', label: 'Shorten URL', icon: '✂️' },
-  { value: 'apk', label: 'App Package', icon: '📱' },
-  { value: 'app', label: 'Software', icon: '📦' },
-  { value: 'order', label: 'Order', icon: '📦' },
-  { value: 'status', label: 'Service Status', icon: '🚦' },
-  { value: 'archive', label: 'Web Archives', icon: '🗄️' },
-  { value: 'auto', label: 'Auto Detect', icon: '✨' },
-];
+/**
+ * How each lookup type is presented, in dropdown order.
+ *
+ * Typed as a complete `Record`, which is the whole point: adding a type to
+ * `LOOKUP_TYPES` in `common` and forgetting it here is now a compile error
+ * rather than a feature that silently never reaches the UI. Key order is
+ * display order — chosen for the dropdown rather than copied from `common`,
+ * since the most-used types belong at the top and `auto` at the bottom.
+ */
+const LOOKUP_LABELS: Record<LookupType, { label: string; icon: string }> = {
+  ip: { label: 'IP Address', icon: '🌍' },
+  domain: { label: 'Domain Name', icon: '📡' },
+  tel: { label: 'Phone Number', icon: '📞' },
+  email: { label: 'Email', icon: '📧' },
+  location: { label: 'Location', icon: '📍' },
+  parcel: { label: 'Parcel', icon: '📦' },
+  shipment: { label: 'Shipment', icon: '🚚' },
+  web: { label: 'Web Search', icon: '🔍' },
+  steam: { label: 'Steam', icon: '🎮' },
+  url: { label: 'URL / Domain', icon: '🌐' },
+  shorten: { label: 'Shorten URL', icon: '✂️' },
+  apk: { label: 'App Package', icon: '📱' },
+  app: { label: 'Software', icon: '📦' },
+  order: { label: 'Order', icon: '📦' },
+  status: { label: 'Service Status', icon: '🚦' },
+  archive: { label: 'Web Archives', icon: '🗄️' },
+  social: { label: 'Social Accounts', icon: '👤' },
+  auto: { label: 'Auto Detect', icon: '✨' },
+};
+
+export const LOOKUP_OPTIONS: { value: LookupType; label: string; icon: string }[] = (
+  Object.entries(LOOKUP_LABELS) as [LookupType, { label: string; icon: string }][]
+).map(([value, meta]) => ({ value, ...meta }));
 
 /**
  * One software package as one source knows it. Mirrors AppEntry in common; the
