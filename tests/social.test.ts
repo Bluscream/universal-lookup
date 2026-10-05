@@ -450,3 +450,37 @@ describe('the fallback chain', () => {
     }
   });
 });
+
+describe('enriching an account', () => {
+  it('keeps the metrics discovery recorded instead of replacing them', async () => {
+    // Regression: a flat spread of `read()`'s result dropped `metrics.match`,
+    // so the accounts a platform had confirmed were the ones that lost the
+    // record of why they were in the answer.
+    const enricher = defineEnricher({
+      name: 'merge-test',
+      platform: 'github',
+      isAvailable: () => true,
+      read: async () => ({ followers: 7, metrics: { following: 3 } }),
+    });
+
+    const enriched = await enricher.enrich(
+      account({ platform: 'github', account: 'x', metrics: { match: 'claimed' } }),
+    );
+
+    expect(enriched.metrics).toEqual({ match: 'claimed', following: 3 });
+    expect(enriched.followers).toBe(7);
+  });
+
+  it('leaves metrics absent when neither side has any', async () => {
+    const enricher = defineEnricher({
+      name: 'bare-test',
+      platform: 'github',
+      isAvailable: () => true,
+      read: async () => ({ followers: 1 }),
+    });
+
+    const enriched = await enricher.enrich(account({ platform: 'github', account: 'x' }));
+
+    expect(enriched.metrics).toBeUndefined();
+  });
+});

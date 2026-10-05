@@ -352,7 +352,19 @@ export function defineEnricher(spec: {
   async function enrich(account: SocialAccount): Promise<SocialAccount> {
     const learned = await spec.read(account);
     if (!learned) return account;
-    return { ...account, ...learned, enriched_by: spec.name };
+    // `metrics` merges rather than replacing. A flat spread would drop whatever
+    // the discovery stage recorded there — including `match`, which says on
+    // what basis the account is in the answer at all, and which would then go
+    // missing from precisely the accounts a platform confirmed.
+    return {
+      ...account,
+      ...learned,
+      metrics:
+        account.metrics || learned.metrics
+          ? { ...(account.metrics ?? {}), ...(learned.metrics ?? {}) }
+          : undefined,
+      enriched_by: spec.name,
+    };
   }
 
   const findByName = spec.findByName;
