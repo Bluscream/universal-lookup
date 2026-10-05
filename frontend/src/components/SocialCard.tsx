@@ -107,16 +107,13 @@ function AccountRow({ account }: { account: SocialAccount }) {
             {MATCH_LABELS[match] ?? match}
           </span>
         )}
-        {/* Who claimed it, who vouched, and who confirmed it still exists are
-            three different things, and collapsing them would overstate the
-            weakest of the three. */}
-        {account.sources?.length > 0 && (
-          <span className="tech-badge">via {account.sources.join(', ')}</span>
-        )}
+        {/* Only `verified_by` survives into the response: who *claimed* a link
+            and which reader confirmed it are internal to the pipeline now. A
+            signature somebody else can check is a claim about the world and
+            still worth showing. */}
         {account.verified_by && account.verified_by.length > 0 && (
           <span className="badge badge-success">verified by {account.verified_by.join(', ')}</span>
         )}
-        {account.enriched_by && <span className="tech-badge">read by {account.enriched_by}</span>}
       </div>
     </div>
   );

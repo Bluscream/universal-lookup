@@ -384,6 +384,29 @@ async function pipeline(
 }
 
 /** The one result that carries the published shape. */
+/**
+ * Strip the provenance fields from the published shape.
+ *
+ * `sources`, `enriched_by` and `detailed_by` stay in the pipeline because three
+ * branches read them — the sub-provider stage runs only on an account with an
+ * `enriched_by`, the exact-handle rung decides a hit by comparing it, and
+ * `mergeAccounts` unions `sources` to fold one account claimed twice into one
+ * entry. Removing them outright would mean rewriting those branches around a
+ * merged list, where a name landing in it for an unrelated reason would quietly
+ * change what runs.
+ *
+ * So they are internal, and removed here, at the one point where an account
+ * becomes a response field.
+ *
+ * `verified_by` is deliberately kept: it is the only one that is a claim about
+ * the world rather than about this program's own workings — Keybase and Harbor
+ * hold signatures somebody can check — and it was not among those asked to go.
+ */
+function published(account: SocialAccount): SocialAccount {
+  const { sources: _sources, enriched_by: _enriched, detailed_by: _detailed, ...rest } = account;
+  return rest as SocialAccount;
+}
+
 function aggregate(
   accounts: SocialAccount[],
   identities: string[],
@@ -395,7 +418,7 @@ function aggregate(
     provider: AGGREGATOR,
     success: found > 0,
     data: {
-      accounts: groupByPlatform(accounts),
+      accounts: groupByPlatform(accounts.map(published)),
       identities,
       recent_chat: chat.length > 0 ? chat : undefined,
       streams: streams.length > 0 ? streams : undefined,

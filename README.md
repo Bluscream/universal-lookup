@@ -232,11 +232,16 @@ Each sub-provider is an ordinary provider: individually switchable through
 exercised by the live probe. A YouTube quota error does not cost the caller the
 GitHub repositories read a moment earlier.
 
-Each account says where it came from, and that distinction is the point:
-`sources` lists who *claimed* the link, `verified_by` lists who cryptographically
-*vouched* for it (empty means self-asserted, which is not the same as false), and
-`enriched_by` names the platform reader that confirmed the account currently
-exists. An account claimed by two sources is reported once, with both listed.
+A published account carries `verified_by` — who cryptographically *vouched* for
+the link, empty meaning self-asserted, which is not the same as false — and
+`metrics.match`, which says whether the link was claimed by a source or is merely
+the same handle on another platform.
+
+The pipeline's own bookkeeping is not published. `sources`, `enriched_by` and
+`detailed_by` exist while a lookup runs, because merging folds one account
+claimed twice into a single entry and the sub-provider stage runs only on
+accounts a platform confirmed — but they are stripped before the account becomes
+a response field.
 
 ---
 

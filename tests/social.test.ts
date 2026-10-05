@@ -5,7 +5,11 @@ import {
   searchFallbackEnabled,
   searchMatches,
 } from '../backend/src/providers/social/direct.js';
-import { PROVIDER_NAMES, PROVIDERS } from '../backend/src/providers/social/index.js';
+import {
+  lookupSocial as lookupSocialForTest,
+  PROVIDER_NAMES,
+  PROVIDERS,
+} from '../backend/src/providers/social/index.js';
 import {
   canonicalPlatform,
   defineEnricher,
@@ -562,5 +566,37 @@ describe('enriching an account', () => {
     const enriched = await enricher.enrich(account({ platform: 'github', account: 'x' }));
 
     expect(enriched.metrics).toBeUndefined();
+  });
+});
+
+describe('the published account', () => {
+  it('carries no provenance fields, but the pipeline still has them', async () => {
+    // These three were dropped from the response by request. They stay internal
+    // because three branches read them, so the check is that they do not reach
+    // the caller — not that they stopped existing.
+    const results = await lookupSocialForTest('maxtaco', 'social').serverPromise;
+    const graph = results.find((r) => r.provider === 'social-graph');
+    const accounts = Object.values(
+      (graph?.data.accounts ?? {}) as Record<string, SocialAccount[]>,
+    ).flat();
+
+    expect(accounts.length).toBeGreaterThan(0);
+    for (const account of accounts) {
+      expect(account).not.toHaveProperty('sources');
+      expect(account).not.toHaveProperty('enriched_by');
+      expect(account).not.toHaveProperty('detailed_by');
+    }
+  });
+
+  it('keeps verified_by, which is a claim about the world', async () => {
+    // Keybase and Harbor hold signatures somebody else can check. That is not
+    // bookkeeping about this program, so it stays.
+    const results = await lookupSocialForTest('maxtaco', 'social').serverPromise;
+    const graph = results.find((r) => r.provider === 'social-graph');
+    const accounts = Object.values(
+      (graph?.data.accounts ?? {}) as Record<string, SocialAccount[]>,
+    ).flat();
+
+    expect(accounts.some((a) => Array.isArray(a.verified_by))).toBe(true);
   });
 });

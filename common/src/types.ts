@@ -573,8 +573,15 @@ export interface SocialAccount {
   account_id?: string | null;
   /** Canonical profile URL. Taken from the claim when it has one. */
   url?: string | null;
-  /** Which discovery sources claimed this account — 'keybase', 'harbor', … */
-  sources: string[];
+  /**
+   * Which discovery sources claimed this account — 'keybase', 'harbor', …
+   *
+   * Internal. Present while the pipeline runs, because `mergeAccounts` unions it
+   * to fold one account claimed by two sources into a single entry, and removed
+   * before the account is published. Optional for that reason: a `SocialAccount`
+   * read off a response will not have one.
+   */
+  sources?: string[];
   /**
    * Identities that cryptographically vouched for the claim. Empty means nobody
    * did — the account is self-asserted, which is not the same as false.
