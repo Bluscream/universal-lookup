@@ -6,7 +6,10 @@ import {
   searchMatches,
 } from '../backend/src/providers/social/direct.js';
 import { PROVIDER_NAMES, PROVIDERS } from '../backend/src/providers/social/index.js';
-import { resolveChannelId as resolveChannelIdForTest } from '../backend/src/providers/social/synchra.js';
+import {
+  claims,
+  resolveChannelId as resolveChannelIdForTest,
+} from '../backend/src/providers/social/synchra.js';
 import {
   canonicalPlatform,
   defineEnricher,
@@ -282,73 +285,141 @@ describe('merging, the cases that decide id against handle', () => {
 
 describe('resolving a Synchra channel', () => {
   /**
-   * Regression. `getChannels` accepts a `provider_channel_name` parameter and
-   * ignores it: probed against the live API with a value no channel could
-   * match, it returned every channel the token can see. Reading `records[0]`
-   * from that attached an arbitrary unrelated person's channels and chat to the
-   * answer, for any query at all.
+   * Three routes, and the safety property that ties them together: a match is
+   * published only when something actually identifies the channel.
    *
-   * The `name` match is server-side but loose in the same spirit — `name=blu`
-   * returns the channel displayed as `Bluscream` — so an exact, case-insensitive
-   * check on `display_name` is what actually identifies a channel.
+   * `getChannels` has two filters with very different behaviour, and the
+   * difference was nearly fatal. `name` matches server-side but **loosely** —
+   * `name=blu` returns the channel displayed as `Bluscream` — so the result is
+   * re-checked here for exact equality. `provider_channel_name` on its own is
+   * **ignored**, returning every channel the token can see; paired with
+   * `provider` it filters exactly. Probed live both ways.
+   *
+   * So the fakes below come in two flavours: one that honours the filter, like
+   * the real API does when both parameters are present, and one that ignores it,
+   * like the real API does when they are not.
    */
   const channels = [
     { id: 'aaaaaaaa-0000-0000-0000-000000000001', display_name: 'Bluscream' },
     { id: 'aaaaaaaa-0000-0000-0000-000000000002', display_name: 'feuerfuchs' },
   ];
 
-  function fakeSynchra(onParams: (p: Record<string, unknown>) => void) {
+  /** Ignores every filter, exactly as the API does without `provider`. */
+  function ignoresFilters(onParams: (p: Record<string, unknown>) => void = () => {}) {
     return {
       channel: {
         getChannels: (params: Record<string, unknown>) => {
           onParams(params);
-          // Deliberately ignores the filter, exactly as the real API does.
           return Promise.resolve({ records: channels });
         },
       },
-      channelProvider: { getChannelProviders: () => Promise.resolve([]) },
-      chat: { getChatMessages: () => Promise.resolve({ records: [] }) },
     };
   }
 
-  it('refuses a loose match instead of attaching the wrong channel', async () => {
-    const seen: Record<string, unknown>[] = [];
-    const id = await resolveChannelIdForTest(
-      fakeSynchra((p) => seen.push(p)),
-      'blu',
-    );
+  /** Honours `provider` + `provider_channel_name`, as the live API does. */
+  function honoursFilters(
+    handles: Record<string, { provider: string; id: string }>,
+    onParams: (p: Record<string, unknown>) => void = () => {},
+  ) {
+    return {
+      channel: {
+        getChannels: (params: Record<string, unknown>) => {
+          onParams(params);
+          const name = params.provider_channel_name as string | undefined;
+          if (name === undefined) return Promise.resolve({ records: [] });
+          const hit = handles[name];
+          return Promise.resolve({
+            records: hit && hit.provider === params.provider ? [{ id: hit.id }] : [],
+          });
+        },
+      },
+    };
+  }
 
-    expect(id).toBeNull();
-    // And it must not have fallen back to the parameter the API ignores.
-    expect(seen.some((p) => 'provider_channel_name' in p)).toBe(false);
+  it('refuses a loose name match instead of attaching the wrong channel', async () => {
+    // `blu` is a substring of `Bluscream`, and the API would return it.
+    await expect(resolveChannelIdForTest(ignoresFilters(), 'blu')).resolves.toBeNull();
+  });
+
+  it('discards a handle match when the filter was plainly not applied', async () => {
+    // Two channels back for one handle on one platform means the server
+    // ignored the filter, which is the behaviour that used to attach a
+    // stranger's accounts and chat to every answer.
+    await expect(resolveChannelIdForTest(ignoresFilters(), 'nobody')).resolves.toBeNull();
   });
 
   it('accepts an exact display name, whatever its case', async () => {
-    await expect(
-      resolveChannelIdForTest(
-        fakeSynchra(() => {}),
-        'bluscream',
+    await expect(resolveChannelIdForTest(ignoresFilters(), 'bluscream')).resolves.toEqual({
+      id: 'aaaaaaaa-0000-0000-0000-000000000001',
+      route: 'name',
+    });
+    await expect(resolveChannelIdForTest(ignoresFilters(), 'FEUERFUCHS')).resolves.toEqual({
+      id: 'aaaaaaaa-0000-0000-0000-000000000002',
+      route: 'name',
+    });
+  });
+
+  it('finds a channel by a handle on a platform it has connected', async () => {
+    // The case the deployed service could not answer: `bleichi_loveless` is a
+    // Twitch account name, not a Synchra channel name, and asking by name
+    // returns nothing at all.
+    const seen: Record<string, unknown>[] = [];
+    const match = await resolveChannelIdForTest(
+      honoursFilters(
+        { bleichi_loveless: { provider: 'twitch', id: 'aaaaaaaa-0000-0000-0000-00000000000b' } },
+        (p) => seen.push(p),
       ),
-    ).resolves.toBe('aaaaaaaa-0000-0000-0000-000000000001');
-    await expect(
-      resolveChannelIdForTest(
-        fakeSynchra(() => {}),
-        'FEUERFUCHS',
+      'bleichi_loveless',
+    );
+
+    expect(match).toEqual({ id: 'aaaaaaaa-0000-0000-0000-00000000000b', route: 'provider' });
+    // Never `provider_channel_name` alone — that is the form the API ignores.
+    for (const params of seen.filter((p) => 'provider_channel_name' in p)) {
+      expect(params.provider).toBeDefined();
+    }
+  });
+
+  it('stops at the platform that answered rather than asking all of them', async () => {
+    const seen: Record<string, unknown>[] = [];
+    await resolveChannelIdForTest(
+      honoursFilters(
+        { someone: { provider: 'twitch', id: 'aaaaaaaa-0000-0000-0000-00000000000c' } },
+        (p) => seen.push(p),
       ),
-    ).resolves.toBe('aaaaaaaa-0000-0000-0000-000000000002');
+      'someone',
+    );
+
+    // One name lookup, then Twitch, and no further platforms.
+    expect(seen.filter((p) => 'provider' in p).map((p) => p.provider)).toEqual(['twitch']);
   });
 
   it('takes a uuid without searching at all, since that endpoint needs no token', async () => {
     let searched = false;
-    const id = await resolveChannelIdForTest(
-      fakeSynchra(() => {
+    const match = await resolveChannelIdForTest(
+      ignoresFilters(() => {
         searched = true;
       }),
       'aaaaaaaa-0000-0000-0000-000000000009',
     );
 
-    expect(id).toBe('aaaaaaaa-0000-0000-0000-000000000009');
+    expect(match).toEqual({ id: 'aaaaaaaa-0000-0000-0000-000000000009', route: 'uuid' });
     expect(searched).toBe(false);
+  });
+});
+
+describe('confirming a Synchra handle match', () => {
+  it('accepts a channel that carries the handle on one of its accounts', () => {
+    expect(claims([{ provider_channel_name: 'bleichi_loveless' }], 'bleichi_loveless')).toBe(true);
+    expect(
+      claims([{ provider_channel_display_name: 'Bleichi_Loveless' }], 'bleichi_loveless'),
+    ).toBe(true);
+  });
+
+  it('rejects a channel where nothing carries it', () => {
+    // The guard against a filter that was silently ignored: a token able to
+    // list exactly one channel would see that channel returned for any query.
+    expect(claims([{ provider_channel_name: 'someone_else' }], 'bleichi_loveless')).toBe(false);
+    expect(claims([], 'bleichi_loveless')).toBe(false);
   });
 });
 

@@ -12,7 +12,8 @@
  * *finding* a channel by name is `GET /channels`, which needs the
  * `channel:read` scope. So:
  *
- *   - with SYNCHRA_TOKEN: search by name, then read providers and chat.
+ *   - with SYNCHRA_TOKEN: find the channel — by its own name, or by a handle on
+ *     any platform it has connected — then read providers and chat.
  *   - without it, and the query is a channel uuid: skip the search and read
  *     both public endpoints anyway.
  *   - without it, and the query is a handle: report unconfigured, because there
@@ -114,7 +115,7 @@ function toChatMessage(message: ChatMessage): SocialChatMessage {
 /**
  * The channel id for a query, or null when there is no way to find one.
  *
- * Two routes in, and only two, because the API supports only two.
+ * Three routes in, tried cheapest first.
  *
  * A uuid is taken at face value rather than searched for: `getChannelProviders`
  * answers for any id without a credential, so an id needs no search and no
@@ -129,33 +130,116 @@ function toChatMessage(message: ChatMessage): SocialChatMessage {
  * case-insensitive equality. Without that a lookup for `blu` would silently
  * attach a different person's channels and chat to the answer.
  *
- * There is deliberately no third route. `getChannels` accepts a
- * `provider_channel_name` parameter and **ignores it** — probed with a value no
- * channel could match, it returned every channel the token can see, so reading
- * `records[0]` from it yields an arbitrary unrelated channel for any query at
- * all. That is worse than answering nothing, so a platform handle that is not
- * also a Synchra channel name resolves to null and the provider says so.
+ * The third route is the one that matters most, and it was nearly missed.
+ * `getChannels` accepts `provider_channel_name`, and on its own it is **ignored**
+ * — probed with a value no channel could match, it returned every channel the
+ * token can see, which is why this provider used to refuse to use it at all.
+ * But paired with `provider` it works, and works *exactly*: probed live,
+ * `{provider: 'twitch', provider_channel_name: 'bleichi_loveless'}` returns the
+ * one channel, and a name no channel holds returns zero rows rather than
+ * everything. That is the only route that answers the question this lookup is
+ * actually asked — a handle on a platform, not a Synchra channel name — and it
+ * is also the only one that reaches a channel the token cannot list.
+ *
+ * So a handle is tried against every platform Synchra federates. The providers
+ * read is then checked against the handle before anything is published, because
+ * the failure mode of a silently-ignored filter is to attach a stranger's
+ * accounts and chat to the answer, and a parameter that was ignored once should
+ * not be trusted on its own a second time.
  */
+
+/** Every platform a Synchra channel can connect that someone could be named on. */
+const PROVIDER_SLUGS = [
+  'twitch',
+  'youtube',
+  'tiktok',
+  'kick',
+  'x',
+  'rumble',
+  'discord',
+  'spotify',
+  'owncast',
+] as const;
+
 export interface ChannelSearch {
   channel: {
-    getChannels(params: { name?: string; per_page?: number }): Promise<{
+    getChannels(params: {
+      name?: string;
+      provider?: (typeof PROVIDER_SLUGS)[number];
+      provider_channel_name?: string;
+      per_page?: number;
+    }): Promise<{
       records?: Array<{ id: string; display_name?: string | null }> | null;
     }>;
   };
 }
 
+/**
+ * Which route found the channel, because it decides what still needs checking.
+ *
+ * `uuid` was given rather than inferred. `name` was matched here, exactly,
+ * against the channel's own display name. Only `provider` leaned on a
+ * server-side filter, so only `provider` gets re-checked downstream.
+ */
+export type ChannelMatch = { id: string; route: 'uuid' | 'name' | 'provider' };
+
 export async function resolveChannelId(
   synchra: ChannelSearch,
   handle: string,
-): Promise<string | null> {
-  if (UUID.test(handle)) return handle;
+): Promise<ChannelMatch | null> {
+  if (UUID.test(handle)) return { id: handle, route: 'uuid' };
 
-  const page = await synchra.channel.getChannels({ name: handle, per_page: 25 });
   const wanted = handle.toLowerCase();
-  const exact = (page.records ?? []).find(
+
+  // A Synchra channel name first: one request, and it is the cheapest hit.
+  const byName = await synchra.channel.getChannels({ name: handle, per_page: 25 });
+  const exact = (byName.records ?? []).find(
     (channel) => channel.display_name?.trim().toLowerCase() === wanted,
   );
-  return exact?.id ?? null;
+  if (exact) return { id: exact.id, route: 'name' };
+
+  // Then the handle as a connected platform account, one platform at a time.
+  // Sequential and short-circuiting: most handles hit on the first or second
+  // platform, and nine concurrent requests per lookup is a poor trade for the
+  // tail case.
+  for (const provider of PROVIDER_SLUGS) {
+    const page = await synchra.channel.getChannels({
+      provider,
+      provider_channel_name: handle,
+      per_page: 5,
+    });
+    const records = page.records ?? [];
+    // More than one channel claiming the same handle on the same platform means
+    // the filter was not applied — the behaviour seen without `provider` — so
+    // the result is discarded rather than guessed at.
+    if (records.length === 1) {
+      return { id: (records[0] as { id: string }).id, route: 'provider' };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Whether any account connected to this channel goes by `handle`.
+ *
+ * The display name counts as well as the account name: a channel found by its
+ * Synchra name legitimately need not have a platform account spelled the same
+ * way, and `resolveChannelId` already checked that name exactly.
+ */
+export function claims(
+  providers: Array<{
+    provider_channel_name?: string | null;
+    provider_channel_display_name?: string | null;
+  }>,
+  handle: string,
+): boolean {
+  const wanted = handle.trim().toLowerCase();
+  return providers.some((provider) =>
+    [provider.provider_channel_name, provider.provider_channel_display_name].some(
+      (name) => name?.trim().toLowerCase() === wanted,
+    ),
+  );
 }
 
 async function lookup(
@@ -171,15 +255,15 @@ async function lookup(
     // — so the token gate sits here rather than inside resolveChannelId, which
     // is about resolution only.
     const synchra = client();
-    const channelId =
+    const match =
       UUID.test(handle) || config.synchraToken ? await resolveChannelId(synchra, handle) : null;
-    if (!channelId) {
+    if (!match) {
       return {
         provider: NAME,
         success: false,
         data: {},
         error: config.synchraToken
-          ? `No Synchra channel named "${handle}" — Synchra resolves a channel by its own name or uuid, not by a handle on a connected platform`
+          ? `No Synchra channel for "${handle}" — tried it as a channel name and as an account name on every platform Synchra federates`
           : 'SYNCHRA_TOKEN is not set, so a name cannot be resolved to a channel',
         duration: Date.now() - start,
       };
@@ -189,18 +273,34 @@ async function lookup(
     // sequence. A failed chat read must not lose the accounts, which is why it
     // is settled rather than awaited directly.
     const [providers, chat] = await Promise.all([
-      synchra.channelProvider.getChannelProviders({ channel_id: channelId }),
+      synchra.channelProvider.getChannelProviders({ channel_id: match.id }),
       synchra.chat
-        .getChatMessages({ channel_id: channelId, per_page: config.socialChatLimit })
+        .getChatMessages({ channel_id: match.id, per_page: config.socialChatLimit })
         .then((page) => page.records ?? [])
         .catch(() => [] as ChatMessage[]),
     ]);
+
+    // The resolution is confirmed here, against data that was fetched anyway.
+    // A uuid needs no confirming — it was given, not inferred — but a handle
+    // was matched by a server-side filter that is silently ignored in one of
+    // its two forms, and a token that can list exactly one channel would see
+    // that one channel returned for every query. If nothing on this channel
+    // actually carries the handle, the match was spurious.
+    if (match.route === 'provider' && !claims(providers, handle)) {
+      return {
+        provider: NAME,
+        success: false,
+        data: {},
+        error: `Synchra returned a channel for "${handle}", but nothing on it carries that name — the match was discarded`,
+        duration: Date.now() - start,
+      };
+    }
 
     const accounts = providers
       .map(toAccount)
       .filter((account): account is SocialAccount => account !== null);
 
-    const result = discovered(NAME, start, handle, accounts, channelId, { providers, chat });
+    const result = discovered(NAME, start, handle, accounts, match.id, { providers, chat });
     // Chat rides along even when no account was connected: a channel with chat
     // and no linked providers is unusual but not a miss.
     if (chat.length > 0) {

@@ -159,7 +159,7 @@ The sources themselves:
 |--------|--------|-------|
 | [Harbor](https://harbor.social) / Polycentric | x, youtube, github, discord, hacker-news, rumble, twitch, website | Signed claims, filtered against a pinned verifier identity |
 | [Keybase](https://keybase.io) | twitter, github, reddit, hackernews, facebook, coinbase, dns, web | Real proofs, but frozen since 2020 — a miss means nothing |
-| Synchra | twitch, youtube, kick, rumble, discord, x, tiktok, spotify | Also the only source for `recent_chat` |
+| Synchra | twitch, youtube, kick, rumble, discord, x, tiktok, spotify | Finds a channel by its own name **or** by a handle on any platform it connected. Also the only source for `recent_chat`. |
 
 **Enrichment** reads each platform directly. `github-user` and `hackernews-user`
 work anonymously; `youtube-channel`, `twitch-channel` and `reddit-user` need a
@@ -169,7 +169,7 @@ search, so Reddit and Hacker News take part in rung 4 and not rung 5.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SYNCHRA_TOKEN` | `null` | Needed to find a Synchra channel *by name* (`channel:read`). Reading a channel's providers and chat is public, so without a token the Synchra source only answers for a channel uuid. |
+| `SYNCHRA_TOKEN` | `null` | Needed to *find* a channel at all (`channel:read`) — by its own name, or by a handle on any platform it has connected. Reading a channel's providers and chat is public, so without a token the Synchra source only answers for a channel uuid. |
 | `SYNCHRA_BASE_URL` | `null` | Self-hosted or staging Synchra only |
 | `TWITCH_CLIENT_ID` | `null` | Twitch **app** credentials, not a user login. Follower counts have needed the broadcaster's own token since 2023 and are never available here. |
 | `TWITCH_CLIENT_SECRET` | `null` | Paired with the client id |
