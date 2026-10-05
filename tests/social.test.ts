@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../backend/src/config.js';
 import { PROVIDER_NAMES, PROVIDERS } from '../backend/src/providers/social/index.js';
+import { resolveChannelId as resolveChannelIdForTest } from '../backend/src/providers/social/synchra.js';
 import {
   canonicalPlatform,
   defineEnricher,
@@ -271,5 +272,77 @@ describe('merging, the cases that decide id against handle', () => {
     ]);
 
     expect(merged).toHaveLength(2);
+  });
+});
+
+describe('resolving a Synchra channel', () => {
+  /**
+   * Regression. `getChannels` accepts a `provider_channel_name` parameter and
+   * ignores it: probed against the live API with a value no channel could
+   * match, it returned every channel the token can see. Reading `records[0]`
+   * from that attached an arbitrary unrelated person's channels and chat to the
+   * answer, for any query at all.
+   *
+   * The `name` match is server-side but loose in the same spirit — `name=blu`
+   * returns the channel displayed as `Bluscream` — so an exact, case-insensitive
+   * check on `display_name` is what actually identifies a channel.
+   */
+  const channels = [
+    { id: 'aaaaaaaa-0000-0000-0000-000000000001', display_name: 'Bluscream' },
+    { id: 'aaaaaaaa-0000-0000-0000-000000000002', display_name: 'feuerfuchs' },
+  ];
+
+  function fakeSynchra(onParams: (p: Record<string, unknown>) => void) {
+    return {
+      channel: {
+        getChannels: (params: Record<string, unknown>) => {
+          onParams(params);
+          // Deliberately ignores the filter, exactly as the real API does.
+          return Promise.resolve({ records: channels });
+        },
+      },
+      channelProvider: { getChannelProviders: () => Promise.resolve([]) },
+      chat: { getChatMessages: () => Promise.resolve({ records: [] }) },
+    };
+  }
+
+  it('refuses a loose match instead of attaching the wrong channel', async () => {
+    const seen: Record<string, unknown>[] = [];
+    const id = await resolveChannelIdForTest(
+      fakeSynchra((p) => seen.push(p)),
+      'blu',
+    );
+
+    expect(id).toBeNull();
+    // And it must not have fallen back to the parameter the API ignores.
+    expect(seen.some((p) => 'provider_channel_name' in p)).toBe(false);
+  });
+
+  it('accepts an exact display name, whatever its case', async () => {
+    await expect(
+      resolveChannelIdForTest(
+        fakeSynchra(() => {}),
+        'bluscream',
+      ),
+    ).resolves.toBe('aaaaaaaa-0000-0000-0000-000000000001');
+    await expect(
+      resolveChannelIdForTest(
+        fakeSynchra(() => {}),
+        'FEUERFUCHS',
+      ),
+    ).resolves.toBe('aaaaaaaa-0000-0000-0000-000000000002');
+  });
+
+  it('takes a uuid without searching at all, since that endpoint needs no token', async () => {
+    let searched = false;
+    const id = await resolveChannelIdForTest(
+      fakeSynchra(() => {
+        searched = true;
+      }),
+      'aaaaaaaa-0000-0000-0000-000000000009',
+    );
+
+    expect(id).toBe('aaaaaaaa-0000-0000-0000-000000000009');
+    expect(searched).toBe(false);
   });
 });

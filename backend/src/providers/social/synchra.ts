@@ -114,25 +114,48 @@ function toChatMessage(message: ChatMessage): SocialChatMessage {
 /**
  * The channel id for a query, or null when there is no way to find one.
  *
- * A uuid is taken at face value rather than searched for: the search needs a
- * scope the query does not, and `getChannelProviders` answers for any id.
+ * Two routes in, and only two, because the API supports only two.
+ *
+ * A uuid is taken at face value rather than searched for: `getChannelProviders`
+ * answers for any id without a credential, so an id needs no search and no
+ * scope. This is also the only way to reach a channel the token cannot list —
+ * `getChannels` returns the channels its user has access to, which need not
+ * include the one being asked about.
+ *
+ * A name goes through `getChannels({ name })`, whose match is server-side but
+ * **loose**: probed against the live API, `name=blu` returns the channel
+ * displayed as `Bluscream`. A substring hit is not an identification, so the
+ * result is re-checked here against `display_name` for an exact,
+ * case-insensitive equality. Without that a lookup for `blu` would silently
+ * attach a different person's channels and chat to the answer.
+ *
+ * There is deliberately no third route. `getChannels` accepts a
+ * `provider_channel_name` parameter and **ignores it** — probed with a value no
+ * channel could match, it returned every channel the token can see, so reading
+ * `records[0]` from it yields an arbitrary unrelated channel for any query at
+ * all. That is worse than answering nothing, so a platform handle that is not
+ * also a Synchra channel name resolves to null and the provider says so.
  */
-async function resolveChannelId(synchra: Synchra, handle: string): Promise<string | null> {
+export interface ChannelSearch {
+  channel: {
+    getChannels(params: { name?: string; per_page?: number }): Promise<{
+      records?: Array<{ id: string; display_name?: string | null }> | null;
+    }>;
+  };
+}
+
+export async function resolveChannelId(
+  synchra: ChannelSearch,
+  handle: string,
+): Promise<string | null> {
   if (UUID.test(handle)) return handle;
-  if (!config.synchraToken) return null;
 
-  // By Synchra channel name first, then by the name on a connected platform —
-  // someone known by their Twitch handle need not have used it as their
-  // channel name.
-  const byName = await synchra.channel.getChannels({ name: handle, per_page: 5 });
-  const direct = byName.records?.[0]?.id;
-  if (direct) return direct;
-
-  const byProvider = await synchra.channel.getChannels({
-    provider_channel_name: handle,
-    per_page: 5,
-  });
-  return byProvider.records?.[0]?.id ?? null;
+  const page = await synchra.channel.getChannels({ name: handle, per_page: 25 });
+  const wanted = handle.toLowerCase();
+  const exact = (page.records ?? []).find(
+    (channel) => channel.display_name?.trim().toLowerCase() === wanted,
+  );
+  return exact?.id ?? null;
 }
 
 async function lookup(
@@ -144,14 +167,20 @@ async function lookup(
   const handle = normalizeHandle(query);
 
   try {
+    // A uuid needs no credential — the providers and chat endpoints are public
+    // — so the token gate sits here rather than inside resolveChannelId, which
+    // is about resolution only.
     const synchra = client();
-    const channelId = await resolveChannelId(synchra, handle);
+    const channelId =
+      UUID.test(handle) || config.synchraToken ? await resolveChannelId(synchra, handle) : null;
     if (!channelId) {
       return {
         provider: NAME,
         success: false,
         data: {},
-        error: 'SYNCHRA_TOKEN is not set, so a name cannot be resolved to a channel',
+        error: config.synchraToken
+          ? `No Synchra channel named "${handle}" — Synchra resolves a channel by its own name or uuid, not by a handle on a connected platform`
+          : 'SYNCHRA_TOKEN is not set, so a name cannot be resolved to a channel',
         duration: Date.now() - start,
       };
     }
