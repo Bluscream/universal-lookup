@@ -6,6 +6,7 @@ import { detectType, normalizeQuery, SPECIAL_NUMBERS } from '../lib/normalizer.j
 import { lookupApk } from '../providers/apk/index.js';
 import { lookupApp } from '../providers/app/index.js';
 import { lookupArchive } from '../providers/archive/index.js';
+import { lookupSocial } from '../providers/social/index.js';
 import { lookupDomain } from '../providers/domain/index.js';
 import { lookupEmail } from '../providers/email/index.js';
 import { lookupIp } from '../providers/ip/index.js';
@@ -611,6 +612,8 @@ export function getLookupFunction(type: LookupType): LookupFn {
       return lookupStatus;
     case 'archive':
       return lookupArchive;
+    case 'social':
+      return lookupSocial;
     default:
       return lookupWeb;
   }

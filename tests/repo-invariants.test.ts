@@ -3,6 +3,8 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { PROVIDER_NAMES as apkNames } from '../backend/src/providers/apk/index.js';
+import { PROVIDER_NAMES as appNames } from '../backend/src/providers/app/index.js';
+import { PROVIDER_NAMES as archiveNames } from '../backend/src/providers/archive/index.js';
 import { PROVIDER_NAMES as domainNames } from '../backend/src/providers/domain/index.js';
 import { PROVIDER_NAMES as emailNames } from '../backend/src/providers/email/index.js';
 import { PROVIDER_NAMES as ipNames } from '../backend/src/providers/ip/index.js';
@@ -11,6 +13,7 @@ import { PROVIDER_NAMES as orderNames } from '../backend/src/providers/order/ind
 import { PROVIDER_NAMES as parcelNames } from '../backend/src/providers/parcel/index.js';
 import { PROVIDER_NAMES as shipmentNames } from '../backend/src/providers/shipment/index.js';
 import { PROVIDER_NAMES as shortenNames } from '../backend/src/providers/shorten/index.js';
+import { PROVIDER_NAMES as socialNames } from '../backend/src/providers/social/index.js';
 import { PROVIDER_NAMES as statusNames } from '../backend/src/providers/status/index.js';
 import { PROVIDER_NAMES as steamNames } from '../backend/src/providers/steam/index.js';
 import { PROVIDER_NAMES as telNames } from '../backend/src/providers/tel/index.js';
@@ -133,6 +136,10 @@ describe('web search lives only in the web provider', () => {
 });
 
 describe('the flat blacklist namespace', () => {
+  // Every registry, with no exceptions — `app`, `archive` and `social` were
+  // missing until the social lookup was added, and their absence was hiding a
+  // real collision (`github`, below). A registry left out of this map is a
+  // registry whose provider names nothing checks.
   const REGISTRIES: Record<string, string[]> = {
     tel: telNames,
     ip: ipNames,
@@ -145,9 +152,12 @@ describe('the flat blacklist namespace', () => {
     url: urlNames,
     shorten: shortenNames,
     apk: apkNames,
+    app: appNames,
+    archive: archiveNames,
     order: orderNames,
     status: statusNames,
     web: webNames,
+    social: socialNames,
   };
 
   function canonical(name: string): string {
@@ -178,6 +188,14 @@ describe('the flat blacklist namespace', () => {
     expect(shared).toEqual([
       'amazon: order,shipment',
       'dns: domain,ip',
+      // Not deliberate, and not the same provider: `github` is the app lookup's
+      // package source and, separately, GitHub's status page. One blacklist
+      // entry disables both. It became visible when `app` was added to the map
+      // above and is pinned rather than renamed, because renaming a provider is
+      // a breaking change for anyone who already has it in PROVIDERS_BLACKLIST.
+      // The social lookup's enrichers avoid the problem by construction —
+      // `github-user`, `twitch-channel` — which is why they carry suffixes.
+      'github: app,status',
       'subdomain: domain,ip',
       'whois: domain,ip',
     ]);

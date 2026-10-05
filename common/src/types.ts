@@ -20,6 +20,7 @@ export const LOOKUP_TYPES = [
   'order',
   'status',
   'archive',
+  'social',
   'auto',
 ] as const;
 
@@ -549,6 +550,86 @@ export interface ArchiveData {
    * entirely different meaning, and there is one flat response namespace.
    */
   archives?: ArchiveServiceResult[] | null;
+  [key: string]: unknown;
+}
+
+/**
+ * One account on one platform, as the social lookup reports it.
+ *
+ * Two kinds of field live here and the difference matters. `platform`, `account`,
+ * `account_id` and `url` come from whoever *claimed* the link — Keybase, Harbor
+ * or Synchra — and are only as true as that source's verification. Everything
+ * from `display_name` down is read afterwards from the platform itself and is
+ * therefore current rather than claimed. `sources` and `verified_by` say which
+ * is which, so a consumer can tell "Harbor says this is theirs, and the verifier
+ * signed it" from "YouTube says this channel has 12k subscribers".
+ */
+export interface SocialAccount {
+  /** Lowercase platform slug: 'youtube', 'x', 'github', 'twitch', … */
+  platform: string;
+  /** The handle, without a leading '@'. Unset when a source knows only an id. */
+  account?: string | null;
+  /** The platform's own stable id, where the claim or the platform carries one. */
+  account_id?: string | null;
+  /** Canonical profile URL. Taken from the claim when it has one. */
+  url?: string | null;
+  /** Which discovery sources claimed this account — 'keybase', 'harbor', … */
+  sources: string[];
+  /**
+   * Identities that cryptographically vouched for the claim. Empty means nobody
+   * did — the account is self-asserted, which is not the same as false.
+   */
+  verified_by?: string[] | null;
+
+  // --- read from the platform, not from the claim ---
+  display_name?: string | null;
+  description?: string | null;
+  avatar?: string | null;
+  /** Followers, subscribers or equivalent. Named per platform in `metrics`. */
+  followers?: number | null;
+  /** Items published: videos, repos, posts. */
+  uploads?: number | null;
+  views?: number | null;
+  /** Account creation, ISO 8601. */
+  created_at?: string | null;
+  /**
+   * Platform-specific counts under their real names — `public_gists`,
+   * `karma`, `broadcaster_type` — rather than forced into the fields above.
+   */
+  metrics?: Record<string, unknown> | null;
+  /** The enricher that read the platform, when one did. */
+  enriched_by?: string | null;
+  [key: string]: unknown;
+}
+
+/** One chat message, as Synchra recorded it. */
+export interface SocialChatMessage {
+  /** Platform the message was sent on. */
+  platform?: string | null;
+  /** Synchra channel it belongs to. */
+  channel?: string | null;
+  author?: string | null;
+  text?: string | null;
+  /** ISO 8601. */
+  time?: string | null;
+  [key: string]: unknown;
+}
+
+/** The social lookup's response. */
+export interface SocialData {
+  /**
+   * Every account found, grouped by platform. One platform can hold several
+   * accounts — a person with two YouTube channels is the case this lookup
+   * exists for — so every value is a list even when it holds one entry.
+   */
+  accounts?: Record<string, SocialAccount[]> | null;
+  /**
+   * The identity each discovery source resolved the query to, as
+   * '<source>:<identity>'. What the accounts below were derived from.
+   */
+  identities?: string[] | null;
+  /** Recent chat, from Synchra, when the query resolved to a channel there. */
+  recent_chat?: SocialChatMessage[] | null;
   [key: string]: unknown;
 }
 

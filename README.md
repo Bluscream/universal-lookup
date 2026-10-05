@@ -71,6 +71,7 @@ All endpoints are available at `http://localhost:24010/api/*`.
 | `GET /api/apk/:query` | Android package metadata & mirrors | `com.spotify.music` |
 | `GET /api/status/:query` | Service health across ~30 providers | `discord` |
 | `GET /api/web/:query` | Web search across four engines | `what is my ip` |
+| `GET /api/social/:query` | Linked accounts for one handle, each described by its own platform, plus recent chat | `@bleichi_loveless` |
 | `GET /api/auto/:query` | Detects the type, then dispatches | anything |
 
 > 📖 **Full Documentation**: Explore the interactive Swagger UI at [http://localhost:24010/docs](http://localhost:24010/docs).
@@ -123,6 +124,44 @@ Copy `.env.example` to `.env` to customize the service.
 | `PHONE_LOCAL_PREFIX`| `null` | Default local area code |
 | `UNIVERSAL_RESULTS_LIMIT`| `3` | Max results shown per provider |
 | `PUPPETEER_SKIP_DOWNLOAD`| `false` | Skip downloading Chromium |
+
+### Social Lookup
+
+`GET /api/social/:query` takes one account — `@bleichi_loveless`, a bare handle,
+a channel id or a pasted profile URL — and answers with every account linked to
+it. It runs in two stages: three identity sources say *which* accounts exist,
+then each platform is asked what its own account looks like.
+
+**Discovery** needs no credentials at all:
+
+| Source | Covers | Notes |
+|--------|--------|-------|
+| [Harbor](https://harbor.social) / Polycentric | x, youtube, github, discord, hacker-news, rumble, twitch, website | Signed claims, filtered against a pinned verifier identity |
+| [Keybase](https://keybase.io) | twitter, github, reddit, hackernews, facebook, coinbase, dns, web | Real proofs, but frozen since 2020 — a miss means nothing |
+| Synchra | twitch, youtube, kick, rumble, discord, x, tiktok, spotify | Also the only source for `recent_chat` |
+
+**Enrichment** reads each platform directly. `github-user` and `hackernews-user`
+work anonymously; `youtube-channel`, `twitch-channel` and `reddit-user` need a
+key, and without one the account is still returned, just undescribed.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SYNCHRA_TOKEN` | `null` | Needed to find a Synchra channel *by name* (`channel:read`). Reading a channel's providers and chat is public, so without a token the Synchra source only answers for a channel uuid. |
+| `SYNCHRA_BASE_URL` | `null` | Self-hosted or staging Synchra only |
+| `TWITCH_CLIENT_ID` | `null` | Twitch **app** credentials, not a user login. Follower counts have needed the broadcaster's own token since 2023 and are never available here. |
+| `TWITCH_CLIENT_SECRET` | `null` | Paired with the client id |
+| `REDDIT_CLIENT_ID` | `null` | Reddit **app** credentials (type "script"). Reddit closed its anonymous JSON endpoints in 2026 — every unauthenticated route 403s — so Reddit accounts are returned undescribed without these. |
+| `REDDIT_CLIENT_SECRET` | `null` | Paired with the client id |
+| `GOOGLE_API_KEY` | `null` | Reused for YouTube — the key needs **YouTube Data API v3** enabled, which a search-only key does not have |
+| `GITHUB_TOKEN` | `null` | Reused; optional, raises the rate limit from 60/h to 5000/h |
+| `SOCIAL_ENRICH_LIMIT` | `12` | How many accounts get read from their platform. The rest are returned unenriched. |
+| `SOCIAL_CHAT_LIMIT` | `25` | Recent chat messages carried back from Synchra |
+
+Each account says where it came from, and that distinction is the point:
+`sources` lists who *claimed* the link, `verified_by` lists who cryptographically
+*vouched* for it (empty means self-asserted, which is not the same as false), and
+`enriched_by` names the platform reader that confirmed the account currently
+exists. An account claimed by two sources is reported once, with both listed.
 
 ---
 

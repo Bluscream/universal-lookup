@@ -193,6 +193,39 @@ export const config = {
   nixpkgsSearchUser: env('NIXPKGS_SEARCH_USER', ''),
   nixpkgsSearchPassword: env('NIXPKGS_SEARCH_PASSWORD', ''),
 
+  // Social (linked accounts) lookup
+  //
+  // Keybase and Harbor need no credentials at all, so the lookup answers with
+  // nothing configured. The settings below widen what it can see.
+  //
+  // Synchra: a personal access token from the Synchra dashboard. Reading a
+  // channel's connected providers and its chat are both public, but *finding* a
+  // channel by name needs the `channel:read` scope — so without a token the
+  // Synchra source only works when the query is already a channel uuid, and says
+  // so rather than failing silently.
+  synchraToken: env('SYNCHRA_TOKEN', ''),
+  // Only for a self-hosted or staging Synchra; empty uses the public API.
+  synchraBaseUrl: env('SYNCHRA_BASE_URL', ''),
+  // Twitch app credentials (not a user login). The client-credentials flow these
+  // drive reads public channel data and nothing belonging to any account.
+  // Register at https://dev.twitch.tv/console/apps. Without them the Twitch
+  // enricher reports itself unconfigured and the claimed account is still
+  // returned, just undescribed.
+  twitchClientId: env('TWITCH_CLIENT_ID', ''),
+  twitchClientSecret: env('TWITCH_CLIENT_SECRET', ''),
+  // Reddit app credentials (type "script", from reddit.com/prefs/apps). Reddit
+  // closed its anonymous JSON endpoints — every unauthenticated route answers
+  // 403, and old.reddit.com answers 200 with an HTML interstitial — so the
+  // Reddit enricher cannot work without these and reports itself unconfigured.
+  redditClientId: env('REDDIT_CLIENT_ID', ''),
+  redditClientSecret: env('REDDIT_CLIENT_SECRET', ''),
+  // How many discovered accounts get read from their own platform. An identity
+  // with forty claims would otherwise mean forty third-party requests for one
+  // lookup; accounts past the cap are still returned, just not enriched.
+  socialEnrichLimit: envInt('SOCIAL_ENRICH_LIMIT', 12),
+  // How many recent chat messages to carry back from Synchra.
+  socialChatLimit: envInt('SOCIAL_CHAT_LIMIT', 25),
+
   // Location providers
   //
   // The warning and weather providers geocode through Nominatim, whose usage

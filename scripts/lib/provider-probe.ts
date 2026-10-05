@@ -31,6 +31,7 @@ import { PROVIDERS as order } from '../../backend/src/providers/order/index.js';
 import { PROVIDERS as parcel } from '../../backend/src/providers/parcel/index.js';
 import { PROVIDERS as shipment } from '../../backend/src/providers/shipment/index.js';
 import { PROVIDERS as shorten } from '../../backend/src/providers/shorten/index.js';
+import { PROVIDERS as social } from '../../backend/src/providers/social/index.js';
 import { PROVIDERS as status } from '../../backend/src/providers/status/index.js';
 import { PROVIDERS as steam } from '../../backend/src/providers/steam/index.js';
 import { PROVIDERS as tel } from '../../backend/src/providers/tel/index.js';
@@ -73,6 +74,11 @@ export const QUERIES: Record<string, string> = {
   apk: 'com.android.chrome',
   // Packaged by every source the app lookup knows about, under that exact name.
   app: 'firefox',
+  // A Keybase founder: a real identity with live proofs on github, twitter,
+  // reddit and hackernews, so every discovery source and most enrichers have
+  // something to answer with. Harbor and Synchra will miss him, which is the
+  // correct result and reads as a miss rather than a failure.
+  social: 'maxtaco',
   parcel: '1Z999AA10123456784', // UPS's documented sample tracking number
   // The shipment provider takes an order number, `orderId::trackingNumber`, or a
   // tracking URL — a bare TBA number was rejected as malformed, which is not a
@@ -118,6 +124,7 @@ export const REGISTRIES: Array<[string, Provider[]]> = [
   ['steam', steam],
   ['apk', apk],
   ['app', app],
+  ['social', social],
   ['parcel', parcel],
   ['shipment', shipment],
   ['order', order],
