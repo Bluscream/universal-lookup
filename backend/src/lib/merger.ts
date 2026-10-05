@@ -1,5 +1,6 @@
 import type { ProviderResult } from '../types/common.js';
 import { isLikelyLocation } from './normalizer.js';
+import { scrubSecrets } from './scrub.js';
 
 /**
  * Key normalization map — maps various API field names to our canonical names.
@@ -270,13 +271,21 @@ export function mergeResponses(results: ProviderResult[]): Record<string, unknow
 
 /**
  * Collect errors from all failed providers.
+ *
+ * Scrubbed on the way out, and this is the only place it can be done once for
+ * every lookup type. A provider message is composed by whichever client library
+ * threw it, and `@twurple/api` reports a failed token request by quoting the
+ * request — which, for the OAuth token endpoint, meant `client_secret=<the real
+ * secret>` reaching a public, unauthenticated response body. Nothing inside this
+ * codebase controls what someone else's error text contains, so the guard
+ * belongs at the boundary where that text becomes output.
  */
 export function collectErrors(results: ProviderResult[]): Record<string, string> {
   const errors: Record<string, string> = {};
 
   for (const result of results) {
     if (!result.success && result.error) {
-      errors[result.provider] = result.error;
+      errors[result.provider] = scrubSecrets(result.error);
     }
   }
 
