@@ -22,6 +22,7 @@ import type {
   SocialAccount,
   SocialActivity,
   SocialChatMessage,
+  SocialStream,
 } from '../../types/common.js';
 
 /** Sent on every request: Reddit and Hacker News both throttle an unnamed client. */
@@ -119,6 +120,8 @@ export interface DiscoveryData {
    * other source holds any.
    */
   recent_chat?: SocialChatMessage[];
+  /** Past broadcasts, which like chat only Synchra can supply. */
+  streams?: SocialStream[];
   [key: string]: unknown;
 }
 

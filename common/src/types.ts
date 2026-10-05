@@ -724,7 +724,38 @@ export interface SocialData {
   identities?: string[] | null;
   /** Recent chat, from Synchra, when the query resolved to a channel there. */
   recent_chat?: SocialChatMessage[] | null;
+  /**
+   * Past stream sessions, from Synchra.
+   *
+   * Top-level rather than under an account, because a session is a property of
+   * the *channel*: one broadcast goes out to several platforms at once, and
+   * `platforms` on each entry says which. Filing it under one of them would
+   * either duplicate it or pick a winner arbitrarily.
+   */
+  streams?: SocialStream[] | null;
   [key: string]: unknown;
+}
+
+/**
+ * One past broadcast, as Synchra recorded it.
+ *
+ * Deliberately carries no live flag. Synchra's stream record has no `is_live`
+ * and no `ended_at` — only a nullable `duration_seconds` — so "currently live"
+ * could only be inferred, and an unverified inference about whether somebody is
+ * on air right now is worse than not answering.
+ */
+export interface SocialStream {
+  id?: string | null;
+  /** ISO 8601. */
+  started_at?: string | null;
+  duration_seconds?: number | null;
+  /** Every platform this one broadcast went out to. */
+  platforms?: string[] | null;
+  avg_viewers?: number | null;
+  peak_viewers?: number | null;
+  watched_minutes?: number | null;
+  chat_messages?: number | null;
+  unique_chatters?: number | null;
 }
 
 /** Canonical health indicator across all status providers. */

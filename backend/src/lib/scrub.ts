@@ -46,6 +46,7 @@ const AUTH_HEADER = /\b(bearer|basic)\s+([A-Za-z0-9._\-+/=]{8,})/gi;
 function configuredSecrets(): string[] {
   const candidates = [
     config.twitchClientSecret,
+    config.kickClientSecret,
     config.redditClientSecret,
     config.synchraToken,
     config.googleApiKey,

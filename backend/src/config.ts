@@ -225,6 +225,12 @@ export const config = {
   socialEnrichLimit: envInt('SOCIAL_ENRICH_LIMIT', 12),
   // How many recent chat messages to carry back from Synchra.
   socialChatLimit: envInt('SOCIAL_CHAT_LIMIT', 25),
+  // Kick app credentials, from kick.com/settings/developer. An *app*
+  // registration, not a user login: Kick's client_credentials grant is
+  // documented for public data and acts for nobody. Without these the Kick
+  // reader reports itself unconfigured.
+  kickClientId: env('KICK_CLIENT_ID', ''),
+  kickClientSecret: env('KICK_CLIENT_SECRET', ''),
   // Stop at the first source that knows the handle, rather than merging all of
   // them: Synchra, then Keybase, then Harbor, then the platforms themselves.
   //

@@ -39,9 +39,11 @@ import type {
   ProviderResult,
   SocialAccount,
   SocialChatMessage,
+  SocialStream,
 } from '../../types/common.js';
 import { githubUser } from './enrich/github-user.js';
 import { instagramProfile } from './enrich/instagram-profile.js';
+import { kickChannel } from './enrich/kick-channel.js';
 import { hackernewsUser } from './enrich/hackernews-user.js';
 import { redditUser } from './enrich/reddit-user.js';
 import { threadsProfile } from './enrich/threads-profile.js';
@@ -99,6 +101,7 @@ const ENRICHERS: Enricher[] = [
   instagramProfile,
   threadsProfile,
   tiktokProfile,
+  kickChannel,
 ];
 
 /**
@@ -342,6 +345,7 @@ async function pipeline(
   }
 
   const chat = discoveries.flatMap((result) => result.data.recent_chat ?? []);
+  const streams = discoveries.flatMap((result) => result.data.streams ?? []);
   const identities = discoveries
     .filter((result) => result.data.identity !== undefined)
     .map((result) => `${result.provider}:${result.data.identity as string}`);
@@ -375,7 +379,7 @@ async function pipeline(
     ...[...failures, ...detailFailures].map(
       (failure) => ({ ...failure, data: {} }) as ProviderResult,
     ),
-    aggregate(accounts, identities, chat, merged.length),
+    aggregate(accounts, identities, chat, streams, merged.length),
   ];
 }
 
@@ -384,6 +388,7 @@ function aggregate(
   accounts: SocialAccount[],
   identities: string[],
   chat: SocialChatMessage[],
+  streams: SocialStream[],
   found: number,
 ): ProviderResult {
   return {
@@ -393,6 +398,7 @@ function aggregate(
       accounts: groupByPlatform(accounts),
       identities,
       recent_chat: chat.length > 0 ? chat : undefined,
+      streams: streams.length > 0 ? streams : undefined,
     },
     duration: 0,
   };

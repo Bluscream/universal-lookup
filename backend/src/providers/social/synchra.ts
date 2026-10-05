@@ -40,6 +40,7 @@ import type {
   SocialChatMessage,
 } from '../../types/common.js';
 import { profileUrl } from './profile-url.js';
+import { recentStreams } from './streams.js';
 import { viewerAvatars } from './viewer-avatars.js';
 import {
   canonicalPlatform,
@@ -300,12 +301,17 @@ async function lookup(
     // Both are public and independent, so they go together rather than in
     // sequence. A failed chat read must not lose the accounts, which is why it
     // is settled rather than awaited directly.
-    const [providers, chat] = await Promise.all([
+    const [providers, chat, streams] = await Promise.all([
       synchra.channelProvider.getChannelProviders({ channel_id: match.id }),
       synchra.chat
         .getChatMessages({ channel_id: match.id, per_page: config.socialChatLimit })
         .then((page) => page.records ?? [])
         .catch(() => [] as ChatMessage[]),
+      // Follows the sub-provider switch, since like them it is an extra request
+      // for context rather than part of answering "which accounts exist".
+      config.socialDetails
+        ? recentStreams(synchra, match.id, config.socialDetailLimit)
+        : Promise.resolve([]),
     ]);
 
     // The resolution is confirmed here, against data that was fetched anyway.
@@ -328,7 +334,12 @@ async function lookup(
       .map(toAccount)
       .filter((account): account is SocialAccount => account !== null);
 
-    const result = discovered(NAME, start, handle, accounts, match.id, { providers, chat });
+    const result = discovered(NAME, start, handle, accounts, match.id, {
+      providers,
+      chat,
+      streams,
+    });
+    if (streams.length > 0) result.data.streams = streams;
     // Chat rides along even when no account was connected: a channel with chat
     // and no linked providers is unusual but not a miss.
     if (chat.length > 0) {
