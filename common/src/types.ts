@@ -599,7 +599,47 @@ export interface SocialAccount {
   metrics?: Record<string, unknown> | null;
   /** The enricher that read the platform, when one did. */
   enriched_by?: string | null;
+  /**
+   * What this account has recently published, newest first.
+   *
+   * One shape for every platform on purpose: a video, a repository, a post and
+   * a comment are all "a thing this account put out, at a time, with a score".
+   * Keeping them uniform is what lets one list render them all and lets two
+   * platforms be compared without the caller learning five schemas. Anything
+   * genuinely platform-shaped goes in `metrics` on the entry, or in `details`.
+   */
+  activity?: SocialActivity[] | null;
+  /**
+   * Platform-shaped extras that are not a list of published things — a Twitch
+   * stream schedule, the organisations a GitHub user belongs to — keyed by the
+   * sub-provider that read them.
+   */
+  details?: Record<string, unknown> | null;
+  /** Sub-providers that contributed `activity` or `details`. */
+  detailed_by?: string[] | null;
   [key: string]: unknown;
+}
+
+/** One thing an account published. */
+export interface SocialActivity {
+  /** `video`, `clip`, `stream`, `repo`, `gist`, `post`, `comment`, `event`. */
+  kind: string;
+  /** The sub-provider that read it. */
+  source: string;
+  id?: string | null;
+  title?: string | null;
+  /** Body text, where the item is a post or a comment rather than a work. */
+  text?: string | null;
+  url?: string | null;
+  /** Published at, ISO 8601. */
+  time?: string | null;
+  views?: number | null;
+  /** Upvotes, stars, points — whatever the platform counts as approval. */
+  score?: number | null;
+  /** Seconds, for anything with a runtime. */
+  duration?: number | null;
+  /** Language, stars, flair, game — under the platform's own names. */
+  metrics?: Record<string, unknown> | null;
 }
 
 /** One chat message, as Synchra recorded it. */

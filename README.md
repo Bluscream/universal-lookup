@@ -181,6 +181,36 @@ search, so Reddit and Hacker News take part in rung 4 and not rung 5.
 | `SOCIAL_CHAT_LIMIT` | `25` | Recent chat messages carried back from Synchra |
 | `SOCIAL_CASCADE` | `true` | Stop at the first source that finds anything. `false` queries all three and merges — slower, broader. |
 | `SOCIAL_DIRECT_SEARCH` | `false` | Run rung 5, each platform's own user search. Off by default: a fuzzy name match is not evidence, and YouTube's search costs 100 quota units against a daily 10,000. |
+| `SOCIAL_DETAILS` | `false` | Run the sub-providers. Off by default: it multiplies requests (Twitch 3 calls per channel, YouTube 3, GitHub 2). |
+| `SOCIAL_DETAIL_LIMIT` | `5` | Items per sub-provider per account. A recent-activity sample, not an archive. |
+
+**Sub-providers** are a third stage, off by default. Once an account has been
+*confirmed* by its platform, a sub-provider reads what it has actually been
+publishing — and only confirmed accounts, never unverified claims, because
+spending three Twitch requests on a handle that may be dead is how a lookup gets
+slow for no answer.
+
+| Sub-provider | Reads |
+|--------------|-------|
+| `youtube-uploads` | Recent uploads with views, likes and duration, plus the uploads playlist id. Via the uploads playlist (1 quota unit), never `search` (100). |
+| `twitch-videos` | Past broadcasts and top clips; the stream schedule under `details`. |
+| `github-repos` | Repositories by last push, with stars, language and topics; organisations under `details`. |
+| `reddit-activity` | Recent posts and comments, with score and subreddit. |
+| `hackernews-activity` | Recent stories and comments via Algolia, with points. |
+
+Everything lands as `accounts.<platform>[].activity`: one uniform entry shape —
+`kind`, `title`, `url`, `time`, `views`, `score`, `duration` — whatever the
+platform called it, newest first across every sub-provider. A video, a
+repository and a comment are all "a thing this account put out, at a time, with
+a score", and keeping them uniform is what lets one list render them all.
+Genuinely platform-shaped things that are *not* published items — a stream
+schedule, a list of organisations — go in `details` under the sub-provider that
+read them.
+
+Each sub-provider is an ordinary provider: individually switchable through
+`PROVIDERS_BLACKLIST`, individually reported in `errors`, and individually
+exercised by the live probe. A YouTube quota error does not cost the caller the
+GitHub repositories read a moment earlier.
 
 Each account says where it came from, and that distinction is the point:
 `sources` lists who *claimed* the link, `verified_by` lists who cryptographically

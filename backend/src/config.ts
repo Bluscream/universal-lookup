@@ -239,6 +239,19 @@ export const config = {
   // evidence that the account belongs to the person being looked up, and it
   // spends a request on every searchable platform to say so.
   socialDirectSearch: envBool('SOCIAL_DIRECT_SEARCH', false),
+  // The sub-provider stage: after an account has been confirmed, read what it
+  // has actually been publishing — videos, clips, repositories, posts.
+  //
+  // Off by default because it multiplies the request count. Each confirmed
+  // account costs its platform's sub-providers: Twitch is three calls, YouTube
+  // three, GitHub two. A caller who wants to know which accounts exist does not
+  // necessarily want everything they posted, and the first question should not
+  // have to pay for the second.
+  socialDetails: envBool('SOCIAL_DETAILS', false),
+  // How many items each sub-provider returns per account. Small on purpose:
+  // this is a recent-activity sample, not an archive, and the response carries
+  // one of these lists per confirmed account.
+  socialDetailLimit: envInt('SOCIAL_DETAIL_LIMIT', 5),
 
   // Location providers
   //

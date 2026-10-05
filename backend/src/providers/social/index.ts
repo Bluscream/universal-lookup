@@ -45,11 +45,17 @@ import { hackernewsUser } from './enrich/hackernews-user.js';
 import { redditUser } from './enrich/reddit-user.js';
 import { twitchChannel } from './enrich/twitch-channel.js';
 import { youtubeChannel } from './enrich/youtube-channel.js';
+import { githubRepos } from './detail/github-repos.js';
+import { hackernewsActivity } from './detail/hackernews-activity.js';
+import { redditActivity } from './detail/reddit-activity.js';
+import { twitchVideos } from './detail/twitch-videos.js';
+import { youtubeUploads } from './detail/youtube-uploads.js';
 import { exactHandleMatches, searchFallbackEnabled, searchMatches } from './direct.js';
 import { harbor } from './harbor.js';
 import { keybase } from './keybase.js';
 import {
   canonicalPlatform,
+  type Detailer,
   type DiscoveryData,
   type Enricher,
   groupByPlatform,
@@ -87,6 +93,21 @@ const ENRICHERS: Enricher[] = [
   githubUser,
   redditUser,
   hackernewsUser,
+];
+
+/**
+ * Sub-providers, run after enrichment on accounts a platform confirmed.
+ *
+ * A platform may have more than one — GitHub's repositories and Hacker News's
+ * submissions answer the same question in different shapes — so this is a list
+ * and every detailer whose platform matches gets to run.
+ */
+const DETAILERS: Detailer[] = [
+  youtubeUploads,
+  twitchVideos,
+  githubRepos,
+  redditActivity,
+  hackernewsActivity,
 ];
 
 /** The aggregator's own name, so an operator can turn the grouping off. */
@@ -140,6 +161,85 @@ async function enrichAll(
   );
 
   return { accounts: [...enriched, ...accounts.slice(config.socialEnrichLimit)], failures };
+}
+
+/**
+ * Read everything else the platforms know about the accounts that turned out to
+ * be real.
+ *
+ * Only enriched accounts are passed in, and that restriction is the point. An
+ * account nobody confirmed is a claim, and spending three Twitch requests on a
+ * claim that may be a dead handle is how a lookup becomes slow for no answer.
+ *
+ * Each detailer is an independent failure: a YouTube quota error must not cost
+ * the caller the GitHub repositories that were read a moment earlier, so
+ * failures are collected and reported per sub-provider, exactly as enrichment
+ * does. The work is bounded twice over — by how many accounts get here, and by
+ * SOCIAL_DETAIL_LIMIT items per sub-provider.
+ */
+async function detailAll(
+  accounts: SocialAccount[],
+): Promise<{ accounts: SocialAccount[]; failures: ProviderResult<DiscoveryData>[] }> {
+  const failures: ProviderResult<DiscoveryData>[] = [];
+
+  const detailed = await Promise.all(
+    accounts.map(async (account) => {
+      // An account no enricher confirmed has nothing worth asking about, and
+      // the detailers address platforms by the ids enrichment resolves.
+      if (!account.enriched_by) return account;
+
+      const slug = canonicalPlatform(account.platform);
+      const applicable = DETAILERS.filter(
+        (detailer) =>
+          detailer.platform === slug && detailer.isAvailable() && !isBlacklisted(detailer.name),
+      );
+      if (applicable.length === 0) return account;
+
+      const results = await Promise.all(
+        applicable.map(async (detailer) => {
+          const start = Date.now();
+          try {
+            return { detailer, learned: await detailer.detail(account, config.socialDetailLimit) };
+          } catch (error) {
+            failures.push({
+              provider: detailer.name,
+              success: false,
+              data: {},
+              error: `${account.platform}/${account.account ?? account.account_id ?? '?'}: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+              duration: Date.now() - start,
+            });
+            return null;
+          }
+        }),
+      );
+
+      const landed = results.filter(
+        (result): result is NonNullable<typeof result> => result !== null,
+      );
+      if (landed.length === 0) return account;
+
+      const activity = landed.flatMap(({ learned }) => learned.activity ?? []);
+      // Newest first across every sub-provider, so a channel's videos and its
+      // clips read as one timeline rather than two concatenated lists.
+      activity.sort((a, b) => Date.parse(b.time ?? '') - Date.parse(a.time ?? ''));
+
+      const details: Record<string, unknown> = {};
+      for (const { detailer, learned } of landed) {
+        if (learned.details) details[detailer.name] = learned.details;
+      }
+
+      return {
+        ...account,
+        activity: activity.length > 0 ? activity : null,
+        details: Object.keys(details).length > 0 ? details : null,
+        detailed_by: landed.map(({ detailer }) => detailer.name),
+      } satisfies SocialAccount;
+    }),
+  );
+
+  return { accounts: detailed, failures };
 }
 
 /**
@@ -253,13 +353,22 @@ async function pipeline(
   // Stages 4 and 5 read the platform to decide whether the account exists at
   // all, so their results arrive enriched. Running enrichment over them again
   // would repeat every one of those requests to learn nothing.
-  const { accounts, failures } = fromDirect
+  const { accounts: enriched, failures } = fromDirect
     ? { accounts: merged, failures: [] as ProviderResult<DiscoveryData>[] }
     : await enrichAll(merged);
 
+  // The sub-provider stage. Off by default for the same reason it is a separate
+  // stage at all: it multiplies the request count, and a caller who wants to
+  // know which accounts exist does not necessarily want everything they posted.
+  const { accounts, failures: detailFailures } = config.socialDetails
+    ? await detailAll(enriched)
+    : { accounts: enriched, failures: [] as ProviderResult<DiscoveryData>[] };
+
   return [
     ...blanked,
-    ...failures.map((failure) => ({ ...failure, data: {} }) as ProviderResult),
+    ...[...failures, ...detailFailures].map(
+      (failure) => ({ ...failure, data: {} }) as ProviderResult,
+    ),
     aggregate(accounts, identities, chat, merged.length),
   ];
 }
@@ -326,7 +435,7 @@ export function lookupSocial(
 }
 
 /** Every provider registered for this lookup type, in registry order. */
-export const PROVIDERS: Provider[] = [...DISCOVERY, ...ENRICHERS];
+export const PROVIDERS: Provider[] = [...DISCOVERY, ...ENRICHERS, ...DETAILERS];
 
 /** Names of every provider registered for this lookup type. */
 export const PROVIDER_NAMES: string[] = [...PROVIDERS.map((p) => p.name), AGGREGATOR];

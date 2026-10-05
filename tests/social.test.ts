@@ -11,8 +11,10 @@ import {
   claims,
   resolveChannelId as resolveChannelIdForTest,
 } from '../backend/src/providers/social/synchra.js';
+import { durationSeconds } from '../backend/src/providers/social/detail/youtube-uploads.js';
 import {
   canonicalPlatform,
+  defineDetailer,
   defineEnricher,
   groupByPlatform,
   looksLikeId,
@@ -198,7 +200,7 @@ describe('an enricher', () => {
 });
 
 describe('the registry', () => {
-  it('registers every discovery source and enricher', () => {
+  it('registers every discovery source, enricher and sub-provider', () => {
     expect(PROVIDER_NAMES).toEqual([
       'harbor',
       'keybase',
@@ -208,6 +210,11 @@ describe('the registry', () => {
       'github-user',
       'reddit-user',
       'hackernews-user',
+      'youtube-uploads',
+      'twitch-videos',
+      'github-repos',
+      'reddit-activity',
+      'hackernews-activity',
       'social-graph',
     ]);
   });
@@ -596,5 +603,111 @@ describe("a chat author's profile url", () => {
 
   it('matches the platform whatever case Synchra reports it in', () => {
     expect(profileUrl('Twitch', 'someone')).toBe('https://www.twitch.tv/someone');
+  });
+});
+
+describe('a sub-provider', () => {
+  function detailer(spec: {
+    name?: string;
+    platform?: string;
+    available?: boolean;
+    items?: number;
+    throws?: boolean;
+    details?: Record<string, unknown>;
+  }) {
+    return defineDetailer({
+      name: spec.name ?? 'test-detail',
+      platform: spec.platform ?? 'github',
+      isAvailable: () => spec.available ?? true,
+      read: async (_account, limit) => {
+        if (spec.throws) throw new Error('503 Service Unavailable');
+        return {
+          activity: Array.from({ length: Math.min(spec.items ?? 2, limit) }, (_, i) => ({
+            kind: 'repo',
+            // Deliberately wrong, to prove the factory overwrites it.
+            source: 'claimed-by-the-detailer',
+            id: String(i),
+            time: `2026-01-0${i + 1}T00:00:00Z`,
+          })),
+          details: spec.details,
+        };
+      },
+    });
+  }
+
+  it('stamps its own name as the source rather than trusting the entry', async () => {
+    const learned = await detailer({ name: 'github-test' }).detail(
+      account({ platform: 'github', account: 'x' }),
+      5,
+    );
+
+    // An entry must always be traceable to whatever fetched it.
+    expect(learned.activity?.map((a) => a.source)).toEqual(['github-test', 'github-test']);
+  });
+
+  it('honours the per-account item cap', async () => {
+    const learned = await detailer({ items: 50 }).detail(
+      account({ platform: 'github', account: 'x' }),
+      3,
+    );
+
+    expect(learned.activity).toHaveLength(3);
+  });
+
+  it('is a Provider, so the blacklist and the live probe can reach it', async () => {
+    const one = detailer({ name: 'github-test' });
+
+    // The two properties the Enricher comment names as the reason for extending
+    // Provider at all: a name to blacklist, and a standalone lookup().
+    expect(one.name).toBe('github-test');
+    expect(typeof one.lookup).toBe('function');
+    expect(typeof one.isAvailable).toBe('function');
+
+    const result = await one.lookup('someone');
+    expect(result.provider).toBe('github-test');
+    expect(result.success).toBe(true);
+    expect(result.data.socials?.[0]?.detailed_by).toEqual(['github-test']);
+  });
+
+  it('reports a failure through the standalone façade instead of throwing', async () => {
+    const result = await detailer({ throws: true }).lookup('someone');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('503');
+  });
+
+  it('says so when a platform had nothing recent', async () => {
+    const result = await detailer({ items: 0 }).lookup('someone');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Nothing recent');
+  });
+
+  it('carries platform-shaped extras separately from the activity list', async () => {
+    // A Twitch schedule is a plan, not a published item: sorting it into the
+    // timeline would make a future stream indistinguishable from a past one.
+    const learned = await detailer({ details: { schedule: [{ title: 'Friday' }] } }).detail(
+      account({ platform: 'twitch', account: 'x' }),
+      5,
+    );
+
+    expect(learned.details).toEqual({ schedule: [{ title: 'Friday' }] });
+  });
+});
+
+describe('a YouTube duration', () => {
+  it('reads an ISO 8601 period as seconds', () => {
+    expect(durationSeconds('PT1H2M3S')).toBe(3723);
+    expect(durationSeconds('PT45S')).toBe(45);
+    expect(durationSeconds('PT12M')).toBe(720);
+    // A livestream VOD can run past a day.
+    expect(durationSeconds('P1DT2H')).toBe(93600);
+  });
+
+  it('returns null rather than zero for something it cannot read', () => {
+    // Zero would be a duration, and a video is never zero seconds long.
+    expect(durationSeconds(null)).toBeNull();
+    expect(durationSeconds('')).toBeNull();
+    expect(durationSeconds('banana')).toBeNull();
   });
 });

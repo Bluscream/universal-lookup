@@ -20,6 +20,7 @@ import type {
   Provider,
   ProviderResult,
   SocialAccount,
+  SocialActivity,
   SocialChatMessage,
 } from '../../types/common.js';
 
@@ -417,6 +418,108 @@ export function defineEnricher(spec: {
     },
   };
 }
+
+/**
+ * A sub-provider: given an account that has already been resolved and read,
+ * what else that platform knows about it.
+ *
+ * The split from `Enricher` is about the question, not the mechanism. An
+ * enricher answers "does this account exist, and who is it" — one cheap call
+ * that every account needs. A detailer answers "what has it been doing", which
+ * is several calls, is only worth making for an account that turned out to be
+ * real, and is the part a caller may not want at all. Running them as one stage
+ * would mean a lookup could not have the first without paying for the second.
+ *
+ * Like `Enricher` it extends `Provider`, and for the same two reasons: an
+ * operator can switch one off by name through PROVIDERS_BLACKLIST, and the live
+ * probe can exercise it. Several detailers may share a platform — `github` has
+ * one for repositories and one for events — which is the other reason this is a
+ * list rather than a map.
+ */
+export interface Detailer extends Provider {
+  /** The canonical platform slug this reads. */
+  platform: string;
+  /**
+   * Read activity and extras for `account`.
+   *
+   * Returns what it learned rather than a modified account, so the pipeline
+   * stays in charge of merging and no detailer can drop another's work.
+   */
+  detail(account: SocialAccount, limit: number): Promise<DetailResult>;
+}
+
+/** What one detailer learned. */
+export interface DetailResult {
+  activity?: SocialActivity[];
+  /** Keyed by whatever the detailer wants to call it, under its own name. */
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Build a detailer from the one function that differs between platforms.
+ *
+ * `read` is handed the account and the per-platform item cap, and returns what
+ * it found. Everything else — the standalone `lookup()` façade, timing, the
+ * error shape, stamping `source` on each entry — is identical across platforms
+ * and lives here, exactly as it does for `defineEnricher`.
+ */
+export function defineDetailer(spec: {
+  name: string;
+  platform: string;
+  isAvailable: () => boolean;
+  read: (account: SocialAccount, limit: number) => Promise<DetailResult>;
+}): Detailer {
+  async function detail(account: SocialAccount, limit: number): Promise<DetailResult> {
+    const learned = await spec.read(account, limit);
+    return {
+      // `source` is stamped here rather than trusted from the detailer, so an
+      // entry can always be traced back to what fetched it.
+      activity: learned.activity?.map((entry) => ({ ...entry, source: spec.name })),
+      details: learned.details,
+    };
+  }
+
+  return {
+    name: spec.name,
+    platform: spec.platform,
+    detail,
+    isAvailable: spec.isAvailable,
+    async lookup(query: string): Promise<ProviderResult<DiscoveryData>> {
+      const start = Date.now();
+      const handle = normalizeHandle(query);
+      try {
+        const learned = await detail(
+          { platform: spec.platform, account: handle, sources: [spec.name] },
+          DEFAULT_DETAIL_LIMIT,
+        );
+        const found = learned.activity?.length ?? 0;
+        return {
+          provider: spec.name,
+          success: found > 0 || learned.details !== undefined,
+          data: {
+            socials: [
+              {
+                platform: spec.platform,
+                account: handle,
+                sources: [spec.name],
+                activity: learned.activity ?? null,
+                details: learned.details ?? null,
+                detailed_by: [spec.name],
+              },
+            ],
+          },
+          error: found === 0 ? `Nothing recent for ${spec.platform}/${handle}` : undefined,
+          duration: Date.now() - start,
+        };
+      } catch (error) {
+        return failure(spec.name, start, error);
+      }
+    },
+  };
+}
+
+/** The cap the standalone façade uses; the pipeline passes its own. */
+const DEFAULT_DETAIL_LIMIT = 5;
 
 /** Group merged accounts by platform, each platform's list in discovery order. */
 export function groupByPlatform(accounts: SocialAccount[]): Record<string, SocialAccount[]> {

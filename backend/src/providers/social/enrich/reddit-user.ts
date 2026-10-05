@@ -57,7 +57,14 @@ interface TokenResponse {
  */
 let cached: { token: string; expiresAt: number } | undefined;
 
-async function appToken(): Promise<string> {
+/**
+ * The app token, shared.
+ *
+ * Exported so the activity sub-provider reuses this cache rather than keeping
+ * its own: two caches would mean two token requests per hour against an
+ * endpoint Reddit rate-limits, for one set of credentials.
+ */
+export async function appToken(): Promise<string> {
   if (cached && Date.now() < cached.expiresAt) return cached.token;
 
   const response = await axios.post<TokenResponse>(
