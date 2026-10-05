@@ -32,25 +32,18 @@ type LookupFn = (
   options?: LookupOptions,
 ) => DualPromiseResult;
 
-const VALID_TYPES = new Set<string>([
-  'tel',
-  'ip',
-  'domain',
-  'email',
-  'location',
-  'parcel',
-  'shipment',
-  'web',
-  'steam',
-  'url',
-  'shorten',
-  'apk',
-  'app',
-  'order',
-  'status',
-  'archive',
-  'auto',
-]);
+/**
+ * Derived from LOOKUP_TYPES, not restated.
+ *
+ * This was a hand-written copy of that list, which is exactly the drift
+ * LOOKUP_TYPES documents itself as preventing — and it had drifted: the route
+ * matcher and the auth hook both derived from LOOKUP_TYPES while this schema
+ * did not, so a type added to LOOKUP_TYPES was routable, protected by the auth
+ * hook, and then rejected by Fastify's own parameter validation with "must be
+ * equal to one of the allowed values". Nothing in the lookup itself was wrong
+ * and no test covered the difference.
+ */
+const VALID_TYPES = new Set<string>(LOOKUP_TYPES);
 
 const responseSchema = {
   200: {
@@ -583,7 +576,8 @@ async function handleStatuspageFormat(
   return reply.type('application/json').send(summary);
 }
 
-function getLookupFunction(type: LookupType): LookupFn {
+/** Exported for tests/repo-invariants: every type must map to its own lookup. */
+export function getLookupFunction(type: LookupType): LookupFn {
   switch (type) {
     case 'ip':
       return lookupIp;
