@@ -1,6 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ChatMessage } from 'synchra-ts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { config } from '../backend/src/config.js';
 import { profileUrl } from '../backend/src/providers/social/profile-url.js';
+import {
+  resetViewerAvatars,
+  viewerAvatars,
+} from '../backend/src/providers/social/viewer-avatars.js';
 import {
   exactHandleMatches,
   searchFallbackEnabled,
@@ -709,5 +714,84 @@ describe('a YouTube duration', () => {
     expect(durationSeconds(null)).toBeNull();
     expect(durationSeconds('')).toBeNull();
     expect(durationSeconds('banana')).toBeNull();
+  });
+});
+
+describe('viewer avatars', () => {
+  function fakeViewerInfo(urls: Record<string, string | null>, onCall: (id: string) => void) {
+    return {
+      channelViewer: {
+        providerViewerInfo: async (params: { provider: string; provider_viewer_id: string }) => {
+          const id = `${params.provider}:${params.provider_viewer_id}`;
+          onCall(id);
+          if (!(id in urls)) throw new Error('403 Forbidden');
+          return { profile_picture_url: urls[id] };
+        },
+      },
+    };
+  }
+
+  function message(partial: Partial<ChatMessage> & { provider_viewer_id: string }) {
+    return { provider: 'twitch', ...partial } as ChatMessage;
+  }
+
+  beforeEach(() => {
+    resetViewerAvatars();
+  });
+
+  it('never looks up a viewer whose message already carried a picture', async () => {
+    const calls: string[] = [];
+    const resolved = await viewerAvatars(
+      fakeViewerInfo({}, (id) => calls.push(id)),
+      'channel',
+      [
+        message({
+          provider: 'tiktok',
+          provider_viewer_id: '1',
+          viewer_profile_picture_url: 'https://cdn/tiktok.jpg',
+        }),
+      ],
+    );
+
+    expect(calls).toEqual([]);
+    expect(resolved.get('tiktok:1')).toBe('https://cdn/tiktok.jpg');
+  });
+
+  it('looks a chatter up once however much they talk', async () => {
+    const calls: string[] = [];
+    const source = fakeViewerInfo({ 'twitch:7': 'https://cdn/a.png' }, (id) => calls.push(id));
+    const messages = Array.from({ length: 12 }, () => message({ provider_viewer_id: '7' }));
+
+    const resolved = await viewerAvatars(source, 'channel', messages);
+
+    // Cached per viewer, not per message: twelve lines, one request.
+    expect(calls).toEqual(['twitch:7']);
+    expect(resolved.get('twitch:7')).toBe('https://cdn/a.png');
+  });
+
+  it('remembers a miss, so a token that cannot read viewers is asked once', async () => {
+    const calls: string[] = [];
+    // Nothing configured, so every lookup throws 403 — the shape of a token
+    // without viewer access.
+    const source = fakeViewerInfo({}, (id) => calls.push(id));
+
+    await viewerAvatars(source, 'channel', [message({ provider_viewer_id: '9' })]);
+    await viewerAvatars(source, 'channel', [message({ provider_viewer_id: '9' })]);
+
+    expect(calls).toEqual(['twitch:9']);
+  });
+
+  it('rations a cold start instead of firing one request per chatter', async () => {
+    const calls: string[] = [];
+    const source = fakeViewerInfo({}, (id) => calls.push(id));
+    const messages = Array.from({ length: 30 }, (_, i) =>
+      message({ provider_viewer_id: String(i) }),
+    );
+
+    await viewerAvatars(source, 'channel', messages);
+
+    // Thirty unknown chatters must not mean thirty requests on one refresh;
+    // the rest are picked up by the next call.
+    expect(calls).toHaveLength(6);
   });
 });

@@ -124,28 +124,72 @@ function AccountRow({ account }: { account: SocialAccount }) {
 
 function ChatLine({ message }: { message: SocialChatMessage }) {
   const author = message.author || message.author_name || 'someone';
+  const badges = message.badges ?? [];
   return (
-    <li className="social-chat-line">
+    <li className={`social-chat-line${message.deleted_at ? ' social-chat-deleted' : ''}`}>
       <span className="social-chat-meta">
         {message.platform && <ServiceLogo service={message.platform} size={13} />}
         <span className="social-chat-time">{formatTime(message.time)}</span>
       </span>
+      {message.author_avatar ? (
+        <img className="social-chat-avatar" src={message.author_avatar} alt="" loading="lazy" />
+      ) : (
+        <span className="social-chat-avatar social-chat-avatar-blank" aria-hidden />
+      )}
       {/* The url is derived from the handle rather than reported by Synchra, so
           it is absent for platforms with no public profile page — Discord, and
           the integrations that are not places people have profiles at all. */}
-      {message.author_url ? (
-        <a
-          className="social-chat-author"
-          href={message.author_url}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {author}
-        </a>
-      ) : (
-        <span className="social-chat-author">{author}</span>
-      )}
-      <span className="social-chat-text">{message.text || <em>(no text)</em>}</span>
+      <span className="social-chat-who">
+        {/* The platform's own name colour, which is how a regular reads a chat
+            log at a glance. Only ever used as a colour, never as markup. */}
+        {message.author_url ? (
+          <a
+            className="social-chat-author"
+            href={message.author_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={message.author_color ? { color: message.author_color } : undefined}
+          >
+            {author}
+          </a>
+        ) : (
+          <span
+            className="social-chat-author"
+            style={message.author_color ? { color: message.author_color } : undefined}
+          >
+            {author}
+          </span>
+        )}
+        {badges.map((badge) =>
+          badge.icon ? (
+            <img
+              key={badge.id ?? badge.name}
+              className="social-chat-badge"
+              src={badge.icon}
+              alt={badge.name ?? ''}
+              title={badge.name ?? undefined}
+              loading="lazy"
+            />
+          ) : (
+            <span key={badge.id ?? badge.name} className="social-chat-badge-text">
+              {badge.name}
+            </span>
+          ),
+        )}
+      </span>
+      <span className="social-chat-text">
+        {message.reply_to && (
+          <span className="social-chat-reply" title={message.reply_to.text ?? undefined}>
+            ↳ {message.reply_to.author}
+          </span>
+        )}
+        {message.text || <em>(no text)</em>}
+        {message.deleted_at && (
+          <span className="social-chat-removed">
+            deleted{message.deleted_by ? ` by ${message.deleted_by}` : ''}
+          </span>
+        )}
+      </span>
     </li>
   );
 }

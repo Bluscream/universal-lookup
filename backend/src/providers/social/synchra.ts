@@ -40,6 +40,7 @@ import type {
   SocialChatMessage,
 } from '../../types/common.js';
 import { profileUrl } from './profile-url.js';
+import { viewerAvatars } from './viewer-avatars.js';
 import {
   canonicalPlatform,
   type DiscoveryData,
@@ -100,7 +101,7 @@ function toAccount(provider: ChannelProviderPublic): SocialAccount | null {
  * content in `notice_message_parts` instead. Reading only the first would render
  * every gift as a blank line, so both are concatenated.
  */
-function toChatMessage(message: ChatMessage): SocialChatMessage {
+function toChatMessage(message: ChatMessage, avatar?: string | null): SocialChatMessage {
   const parts = [...(message.message_parts ?? []), ...(message.notice_message_parts ?? [])];
   return {
     platform: canonicalPlatform(message.provider),
@@ -113,6 +114,25 @@ function toChatMessage(message: ChatMessage): SocialChatMessage {
     // Synchra does not send one, so it is derived — the same mapping
     // synchra-php applies when rendering the same data.
     author_url: profileUrl(message.provider, message.viewer_name, message.provider_viewer_id),
+    // What the message carries wins; the resolver only fills the platforms that
+    // send none.
+    author_avatar: message.viewer_profile_picture_url ?? avatar ?? null,
+    author_color: message.viewer_color ?? null,
+    author_since: message.viewer_created_at ?? null,
+    badges: (message.badges ?? []).map((badge) => ({
+      id: badge.id,
+      name: badge.name,
+      type: badge.type,
+      // `urls` holds three sizes; the largest that exists stays sharp on a
+      // high-density display, and all of them are the platform's own CDN.
+      icon: badge.urls?.lg ?? badge.urls?.md ?? badge.urls?.sm ?? null,
+    })),
+    access_level: message.access_level ?? null,
+    reply_to: message.parent
+      ? { author: message.parent.viewer_display_name, text: message.parent.message }
+      : null,
+    deleted_at: message.deleted_at ?? null,
+    deleted_by: message.deleted_by_display_name ?? message.deleted_by_name ?? null,
     text: parts.map((part) => part.text).join('') || null,
     time: message.created_at ?? null,
     type: message.type,
@@ -312,11 +332,26 @@ async function lookup(
     // Chat rides along even when no account was connected: a channel with chat
     // and no linked providers is unusual but not a miss.
     if (chat.length > 0) {
+      // Twitch and YouTube messages carry no avatar, so the ones that would
+      // otherwise render blank are resolved per viewer — cached and rationed,
+      // and allowed to fail, because a chat log without pictures is still a
+      // chat log.
+      const avatars = await viewerAvatars(synchra, match.id, chat).catch(
+        () => new Map<string, string | null>(),
+      );
       return {
         ...result,
         success: true,
         error: undefined,
-        data: { ...result.data, recent_chat: chat.map(toChatMessage) },
+        data: {
+          ...result.data,
+          recent_chat: chat.map((message) =>
+            toChatMessage(
+              message,
+              avatars.get(`${message.provider}:${message.provider_viewer_id}`),
+            ),
+          ),
+        },
       };
     }
     return result;

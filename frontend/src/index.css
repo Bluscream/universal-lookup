@@ -1588,7 +1588,7 @@ a:hover {
 }
 .social-chat-line {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto auto auto 1fr;
   gap: 0.5rem;
   align-items: baseline;
   font-size: 0.8rem;
@@ -1608,9 +1608,50 @@ a:hover {
   font-size: 0.68rem;
   white-space: nowrap;
 }
+.social-chat-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+}
+.social-chat-avatar-blank {
+  display: inline-block;
+  border: 1px dashed var(--border-color);
+}
+.social-chat-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
 .social-chat-author {
   font-weight: 600;
   white-space: nowrap;
+}
+.social-chat-badge {
+  width: 14px;
+  height: 14px;
+  vertical-align: -0.15em;
+}
+.social-chat-badge-text {
+  font-size: 0.62rem;
+  padding: 0 0.25rem;
+  border-radius: var(--radius-sm, 3px);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+.social-chat-reply {
+  color: var(--text-muted);
+  margin-right: 0.3rem;
+  font-size: 0.72rem;
+}
+.social-chat-removed {
+  margin-left: 0.4rem;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-style: italic;
 }
 a.social-chat-author {
   color: var(--accent-secondary);
@@ -1619,10 +1660,15 @@ a.social-chat-author {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+/* A removed message is still shown — it was said — but must not read as live. */
+.social-chat-deleted .social-chat-text {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
 
 @media (max-width: 768px) {
   .social-chat-line {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto 1fr;
     gap: 0.15rem;
   }
 }

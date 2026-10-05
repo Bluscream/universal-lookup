@@ -642,6 +642,15 @@ export interface SocialActivity {
   metrics?: Record<string, unknown> | null;
 }
 
+/** A badge a platform shows beside a name. */
+export interface SocialChatBadge {
+  id?: string | null;
+  name?: string | null;
+  /** `subscriber`, `moderator`, `founder` — the platform's own grouping. */
+  type?: string | null;
+  icon?: string | null;
+}
+
 /** One chat message, as Synchra recorded it. */
 export interface SocialChatMessage {
   /** Platform the message was sent on. */
@@ -663,6 +672,37 @@ export interface SocialChatMessage {
    * people have profiles at all.
    */
   author_url?: string | null;
+  /**
+   * Their avatar.
+   *
+   * Synchra puts `viewer_profile_picture_url` on a message for some platforms
+   * and not others — TikTok messages carry one, Twitch and YouTube do not — so
+   * this is filled from the message where present and resolved per viewer
+   * otherwise. Null means neither route produced one.
+   */
+  author_avatar?: string | null;
+  /** The colour the platform shows their name in, as the platform reports it. */
+  author_color?: string | null;
+  /** When they first appeared on this channel, ISO 8601. */
+  author_since?: string | null;
+  /** Subscriber, moderator, founder — whatever the platform badges them with. */
+  badges?: SocialChatBadge[] | null;
+  /**
+   * Synchra's own standing for them, as a number.
+   *
+   * Passed through rather than labelled. Synchra's schema defines these as bare
+   * values (0, 1, 2, 7, 8, 100, 200, 500, 1000) with no names — synchra-php
+   * generates them as `N7`, `N100` and so on for the same reason — so any
+   * mapping to "moderator" or "broadcaster" here would be this codebase
+   * guessing, and a wrong guess about who moderates a channel is worse than an
+   * unlabelled number. `badges` carries the human-readable standing.
+   */
+  access_level?: number | null;
+  /** The message this one replies to, flattened. */
+  reply_to?: { author?: string | null; text?: string | null } | null;
+  /** Set when the message was removed, with who removed it if known. */
+  deleted_at?: string | null;
+  deleted_by?: string | null;
   text?: string | null;
   /** ISO 8601. */
   time?: string | null;
