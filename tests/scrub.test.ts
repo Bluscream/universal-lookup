@@ -21,6 +21,15 @@ import type { ProviderResult } from '../backend/src/types/common.js';
 const TWURPLE_MESSAGE = (secret: string) =>
   `Encountered HTTP status code 400: Bad Request\n\nURL: token?grant_type=client_credentials&client_id=mkx662b5bw4ecf5yuz1fmik4mop2q5&client_secret=${secret}\nMethod: POST\nBody:\n{\n  "status": 400,\n  "message": "Invalid client credentials"\n}`;
 
+/**
+ * A fake, not the value that actually leaked.
+ *
+ * The real one was pinned here when this test was written, which put the live
+ * credential into the repository and its history — the same mistake the code
+ * under test exists to prevent, made one directory away from it. The test never
+ * needed the real value: what it checks is that a configured secret of any
+ * shape is removed from a message composed elsewhere.
+ */
 const SECRET = 'not-a-real-secret-0000000000000';
 
 const original = config.twitchClientSecret;
