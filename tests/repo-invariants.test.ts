@@ -68,6 +68,15 @@ describe('every env var is documented everywhere it is read from', () => {
     PORT: 'the container port, set by the template Web Port config, not a variable',
     DB_PATH: 'inside the appdata volume mount',
     MAXMIND_DB_PATH: 'inside the appdata volume mount',
+    PHONEBLOCK_PW: 'convenience alias for PHONEBLOCK_PASSWORD',
+    AMAZON_PW: 'convenience alias for AMAZON_PASSWORD',
+    ALIEXPRESS_PW: 'convenience alias for ALIEXPRESS_PASSWORD',
+    FRITZ_SERVER: 'convenience alias for FRITZBOX_HOST',
+    FRITZ_HOST: 'convenience alias for FRITZBOX_HOST',
+    FRITZ_USERNAME: 'convenience alias for FRITZBOX_USER',
+    FRITZ_USER: 'convenience alias for FRITZBOX_USER',
+    FRITZ_PW: 'convenience alias for FRITZBOX_PASS',
+    FRITZ_PASSWORD: 'convenience alias for FRITZBOX_PASS',
   };
 
   function envKeys(file: string, pattern: RegExp): Set<string> {
