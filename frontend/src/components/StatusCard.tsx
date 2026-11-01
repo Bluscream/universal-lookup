@@ -185,7 +185,10 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
   const allOk = down.length === 0 && services.length > 0;
 
   return (
-    <div className="result-card full-width" style={{ flexDirection: 'column', gap: '1rem' }}>
+    <div
+      className="result-card full-width"
+      style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
+    >
       {/* Header / rollup */}
       <div
         style={{

@@ -163,6 +163,7 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
         flexDirection: 'column',
         gap: '0.75rem',
         padding: '0.85rem 1rem',
+        marginTop: '0.75rem',
         borderRadius: '0.5rem',
         background: 'rgba(255,255,255,0.02)',
         border: '1px solid rgba(255,255,255,0.08)',
