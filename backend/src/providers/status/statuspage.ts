@@ -8,6 +8,7 @@ import type {
   MaintenanceWindow,
 } from '../../types/common.js';
 import { statusGet } from './http.js';
+import { getStatuspageHistory } from './statuspage-history.js';
 import { serviceCategory, serviceIconUrl, serviceColor } from './icons.js';
 
 export interface StatuspageProviderOptions {
@@ -524,20 +525,27 @@ export function makeStatuspageProvider(opts: StatuspageProviderOptions): Provide
       try {
         const resp = await statusGet<StatuspageSummary>(opts.url);
         const summary = resp.data || {};
+        const data = summaryToStatusData(
+          summary,
+          opts.service,
+          opts.label,
+          undefined,
+          true,
+          opts.maintenanceTimes,
+          opts.category,
+          opts.brandColor,
+          opts.icon,
+        );
+        const history = await getStatuspageHistory(opts.url, summary.components);
+        if (history && data.services?.[0]) {
+          data.services[0].history = history.history;
+          data.services[0].uptime_30d = history.uptime30d;
+          data.services[0].uptime_90d = history.uptime90d;
+        }
         return {
           provider: opts.service,
           success: true,
-          data: summaryToStatusData(
-            summary,
-            opts.service,
-            opts.label,
-            undefined,
-            true,
-            opts.maintenanceTimes,
-            opts.category,
-            opts.brandColor,
-            opts.icon,
-          ),
+          data,
           raw: summary,
           duration: Date.now() - start,
         };

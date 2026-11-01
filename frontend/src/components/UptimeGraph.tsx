@@ -74,14 +74,14 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
         }
       }
 
-      const points = allDates.map((date) => {
-        return historyMap.get(date) ?? 100;
-      });
+      // Days a service has no data for (e.g. before its feed's coverage) stay gaps.
+      const points: Array<number | null> = allDates.map((date) => historyMap.get(date) ?? null);
+      const known = points.filter((v): v is number => v !== null);
 
-      // Calculate average over the active window
+      // Calculate average over the days with data in the active window
       const avg =
-        points.length > 0
-          ? Math.round((points.reduce((a, b) => a + b, 0) / points.length) * 100) / 100
+        known.length > 0
+          ? Math.round((known.reduce((a, b) => a + b, 0) / known.length) * 100) / 100
           : 100;
 
       return {
@@ -104,7 +104,7 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
   for (const series of seriesData) {
     if (hiddenServices.has(series.service)) continue;
     for (const val of series.points) {
-      if (val < minRatio) minRatio = val;
+      if (val !== null && val < minRatio) minRatio = val;
     }
   }
   // Floor to nearest sensible round number (e.g. 95, 90, 80) with a little margin so dips don't hit the bottom border
@@ -338,15 +338,26 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
           {seriesData.map((s) => {
             if (hiddenServices.has(s.service)) return null;
 
-            // Generate SVG path commands
+            // Generate SVG path commands, one segment per run of known days
             let pathD = '';
+            let areaD = '';
+            let segStart = -1;
+            const closeArea = (end: number) => {
+              if (segStart >= 0)
+                areaD += ` L ${getX(end)} ${getY(yMin)} L ${getX(segStart)} ${getY(yMin)} Z`;
+            };
             s.points.forEach((val, idx) => {
-              const x = getX(idx);
-              const y = getY(val);
-              pathD += idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+              if (val === null) {
+                closeArea(idx - 1);
+                segStart = -1;
+                return;
+              }
+              const cmd = segStart < 0 ? 'M' : 'L';
+              if (segStart < 0) segStart = idx;
+              pathD += ` ${cmd} ${getX(idx)} ${getY(val)}`;
+              areaD += ` ${cmd} ${getX(idx)} ${getY(val)}`;
             });
-
-            const areaD = `${pathD} L ${getX(s.points.length - 1)} ${getY(yMin)} L ${getX(0)} ${getY(yMin)} Z`;
+            closeArea(s.points.length - 1);
 
             return (
               <g key={s.service}>
@@ -382,6 +393,7 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
               {seriesData.map((s) => {
                 if (hiddenServices.has(s.service)) return null;
                 const val = s.points[hoverIndex];
+                if (val === null) return null;
                 return (
                   <circle
                     key={s.service}
@@ -432,6 +444,7 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
             {seriesData.map((s) => {
               if (hiddenServices.has(s.service)) return null;
               const ratio = s.points[hoverIndex];
+              if (ratio === null) return null;
               const ratioColor = ratio >= 99.9 ? '#22C55E' : ratio >= 99 ? '#F59E0B' : '#EF4444';
               return (
                 <div
