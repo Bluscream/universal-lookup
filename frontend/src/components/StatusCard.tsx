@@ -154,7 +154,7 @@ function ServiceTile({ s }: { s: StatusServiceEntry }) {
   );
 }
 
-const CATEGORY_ORDER = ['AI', 'Cloud', 'Internet', 'Games', 'Web', 'Other'];
+const CATEGORY_ORDER = ['AI', 'Social', 'Cloud', 'Internet', 'Games', 'Web', 'Other'];
 
 /** Group services by category, categories in preferred order, services A–Z within. */
 function groupByCategory(services: StatusServiceEntry[]): Array<[string, StatusServiceEntry[]]> {
