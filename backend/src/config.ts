@@ -72,7 +72,7 @@ export const config = {
   tellowsApiKey: env('TELLOWS_API_KEY'),
   phoneblockApiKey: env('PHONEBLOCK_API_KEY'),
   phoneblockUser: env('PHONEBLOCK_USER'),
-  phoneblockPassword: env('PHONEBLOCK_PASSWORD'),
+  phoneblockPassword: env('PHONEBLOCK_PASSWORD') || env('PHONEBLOCK_PW'),
   maxmindLicenseKey: env('MAXMIND_LICENSE_KEY'),
   maxmindDbPath: env('MAXMIND_DB_PATH', './data/maxmind'),
   googleApiKey: env('GOOGLE_API_KEY'),
@@ -108,7 +108,7 @@ export const config = {
   backpackTfApiKey: env('BACKPACK_TF_API_KEY'),
   seventeenTrackApiKey: env('SEVENTEEN_TRACK_API_KEY'),
   amazonUsername: env('AMAZON_USERNAME'),
-  amazonPassword: env('AMAZON_PASSWORD'),
+  amazonPassword: env('AMAZON_PASSWORD') || env('AMAZON_PW'),
   amazonTotpKey: env('AMAZON_TOTP_KEY'),
   amazonCookiesFile: env('AMAZON_COOKIES_FILE'),
   upsAccessKey: env('UPS_ACCESS_KEY'),
@@ -116,14 +116,14 @@ export const config = {
   fedexApiKey: env('FEDEX_API_KEY'),
   fedexSecretKey: env('FEDEX_SECRET_KEY'),
   aliexpressUsername: env('ALIEXPRESS_USERNAME'),
-  aliexpressPassword: env('ALIEXPRESS_PASSWORD'),
+  aliexpressPassword: env('ALIEXPRESS_PASSWORD') || env('ALIEXPRESS_PW'),
   aliexpressCookiesFile: env('ALIEXPRESS_COOKIES_FILE'),
   aliexpressTotpKey: env('ALIEXPRESS_TOTP_KEY'),
 
   // FritzBox
-  fritzboxHost: env('FRITZBOX_HOST', 'fritz.box'),
-  fritzboxUser: env('FRITZBOX_USER'),
-  fritzboxPass: env('FRITZBOX_PASS'),
+  fritzboxHost: env('FRITZBOX_HOST') || env('FRITZ_SERVER') || env('FRITZ_HOST', 'fritz.box'),
+  fritzboxUser: env('FRITZBOX_USER') || env('FRITZ_USERNAME') || env('FRITZ_USER'),
+  fritzboxPass: env('FRITZBOX_PASS') || env('FRITZ_PW') || env('FRITZ_PASSWORD'),
   // Phonebooks to skip entirely, by name (comma-separated, case-insensitive
   // substring). A FRITZ!Box exposes its call-barring and spam-score lists as
   // phonebooks alongside real contacts, and they dominate the download while
