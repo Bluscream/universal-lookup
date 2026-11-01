@@ -13,6 +13,7 @@ import {
 } from '../backend/src/providers/status/statuspage.js';
 import { steamGroupSummary } from '../backend/src/providers/status/steam.js';
 import { ubisoftToSummary } from '../backend/src/providers/status/ubisoft.js';
+import { uptimerobotToSummary } from '../backend/src/providers/status/uptimerobot.js';
 import { xboxToSummary } from '../backend/src/providers/status/xbox.js';
 
 beforeEach(() => {
@@ -396,5 +397,65 @@ describe('nintendoToSummary', () => {
     expect(summary.incidents).toHaveLength(2);
     expect(summary.incidents?.[0].name).toBe('Splatoon 3');
     expect(summary.incidents?.[1].impact).toBe('maintenance');
+  });
+});
+
+describe('uptimerobotToSummary (BARQ)', () => {
+  it('is operational when all monitors have statusClass success', () => {
+    const { summary, history, uptime30d } = uptimerobotToSummary(
+      {
+        data: [
+          {
+            name: 'API',
+            statusClass: 'success',
+            statistic: [{ date: '2026-11-01', ratio: '100.000' }],
+            '30dRatio': { ratio: '100.000' },
+          },
+          {
+            name: 'Website',
+            statusClass: 'success',
+            statistic: [{ date: '2026-11-01', ratio: '100.000' }],
+            '30dRatio': { ratio: '100.000' },
+          },
+        ],
+        statistics: { counts: { up: 2, down: 0, paused: 0, total: 2 } },
+      },
+      'BARQ!',
+      'https://stats.uptimerobot.com/w5P4BUvo3J',
+    );
+    expect(summary.status?.indicator).toBe('none');
+    expect(summary.incidents).toEqual([]);
+    expect(history).toEqual([{ date: '2026-11-01', ratio: 100, label: 'excellent' }]);
+    expect(uptime30d).toBe(100);
+  });
+
+  it('detects down monitors and aggregates ratio', () => {
+    const { summary, history } = uptimerobotToSummary(
+      {
+        data: [
+          {
+            name: 'API',
+            statusClass: 'success',
+            statistic: [{ date: '2026-11-01', ratio: '100.000' }],
+          },
+          {
+            name: 'CMS',
+            statusClass: 'danger',
+            statistic: [{ date: '2026-11-01', ratio: '50.000' }],
+            lastDowntime: { date: '2026-11-01 12:00:00', duration: 100, reason: 'Outage' },
+          },
+        ],
+        statistics: {
+          counts: { up: 1, down: 1, paused: 0, total: 2 },
+          count_result: '1 monitors down',
+        },
+      },
+      'BARQ!',
+      'https://stats.uptimerobot.com/w5P4BUvo3J',
+    );
+    expect(summary.status?.indicator).toBe('minor');
+    expect(summary.incidents).toHaveLength(1);
+    expect(summary.incidents?.[0].name).toBe('CMS service disruption');
+    expect(history).toEqual([{ date: '2026-11-01', ratio: 75, label: 'degraded' }]);
   });
 });

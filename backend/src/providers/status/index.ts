@@ -24,6 +24,7 @@ import { playstationProvider } from './playstation.js';
 import { makeStatuspageProvider, STATUSPAGE_SERVICES } from './statuspage.js';
 import { steamProvider } from './steam.js';
 import { ubisoftProvider } from './ubisoft.js';
+import { makeUptimeRobotProvider, UPTIMEROBOT_SERVICES } from './uptimerobot.js';
 import { xboxProvider } from './xbox.js';
 
 /** Words that mean "give me everything" rather than a specific service filter. */
@@ -52,6 +53,7 @@ const CROWD_PROVIDERS: Provider[] = config.statusAllestoerungenEnabled
 const BASE_STATUS_PROVIDERS: Provider[] = [
   ...STATUSPAGE_SERVICES.map(makeStatuspageProvider),
   ...INSTATUS_SERVICES.map(makeInstatusProvider),
+  ...UPTIMEROBOT_SERVICES.map(makeUptimeRobotProvider),
   ...CROWD_PROVIDERS,
   xboxProvider,
   playstationProvider,

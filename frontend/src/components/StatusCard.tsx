@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle2, CircleDashed, Wrench } from 'lucide-react';
 import type { StatusIncident, StatusIndicator, StatusServiceEntry } from '../types/api';
 import { ServiceLogo } from './ServiceLogo';
+import { UptimeGraph } from './UptimeGraph';
 
 /** Colour + icon for each canonical indicator. */
 const INDICATOR_META: Record<StatusIndicator, { color: string; label: string }> = {
@@ -210,6 +211,9 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
             : `${down.length} of ${services.length} services affected`}
         </div>
       </div>
+
+      {/* Uptime history graph across filtered services */}
+      <UptimeGraph services={services} />
 
       {/* Service grid, grouped by category */}
       {groupByCategory(services).map(([category, entries]) => (

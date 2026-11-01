@@ -22,6 +22,7 @@ const SERVICE_ICON_URL: Record<string, string> = {
   gcp: SI('googlecloud'),
   aws: MDI('aws'),
   azure: MDI('microsoft-azure'),
+  barq: 'https://stats.uptimerobot.com/assets/favicon.ico',
 };
 
 const SERVICE_COLOR: Record<string, string> = {
@@ -36,6 +37,7 @@ const SERVICE_COLOR: Record<string, string> = {
   gcp: '#4285F4',
   aws: '#FF9900',
   azure: '#0078D4',
+  barq: '#E65100',
 };
 
 /** CDN URL of a service's brand icon, or null if we don't have one. */
@@ -54,6 +56,7 @@ const SERVICE_CATEGORY: Record<string, string> = {
   aws: 'Cloud',
   azure: 'Cloud',
   gcp: 'Cloud',
+  barq: 'Social',
   // Games / gaming platforms
   steam: 'Games',
   cs2: 'Games',

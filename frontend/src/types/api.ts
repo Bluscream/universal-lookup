@@ -10,39 +10,15 @@
  * how `common` describes itself — the route matcher and the auth hook already
  * derive from it.
  */
-import type { LookupType } from '@universal-lookup/common';
+import type {
+  LookupType,
+  StatusHistoryPoint,
+  StatusIncident,
+  StatusIndicator,
+  StatusServiceEntry,
+} from '@universal-lookup/common';
 
-export type { LookupType };
-
-export type StatusIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance' | 'unknown';
-
-export interface StatusServiceEntry {
-  service: string;
-  name: string;
-  indicator: StatusIndicator;
-  status: string;
-  operational: boolean;
-  updated_at?: string | null;
-  page_url?: string | null;
-  icon?: string | null;
-  category?: string | null;
-  active_incidents?: number | null;
-  maintenance: boolean;
-  maintainance: boolean;
-  status_color?: string | null;
-  service_color?: string | null;
-}
-
-export interface StatusIncident {
-  service: string;
-  name: string;
-  impact?: string | null;
-  status?: string | null;
-  url?: string | null;
-  started_at?: string | null;
-  updated_at?: string | null;
-  scheduled_until?: string | null;
-}
+export type { LookupType, StatusHistoryPoint, StatusIncident, StatusIndicator, StatusServiceEntry };
 
 export interface LookupRequest {
   type: LookupType;

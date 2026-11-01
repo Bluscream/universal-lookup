@@ -786,6 +786,13 @@ export interface SocialStream {
 /** Canonical health indicator across all status providers. */
 export type StatusIndicator = 'none' | 'minor' | 'major' | 'critical' | 'maintenance' | 'unknown';
 
+/** A single historical uptime datapoint for a service. */
+export interface StatusHistoryPoint {
+  date: string;
+  ratio: number;
+  label?: string | null;
+}
+
 /** One service's current health, contributed by a single status provider. */
 export interface StatusServiceEntry {
   service: string;
@@ -804,6 +811,12 @@ export interface StatusServiceEntry {
   maintainance: boolean;
   status_color?: string | null;
   service_color?: string | null;
+  /** Historical uptime ratios over time. */
+  history?: StatusHistoryPoint[] | null;
+  /** 30-day uptime ratio percentage (0-100). */
+  uptime_30d?: number | null;
+  /** 90-day uptime ratio percentage (0-100). */
+  uptime_90d?: number | null;
 }
 
 /** An active incident/disruption reported by a status provider. */
