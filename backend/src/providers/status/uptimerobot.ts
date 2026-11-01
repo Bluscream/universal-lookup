@@ -22,6 +22,7 @@ export interface UptimeRobotMonitor {
   status?: string | null;
   statusClass: string; // 'success' | 'danger' | 'warning' | 'paused'
   type?: string;
+  dailyRatios?: UptimeRobotStatistic[];
   statistic?: UptimeRobotStatistic[];
   '30dRatio'?: { ratio?: string | number; label?: string; color?: string };
   '90dRatio'?: { ratio?: string | number; label?: string; color?: string };
@@ -102,8 +103,9 @@ export function uptimerobotToSummary(
   // Aggregate daily history across all monitors
   const historyMap = new Map<string, { sum: number; count: number }>();
   for (const monitor of monitors) {
-    if (Array.isArray(monitor.statistic)) {
-      for (const stat of monitor.statistic) {
+    const stats = monitor.dailyRatios || monitor.statistic;
+    if (Array.isArray(stats)) {
+      for (const stat of stats) {
         if (!stat.date) continue;
         const val = parseFloat(String(stat.ratio));
         if (Number.isNaN(val)) continue;
