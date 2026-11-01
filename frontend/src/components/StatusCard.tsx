@@ -212,9 +212,6 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
         </div>
       </div>
 
-      {/* Uptime history graph across filtered services */}
-      <UptimeGraph services={services} />
-
       {/* Service grid, grouped by category */}
       {groupByCategory(services).map(([category, entries]) => (
         <div key={category}>
@@ -298,6 +295,9 @@ export function StatusCard({ response }: { response: Record<string, unknown> }) 
           </div>
         </div>
       )}
+
+      {/* Uptime history graph across filtered services with historical data */}
+      <UptimeGraph services={services} />
     </div>
   );
 }

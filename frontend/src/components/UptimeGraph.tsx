@@ -32,16 +32,16 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hiddenServices, setHiddenServices] = useState<Set<string>>(() => new Set());
 
-  // Only render if at least one service has history datapoints
-  const hasAnyHistory = useMemo(
-    () => services.some((s) => Array.isArray(s.history) && s.history.length > 0),
+  // Only consider services that actually provide historical datapoints
+  const historyServices = useMemo(
+    () => services.filter((s) => Array.isArray(s.history) && s.history.length > 0),
     [services],
   );
 
   // Collect the timeline dates from services that provide history
   const allDates = useMemo(() => {
     const datesSet = new Set<string>();
-    for (const s of services) {
+    for (const s of historyServices) {
       if (Array.isArray(s.history)) {
         for (const pt of s.history) {
           if (pt.date) datesSet.add(pt.date);
@@ -50,23 +50,23 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
     }
     const sorted = [...datesSet].sort();
     return sorted.slice(-daysWindow);
-  }, [services, daysWindow]);
+  }, [historyServices, daysWindow]);
 
   // Color assignments per service
   const serviceColors = useMemo(() => {
     const colors = new Map<string, string>();
-    services.forEach((s, idx) => {
+    historyServices.forEach((s, idx) => {
       const color = s.service_color || PALETTE[idx % PALETTE.length];
       colors.set(s.service, color);
     });
     return colors;
-  }, [services]);
+  }, [historyServices]);
 
-  // Map each service to an array of ratios aligned to allDates
+  // Map each history-enabled service to an array of ratios aligned to allDates
   const seriesData = useMemo(() => {
     if (allDates.length === 0) return [];
 
-    return services.map((s) => {
+    return historyServices.map((s) => {
       const historyMap = new Map<string, number>();
       if (Array.isArray(s.history)) {
         for (const pt of s.history) {
@@ -75,11 +75,7 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
       }
 
       const points = allDates.map((date) => {
-        if (historyMap.has(date)) {
-          return historyMap.get(date)!;
-        }
-        // Baseline fallback for services without daily history: 100% operational
-        return s.operational ? 100 : 0;
+        return historyMap.get(date) ?? 100;
       });
 
       // Calculate average over the active window
@@ -97,9 +93,9 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
         avg,
       };
     });
-  }, [services, allDates, serviceColors]);
+  }, [historyServices, allDates, serviceColors]);
 
-  if (!hasAnyHistory || allDates.length === 0) {
+  if (historyServices.length === 0 || allDates.length === 0) {
     return null;
   }
 
@@ -111,8 +107,8 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
       if (val < minRatio) minRatio = val;
     }
   }
-  // Floor to nearest sensible round number (e.g. 95, 90, 80) so minor dips are prominent
-  const yMin = Math.max(0, Math.floor((minRatio - 1) / 5) * 5);
+  // Floor to nearest sensible round number (e.g. 95, 90, 80) with a little margin so dips don't hit the bottom border
+  const yMin = Math.max(0, Math.floor((minRatio - 3) / 5) * 5);
   const yMax = 100;
   const yRange = Math.max(1, yMax - yMin);
 
@@ -136,9 +132,9 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
     return paddingTop + chartHeight - ((clamped - yMin) / yRange) * chartHeight;
   };
 
-  // Build gridlines (3 to 5 horizontal ticks)
+  // Build gridlines (3 to 6 horizontal ticks)
   const yTicks = [yMax];
-  const step = yRange <= 5 ? 1 : yRange <= 15 ? 5 : yRange <= 40 ? 10 : 25;
+  const step = yRange <= 5 ? 1 : yRange <= 25 ? 5 : yRange <= 50 ? 10 : 25;
   for (let val = yMax - step; val >= yMin; val -= step) {
     yTicks.push(val);
   }
@@ -285,7 +281,7 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
                 x2="0"
                 y2="1"
               >
-                <stop offset="0%" stopColor={s.color} stopOpacity="0.25" />
+                <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
                 <stop offset="100%" stopColor={s.color} stopOpacity="0.0" />
               </linearGradient>
             ))}
@@ -353,12 +349,16 @@ export function UptimeGraph({ services }: { services: StatusServiceEntry[] }) {
 
             return (
               <g key={s.service}>
-                <path d={areaD} fill={`url(#${chartId}-grad-${s.service})`} />
+                <path
+                  d={areaD}
+                  fill={`url(#${chartId}-grad-${s.service})`}
+                  opacity={seriesData.length === 1 ? 1 : 0.4}
+                />
                 <path
                   d={pathD}
                   fill="none"
                   stroke={s.color}
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
